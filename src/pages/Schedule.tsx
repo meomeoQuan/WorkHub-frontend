@@ -2,13 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar as CalendarIcon, Check, ArrowLeft, Clock, Plus, X, Move, GripVertical } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, ArrowLeft, Clock, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Calendar, momentLocalizer, View, SlotInfo } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 
 const localizer = momentLocalizer(moment);
 
@@ -54,30 +52,7 @@ const getInitialEvents = (): AvailabilityEvent[] => {
   ];
 };
 
-// Draggable Event Wrapper Component
-function DraggableEventWrapper({ event, children }: { event: AvailabilityEvent; children: React.ReactNode }) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'event',
-    item: { event },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        cursor: 'move',
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ScheduleContent() {
+export function Schedule() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
   const [saved, setSaved] = useState(false);
@@ -86,11 +61,10 @@ function ScheduleContent() {
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [eventTitle, setEventTitle] = useState('');
   const [view, setView] = useState<View>('week');
-  const [draggedEvent, setDraggedEvent] = useState<AvailabilityEvent | null>(null);
   
   // Protect this page - only job seekers can access
   useEffect(() => {
-    if (!isLoggedIn || user?.userType !== 'candidate') {
+    if (!isLoggedIn || user?.userType !== 'jobseeker') {
       navigate('/unauthorized');
     }
   }, [isLoggedIn, user, navigate]);
@@ -99,18 +73,6 @@ function ScheduleContent() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  // Setup drop zone for the entire calendar
-  const [, drop] = useDrop(() => ({
-    accept: 'event',
-    drop: (item: { event: AvailabilityEvent }, monitor) => {
-      const offset = monitor.getClientOffset();
-      if (offset) {
-        // This would require more complex logic to calculate the new time
-        // For now, we'll use a simpler approach with onEventDrop
-      }
-    },
-  }));
 
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
     setSelectedSlot({ start: slotInfo.start as Date, end: slotInfo.end as Date });
@@ -123,30 +85,6 @@ function ScheduleContent() {
       setEvents((prev) => prev.filter((e) => e.id !== event.id));
     }
   }, []);
-
-  // Handle dropping an event on a new slot
-  const moveEvent = useCallback(
-    ({ event, start, end }: { event: AvailabilityEvent; start: Date; end: Date }) => {
-      setEvents((prev) => {
-        const existing = prev.find((ev) => ev.id === event.id);
-        const filtered = prev.filter((ev) => ev.id !== event.id);
-        return [...filtered, { ...existing!, start, end }];
-      });
-    },
-    []
-  );
-
-  // Handle resizing an event
-  const resizeEvent = useCallback(
-    ({ event, start, end }: { event: AvailabilityEvent; start: Date; end: Date }) => {
-      setEvents((prev) => {
-        const existing = prev.find((ev) => ev.id === event.id);
-        const filtered = prev.filter((ev) => ev.id !== event.id);
-        return [...filtered, { ...existing!, start, end }];
-      });
-    },
-    []
-  );
 
   const handleAddEvent = () => {
     if (!eventTitle.trim() || !selectedSlot) {
@@ -177,18 +115,6 @@ function ScheduleContent() {
     }, 2000);
   };
 
-  // Custom event component with drag handle
-  const EventComponent = ({ event }: { event: AvailabilityEvent }) => {
-    return (
-      <DraggableEventWrapper event={event}>
-        <div className="flex items-center gap-1 h-full">
-          <GripVertical className="w-3 h-3 opacity-70" />
-          <span className="flex-1 truncate text-xs">{event.title}</span>
-        </div>
-      </DraggableEventWrapper>
-    );
-  };
-
   const eventStyleGetter = () => {
     return {
       style: {
@@ -201,7 +127,7 @@ function ScheduleContent() {
         alignItems: 'center',
         fontWeight: '500',
         padding: '2px 6px',
-        cursor: 'move',
+        cursor: 'pointer',
         transition: 'all 0.2s ease',
       },
     };
@@ -245,14 +171,14 @@ function ScheduleContent() {
               <div className="flex-1">
                 <h1 className="text-[#263238] mb-2 text-3xl">Manage Your Schedule</h1>
                 <p className="text-[#263238]/70">
-                  Drag and drop availability slots to rearrange your schedule
+                  Set your availability to let employers know when you're free to work
                 </p>
               </div>
             </div>
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Card className="p-4 border-2 border-[#FF9800]/20 bg-gradient-to-br from-[#FF9800]/5 to-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#FF9800]/20 rounded-xl flex items-center justify-center">
@@ -276,34 +202,7 @@ function ScheduleContent() {
                 </div>
               </div>
             </Card>
-            
-            <Card className="p-4 border-2 border-[#4ADE80]/20 bg-gradient-to-br from-[#4ADE80]/5 to-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#4ADE80]/20 rounded-xl flex items-center justify-center">
-                  <Move className="w-5 h-5 text-[#4ADE80]" />
-                </div>
-                <div>
-                  <p className="text-2xl text-[#4ADE80] font-bold">Drag & Drop</p>
-                  <p className="text-xs text-[#263238]/60">Enabled</p>
-                </div>
-              </div>
-            </Card>
           </div>
-
-          {/* Drag & Drop Hint */}
-          <Card className="p-4 mb-6 bg-gradient-to-r from-[#4FC3F7]/10 to-[#4ADE80]/10 border-2 border-[#4FC3F7]/30">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                <GripVertical className="w-5 h-5 text-[#FF9800]" />
-              </div>
-              <div>
-                <p className="text-sm text-[#263238] font-medium">💡 Drag & Drop Instructions</p>
-                <p className="text-xs text-[#263238]/70">
-                  Look for the grip icon (⋮⋮) on events - click and drag to move them to different time slots. Events will snap to hour boundaries.
-                </p>
-              </div>
-            </div>
-          </Card>
 
           {/* Event Form */}
           {showEventForm && selectedSlot && (
@@ -371,7 +270,7 @@ function ScheduleContent() {
 
           {/* Calendar */}
           <Card className="p-6 mb-6 border-2 border-[#263238]/10 shadow-xl">
-            <div ref={drop} className="workhub-calendar">
+            <div className="workhub-calendar">
               <Calendar
                 localizer={localizer}
                 events={events}
@@ -380,15 +279,8 @@ function ScheduleContent() {
                 style={{ height: 600 }}
                 onSelectSlot={handleSelectSlot}
                 onSelectEvent={handleSelectEvent}
-                onEventDrop={moveEvent}
-                onEventResize={resizeEvent}
                 selectable
-                resizable
-                draggableAccessor={() => true}
                 eventPropGetter={eventStyleGetter}
-                components={{
-                  event: EventComponent,
-                }}
                 view={view}
                 onView={setView}
                 views={['month', 'week', 'day']}
@@ -421,24 +313,6 @@ function ScheduleContent() {
                 <div>
                   <p className="text-[#263238] font-medium mb-1">Add Availability</p>
                   <p className="text-[#263238]/60">Click and drag on empty calendar space to create a new availability slot</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl border-2 border-[#4ADE80] bg-[#4ADE80]/10 flex items-center justify-center flex-shrink-0">
-                  <Move className="w-5 h-5 text-[#4ADE80]" />
-                </div>
-                <div>
-                  <p className="text-[#263238] font-medium mb-1">Drag to Move</p>
-                  <p className="text-[#263238]/60">Grab the grip icon (⋮⋮) and drag events to different times or days</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl border-2 border-[#4FC3F7] bg-[#4FC3F7]/10 flex items-center justify-center flex-shrink-0">
-                  <GripVertical className="w-5 h-5 text-[#4FC3F7]" />
-                </div>
-                <div>
-                  <p className="text-[#263238] font-medium mb-1">Resize Duration</p>
-                  <p className="text-[#263238]/60">Drag the top or bottom edge of events to adjust how long you're available</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -522,7 +396,7 @@ function ScheduleContent() {
         .workhub-calendar .rbc-event {
           background-color: #FF9800;
           border-radius: 8px;
-          cursor: move;
+          cursor: pointer;
           transition: all 0.2s;
         }
         
@@ -582,14 +456,5 @@ function ScheduleContent() {
         }
       `}</style>
     </div>
-  );
-}
-
-// Wrap with DnD Provider
-export function Schedule() {
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <ScheduleContent />
-    </DndProvider>
   );
 }

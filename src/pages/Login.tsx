@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -9,15 +9,47 @@ import { Zap, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+
+
 export function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login , googleLogin  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+ useEffect(() => {
+  const interval = setInterval(() => {
+    if (window.google) {
+      clearInterval(interval);
+
+      const client = window.google.accounts.oauth2.initCodeClient({
+        client_id: "627355940500-p6ho8e6lovbq3glle03fevfsnedrbm61.apps.googleusercontent.com",
+        scope: "openid email profile",
+        ux_mode: "popup",
+        callback: async (response: any) => {
+          await googleLogin(response.code);
+          toast.success('Welcome back! Login successful.');
+      navigate('/');
+        },
+      });
+
+      (window as any).googleClient = client;
+    }
+  }, 200);
+
+  return () => clearInterval(interval);
+}, []);
+
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -108,7 +140,7 @@ export function Login() {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked : boolean) => setRememberMe(checked as boolean)}
                 />
                 <label
                   htmlFor="remember"
@@ -140,7 +172,11 @@ export function Login() {
               </div>
             </div>
 
-            <Button type="button" variant="outline" className="w-full h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
+            <Button type="button"
+              variant="outline"
+              onClick={() => (window as any).googleClient.requestCode()} 
+              className="w-full h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
+                
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
