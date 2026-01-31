@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Templates Preview - WorkHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .header h1 {
+            color: #263238;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: rgba(38, 50, 56, 0.7);
+            font-size: 18px;
+        }
+        
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+        
+        .template-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 24px rgba(38, 50, 56, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(38, 50, 56, 0.15);
+        }
+        
+        .template-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .template-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .template-icon.orange {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);
+        }
+        
+        .template-icon.blue {
+            background: linear-gradient(135deg, #4FC3F7 0%, #0288D1 100%);
+            box-shadow: 0 4px 16px rgba(79, 195, 247, 0.3);
+        }
+        
+        .template-info h2 {
+            color: #263238;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .template-info p {
+            color: rgba(38, 50, 56, 0.6);
+            font-size: 14px;
+        }
+        
+        .template-details {
+            margin-bottom: 24px;
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: rgba(79, 195, 247, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4FC3F7;
+        }
+        
+        .detail-item.orange-border {
+            background: rgba(255, 152, 0, 0.05);
+            border-left-color: #FF9800;
+        }
+        
+        .detail-icon {
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+        
+        .detail-text {
+            flex: 1;
+        }
+        
+        .detail-text strong {
+            color: #263238;
+            font-size: 14px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .detail-text span {
+            color: rgba(38, 50, 56, 0.6);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .template-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #4FC3F7 0%, #0288D1 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(79, 195, 247, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: #263238;
+            border: 2px solid rgba(38, 50, 56, 0.2);
+        }
+        
+        .btn-outline:hover {
+            border-color: #263238;
+            background: rgba(38, 50, 56, 0.02);
+        }
+        
+        .variables-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 24px rgba(38, 50, 56, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .variables-section h3 {
+            color: #263238;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .variables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .variable-item {
+            padding: 16px;
+            background: rgba(74, 222, 128, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ADE80;
+        }
+        
+        .variable-item code {
+            color: #FF9800;
+            background: rgba(255, 152, 0, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .variable-item p {
+            color: rgba(38, 50, 56, 0.7);
+            font-size: 13px;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(38, 50, 56, 0.5);
+            font-size: 14px;
+            margin-top: 48px;
+        }
+        
+        @media (max-width: 768px) {
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .template-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1>📧 WorkHub Email Templates</h1>
+            <p>Preview and test email templates for your backend integration</p>
+        </div>
+        
+        <!-- Templates Grid -->
+        <div class="templates-grid">
+            
+            <!-- Verify Email Template -->
+            <div class="template-card">
+                <div class="template-header">
+                    <div class="template-icon orange">
+                        ✓
+                    </div>
+                    <div class="template-info">
+                        <h2>Verify Email</h2>
+                        <p>VerifyEmail.html</p>
+                    </div>
+                </div>
+                
+                <div class="template-details">
+                    <div class="detail-item orange-border">
+                        <div class="detail-icon">🎨</div>
+                        <div class="detail-text">
+                            <strong>Design Theme</strong>
+                            <span>Warm orange gradient header, welcoming tone, onboarding checklist</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item orange-border">
+                        <div class="detail-icon">⏰</div>
+                        <div class="detail-text">
+                            <strong>Expiration</strong>
+                            <span>24 hours validity period mentioned</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item orange-border">
+                        <div class="detail-icon">🚀</div>
+                        <div class="detail-text">
+                            <strong>Features</strong>
+                            <span>Welcome message, verification button, next steps guide</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-actions">
+                    <a href="VerifyEmail.html" target="_blank" class="btn btn-primary">
+                        👁️ Preview
+                    </a>
+                    <a href="VerifyEmail.html" download class="btn btn-outline">
+                        📥 Download
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Reset Password Template -->
+            <div class="template-card">
+                <div class="template-header">
+                    <div class="template-icon blue">
+                        🔒
+                    </div>
+                    <div class="template-info">
+                        <h2>Reset Password</h2>
+                        <p>ResetPassword.html</p>
+                    </div>
+                </div>
+                
+                <div class="template-details">
+                    <div class="detail-item">
+                        <div class="detail-icon">🎨</div>
+                        <div class="detail-text">
+                            <strong>Design Theme</strong>
+                            <span>Sky blue gradient header, security-focused, warning alerts</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon">⏰</div>
+                        <div class="detail-text">
+                            <strong>Expiration</strong>
+                            <span>1 hour validity period mentioned</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon">🔐</div>
+                        <div class="detail-text">
+                            <strong>Features</strong>
+                            <span>Security tips, password guidance, alert for unauthorized access</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-actions">
+                    <a href="ResetPassword.html" target="_blank" class="btn btn-secondary">
+                        👁️ Preview
+                    </a>
+                    <a href="ResetPassword.html" download class="btn btn-outline">
+                        📥 Download
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Variables Section -->
+        <div class="variables-section">
+            <h3>
+                <span>🔧</span>
+                Backend Integration Variables
+            </h3>
+            
+            <div class="variables-grid">
+                <div class="variable-item">
+                    <code>{{VERIFICATION_URL}}</code>
+                    <p>Replace with the actual email verification link generated by your backend</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>{{RESET_URL}}</code>
+                    <p>Replace with the password reset link with token from your backend</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>{{USER_NAME}}</code>
+                    <p>(Optional) Add user's name for personalization if needed</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>{{USER_EMAIL}}</code>
+                    <p>(Optional) Display the email address being verified</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technical Specs -->
+        <div class="variables-section">
+            <h3>
+                <span>📋</span>
+                Technical Specifications
+            </h3>
+            
+            <div class="variables-grid">
+                <div class="variable-item">
+                    <code>Inline CSS</code>
+                    <p>All styles are inline for maximum email client compatibility</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>Table Layout</code>
+                    <p>Uses HTML tables for consistent rendering across email clients</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>Responsive</code>
+                    <p>Optimized for desktop, mobile, and tablet viewing</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>Brand Colors</code>
+                    <p>Orange #FF9800, Blue #4FC3F7, Charcoal #263238, Green #4ADE80</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>600px Width</code>
+                    <p>Standard email width for optimal rendering</p>
+                </div>
+                
+                <div class="variable-item">
+                    <code>Dark Footer</code>
+                    <p>Charcoal gray footer with social links and branding</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Usage Instructions -->
+        <div class="variables-section">
+            <h3>
+                <span>📖</span>
+                How to Use in Backend
+            </h3>
+            
+            <div style="background: rgba(79, 195, 247, 0.05); border-left: 4px solid #4FC3F7; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 8px;">1. Copy HTML Files to Backend</strong>
+                    Place <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">VerifyEmail.html</code> and 
+                    <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">ResetPassword.html</code> in your email templates folder
+                </p>
+            </div>
+            
+            <div style="background: rgba(74, 222, 128, 0.05); border-left: 4px solid #4ADE80; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 8px;">2. Replace Template Variables</strong>
+                    Use your backend's template engine to replace <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">{{VERIFICATION_URL}}</code> 
+                    and <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">{{RESET_URL}}</code> with actual links
+                </p>
+            </div>
+            
+            <div style="background: rgba(255, 152, 0, 0.05); border-left: 4px solid #FF9800; padding: 20px; border-radius: 8px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 8px;">3. Send via Email Service</strong>
+                    Use your email service (SendGrid, AWS SES, Nodemailer, etc.) to send the HTML as email body
+                </p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Made with ❤️ for WorkHub Backend Integration • All CSS is inline for email compatibility</p>
+        </div>
+        
+    </div>
+</body>
+</html>

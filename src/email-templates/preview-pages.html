@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Flow Pages Preview - WorkHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .header h1 {
+            color: #263238;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: rgba(38, 50, 56, 0.7);
+            font-size: 18px;
+        }
+        
+        .section {
+            margin-bottom: 48px;
+        }
+        
+        .section-title {
+            color: #263238;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            padding-left: 16px;
+            border-left: 4px solid #FF9800;
+        }
+        
+        .pages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        
+        .page-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(38, 50, 56, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .page-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(38, 50, 56, 0.12);
+        }
+        
+        .page-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .page-icon.green {
+            background: linear-gradient(135deg, #4ADE80 0%, #22C55E 100%);
+            box-shadow: 0 4px 16px rgba(74, 222, 128, 0.3);
+        }
+        
+        .page-icon.red {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+        }
+        
+        .page-icon.blue {
+            background: linear-gradient(135deg, #4FC3F7 0%, #0288D1 100%);
+            box-shadow: 0 4px 16px rgba(79, 195, 247, 0.3);
+        }
+        
+        .page-icon.orange {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);
+        }
+        
+        .page-card h3 {
+            color: #263238;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .page-card p {
+            color: rgba(38, 50, 56, 0.6);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .page-url {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #FF9800;
+            background: rgba(255, 152, 0, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            word-break: break-all;
+        }
+        
+        .info-box {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 24px rgba(38, 50, 56, 0.08);
+            margin-bottom: 32px;
+        }
+        
+        .info-box h3 {
+            color: #263238;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .info-item {
+            padding: 16px;
+            background: rgba(79, 195, 247, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4FC3F7;
+        }
+        
+        .info-item strong {
+            color: #263238;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .info-item span {
+            color: rgba(38, 50, 56, 0.7);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(38, 50, 56, 0.5);
+            font-size: 14px;
+            margin-top: 48px;
+        }
+        
+        @media (max-width: 768px) {
+            .pages-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1>🔗 Email Flow Pages Preview</h1>
+            <p>Test all email verification and password reset flow pages</p>
+        </div>
+        
+        <!-- Integration Info -->
+        <div class="info-box">
+            <h3>
+                <span>🔧</span>
+                Frontend Pages Created
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>/pages/VerifyEmail.tsx</strong>
+                    <span>Handles email verification when users click the link from their inbox</span>
+                </div>
+                <div class="info-item">
+                    <strong>/pages/ResetPassword.tsx</strong>
+                    <span>Password reset form where users create a new password</span>
+                </div>
+                <div class="info-item">
+                    <strong>Updated Flow</strong>
+                    <span>Register → VerifyEmail → EmailConfirmation (success page)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flow Testing -->
+        <div class="info-box" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(79, 195, 247, 0.05) 100%); border: 2px solid #FF9800;">
+            <h3 style="color: #FF9800;">
+                <span>🚀</span>
+                Test the Complete Registration Flow
+            </h3>
+            <div style="background: white; border-radius: 12px; padding: 24px; margin-top: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;">
+                    <div style="flex: 1; min-width: 140px; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: white; font-size: 24px; font-weight: 700;">1</div>
+                        <p style="color: #263238; font-size: 14px; margin: 0; font-weight: 600;">Register</p>
+                        <p style="color: rgba(38, 50, 56, 0.6); font-size: 12px; margin: 4px 0 0 0;">Fill form</p>
+                    </div>
+                    <div style="color: #4FC3F7; font-size: 20px;">→</div>
+                    <div style="flex: 1; min-width: 140px; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #4FC3F7 0%, #0288D1 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: white; font-size: 24px; font-weight: 700;">2</div>
+                        <p style="color: #263238; font-size: 14px; margin: 0; font-weight: 600;">Email Page</p>
+                        <p style="color: rgba(38, 50, 56, 0.6); font-size: 12px; margin: 4px 0 0 0;">Wait 2s</p>
+                    </div>
+                    <div style="color: #4ADE80; font-size: 20px;">→</div>
+                    <div style="flex: 1; min-width: 140px; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #4ADE80 0%, #22C55E 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: white; font-size: 24px; font-weight: 700;">3</div>
+                        <p style="color: #263238; font-size: 14px; margin: 0; font-weight: 600;">Verify Success</p>
+                        <p style="color: rgba(38, 50, 56, 0.6); font-size: 12px; margin: 4px 0 0 0;">Click button</p>
+                    </div>
+                    <div style="color: #FF9800; font-size: 20px;">→</div>
+                    <div style="flex: 1; min-width: 140px; text-align: center;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #263238 0%, #37474F 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: white; font-size: 24px; font-weight: 700;">4</div>
+                        <p style="color: #263238; font-size: 14px; margin: 0; font-weight: 600;">Login</p>
+                        <p style="color: rgba(38, 50, 56, 0.6); font-size: 12px; margin: 4px 0 0 0;">Auto redirect</p>
+                    </div>
+                </div>
+                <div style="background: rgba(79, 195, 247, 0.1); border: 1px solid rgba(79, 195, 247, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                    <p style="color: #263238; font-size: 13px; line-height: 1.6; margin: 0;">
+                        <strong>📋 Complete Flow:</strong><br>
+                        1️⃣ Fill registration form<br>
+                        2️⃣ See "Email sent" with 2-second loading<br>
+                        3️⃣ Click "Verify Email" button (simulates clicking email link)<br>
+                        4️⃣ See success page with 5-second countdown<br>
+                        5️⃣ Auto-redirect to login page
+                    </p>
+                </div>
+                <div style="text-align: center;">
+                    <a href="/register" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3);">
+                        🎯 Test Full Flow (Start Here!)
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Verify Email Pages -->
+        <div class="section">
+            <h2 class="section-title">Email Verification Pages</h2>
+            <div class="pages-grid">
+                
+                <a href="/verify-email?token=validtoken123" class="page-card" target="_blank">
+                    <div class="page-icon blue">
+                        ⏳
+                    </div>
+                    <h3>Verifying State</h3>
+                    <p>Loading screen shown while the backend validates the token</p>
+                    <div class="page-url">/verify-email?token=validtoken123</div>
+                </a>
+                
+                <a href="/verify-email?token=success123" class="page-card" target="_blank">
+                    <div class="page-icon green">
+                        ✓
+                    </div>
+                    <h3>Success State</h3>
+                    <p>Email successfully verified with auto-redirect countdown to login</p>
+                    <div class="page-url">/verify-email?token=success123</div>
+                </a>
+                
+                <a href="/verify-email?token=expired" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ✕
+                    </div>
+                    <h3>Expired Token</h3>
+                    <p>Shows when the verification link has expired (24hr limit)</p>
+                    <div class="page-url">/verify-email?token=expired</div>
+                </a>
+                
+                <a href="/verify-email?token=invalid" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ✕
+                    </div>
+                    <h3>Invalid Token</h3>
+                    <p>Shows when the token is malformed or doesn't exist</p>
+                    <div class="page-url">/verify-email?token=invalid</div>
+                </a>
+                
+                <a href="/verify-email" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ⚠️
+                    </div>
+                    <h3>No Token</h3>
+                    <p>Error state when user visits without a token parameter</p>
+                    <div class="page-url">/verify-email</div>
+                </a>
+                
+            </div>
+        </div>
+        
+        <!-- Reset Password Pages -->
+        <div class="section">
+            <h2 class="section-title">Password Reset Pages</h2>
+            <div class="pages-grid">
+                
+                <a href="/reset-password?token=validreset123" class="page-card" target="_blank">
+                    <div class="page-icon blue">
+                        ⏳
+                    </div>
+                    <h3>Validating Token</h3>
+                    <p>Loading screen while backend validates the reset token</p>
+                    <div class="page-url">/reset-password?token=validreset123</div>
+                </a>
+                
+                <a href="/reset-password?token=valid123" class="page-card" target="_blank">
+                    <div class="page-icon orange">
+                        🔒
+                    </div>
+                    <h3>Reset Form</h3>
+                    <p>Password reset form with strength indicator and validation</p>
+                    <div class="page-url">/reset-password?token=valid123</div>
+                </a>
+                
+                <a href="/reset-password?token=success" class="page-card" target="_blank">
+                    <div class="page-icon green">
+                        ✓
+                    </div>
+                    <h3>Success State</h3>
+                    <p>Password successfully reset with auto-redirect to login</p>
+                    <div class="page-url">/reset-password?token=success</div>
+                </a>
+                
+                <a href="/reset-password?token=expired" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ✕
+                    </div>
+                    <h3>Expired Token</h3>
+                    <p>Shows when reset link has expired (1hr limit)</p>
+                    <div class="page-url">/reset-password?token=expired</div>
+                </a>
+                
+                <a href="/reset-password?token=invalid" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ✕
+                    </div>
+                    <h3>Invalid Token</h3>
+                    <p>Shows when token is invalid or already used</p>
+                    <div class="page-url">/reset-password?token=invalid</div>
+                </a>
+                
+                <a href="/reset-password" class="page-card" target="_blank">
+                    <div class="page-icon red">
+                        ⚠️
+                    </div>
+                    <h3>No Token</h3>
+                    <p>Error state when user visits without token parameter</p>
+                    <div class="page-url">/reset-password</div>
+                </a>
+                
+            </div>
+        </div>
+        
+        <!-- Backend Integration Guide -->
+        <div class="info-box">
+            <h3>
+                <span>📖</span>
+                Backend Integration Steps
+            </h3>
+            
+            <div style="background: rgba(79, 195, 247, 0.05); border-left: 4px solid #4FC3F7; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 12px; font-size: 16px;">1. Email Templates</strong>
+                    • Copy <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">VerifyEmail.html</code> and 
+                    <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">ResetPassword.html</code> to your backend<br>
+                    • Replace <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">{{VERIFICATION_URL}}</code> with: 
+                    <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">https://yourapp.com/verify-email?token=GENERATED_TOKEN</code><br>
+                    • Replace <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">{{RESET_URL}}</code> with: 
+                    <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">https://yourapp.com/reset-password?token=GENERATED_TOKEN</code>
+                </p>
+            </div>
+            
+            <div style="background: rgba(74, 222, 128, 0.05); border-left: 4px solid #4ADE80; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 12px; font-size: 16px;">2. Frontend API Calls (TODO)</strong>
+                    • Update <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">/pages/VerifyEmail.tsx</code> line 32-35<br>
+                    • Update <code style="background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; color: #FF9800;">/pages/ResetPassword.tsx</code> line 40-43 and line 103-108<br>
+                    • Replace mock API calls with your actual backend endpoints
+                </p>
+            </div>
+            
+            <div style="background: rgba(255, 152, 0, 0.05); border-left: 4px solid #FF9800; padding: 20px; border-radius: 8px;">
+                <p style="color: #263238; font-size: 14px; line-height: 1.8; margin: 0;">
+                    <strong style="display: block; margin-bottom: 12px; font-size: 16px;">3. Test Flow</strong>
+                    • User registers → Backend sends email using VerifyEmail.html<br>
+                    • User clicks email link → Lands on /verify-email?token=xxx page<br>
+                    • Frontend calls your backend API to verify token<br>
+                    • User sees success/error state and redirects to login
+                </p>
+            </div>
+        </div>
+        
+        <!-- Features List -->
+        <div class="info-box">
+            <h3>
+                <span>✨</span>
+                Page Features
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Loading States</strong>
+                    <span>Animated spinners while validating tokens</span>
+                </div>
+                <div class="info-item">
+                    <strong>Auto Redirect</strong>
+                    <span>5-second countdown after success, then redirects to login</span>
+                </div>
+                <div class="info-item">
+                    <strong>Password Strength</strong>
+                    <span>Real-time strength indicator (weak/medium/strong)</span>
+                </div>
+                <div class="info-item">
+                    <strong>Validation</strong>
+                    <span>Min 8 chars, uppercase, lowercase, number, special char</span>
+                </div>
+                <div class="info-item">
+                    <strong>Error Handling</strong>
+                    <span>Clear messages for expired, invalid, or missing tokens</span>
+                </div>
+                <div class="info-item">
+                    <strong>Responsive Design</strong>
+                    <span>Works perfectly on mobile, tablet, and desktop</span>
+                </div>
+                <div class="info-item">
+                    <strong>WorkHub Branding</strong>
+                    <span>Matches your color palette and design system</span>
+                </div>
+                <div class="info-item">
+                    <strong>Show/Hide Password</strong>
+                    <span>Eye icon toggles password visibility</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Made with ❤️ for WorkHub • Frontend pages ready for backend integration</p>
+        </div>
+        
+    </div>
+</body>
+</html>
