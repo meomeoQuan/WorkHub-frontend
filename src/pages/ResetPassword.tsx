@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { CheckCircle2, XCircle, Loader2, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Lock, Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
 
 type ResetStatus = 'validating' | 'valid' | 'success' | 'error' | 'invalid';
 
@@ -11,6 +11,7 @@ export function ResetPassword() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<ResetStatus>('validating');
   const [errorMessage, setErrorMessage] = useState('');
+  const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -290,6 +291,26 @@ export function ResetPassword() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email Field */}
+          <div>
+            <label className="block text-sm text-[#263238] mb-2 font-medium">
+              Email Address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full h-12 px-4 pl-12 border-2 border-[#263238]/20 rounded-xl focus:border-[#4FC3F7] focus:outline-none transition"
+                required
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#263238]/50">
+                <Mail className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
           {/* New Password */}
           <div>
             <label className="block text-sm text-[#263238] mb-2 font-medium">
