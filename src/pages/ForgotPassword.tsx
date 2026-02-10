@@ -10,9 +10,25 @@ export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual password reset logic
+
+   const response = await fetch("http://localhost:5222/api/auth/forgot-password", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    console.log("Forgot password response:", response);
+    if (!response.ok) {
+      // Handle error (e.g., show a notification)
+      console.error("Failed to send password reset email");
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
@@ -125,12 +141,6 @@ export function ForgotPassword() {
           </form>
         </div>
 
-        {/* Security Badge */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-[#263238]/60">
-            🔒 Secure password reset • Your data is protected
-          </p>
-        </div>
       </div>
     </div>
   );
