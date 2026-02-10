@@ -25,6 +25,7 @@ export function VerifyEmail() {
   useEffect(() => {
     const token = searchParams.get("token");
 
+     console.log("Verification token:", token);
     if (!token) {
       setStatus("invalid");
       setErrorMessage("No verification token provided");
@@ -35,47 +36,33 @@ export function VerifyEmail() {
     verifyEmailToken(token);
   }, [searchParams]);
 
-  // Countdown and redirect on success
-  useEffect(() => {
-    if (status === "success") {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            navigate("/login");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [status, navigate]);
 
   const verifyEmailToken = async (token: string) => {
     try {
       // TODO: Replace with actual API call to your backend
       // const response = await fetch(`/api/verify-email?token=${token}`);
       // const data = await response.json();
+       
+   const response = await  fetch("http://localhost:5222/api/auth/verify-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    });
+  
+    const data = await response.json();
+   
+    console.log("Verification response:", data);
 
-      // For demo purposes, simulate success for any token
-      // In production, check the actual response from backend
-      if (token === "expired") {
-        setStatus("error");
-        setErrorMessage(
-          "This verification link has expired. Please request a new one.",
-        );
-      } else if (token === "invalid") {
-        setStatus("error");
-        setErrorMessage(
-          "Invalid verification token. Please check your email for the correct link.",
-        );
-      } else {
-        // Success!
-        setStatus("success");
-      }
+    if(!response.ok){
+      setStatus("error");
+      setErrorMessage(data.message ?? "Failed to verify email.");
+    } else {
+      setStatus("success");
+    }
     } catch (error) {
+      console.error("Verification error:", error);
       setStatus("error");
       setErrorMessage(
         "Something went wrong. Please try again later.",
@@ -108,35 +95,6 @@ export function VerifyEmail() {
             now access all WorkHub features!
           </p>
 
-          {/* Success Info */}
-          <div className="bg-gradient-to-r from-[#4ADE80]/10 to-[#22C55E]/10 border-2 border-[#4ADE80]/30 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3 text-left">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Mail className="w-5 h-5 text-[#4ADE80]" />
-              </div>
-              <div>
-                <p className="text-sm text-[#263238] font-semibold mb-1">
-                  What's Next?
-                </p>
-                <p className="text-xs text-[#263238]/70 leading-relaxed">
-                  Complete your profile and start browsing
-                  thousands of job opportunities tailored for
-                  you.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Countdown */}
-          <div className="mb-6">
-            <p className="text-sm text-[#263238]/60">
-              Redirecting to login in{" "}
-              <span className="font-bold text-[#FF9800]">
-                {countdown}
-              </span>{" "}
-              seconds...
-            </p>
-          </div>
 
           {/* Actions */}
           <div className="flex flex-col gap-3">

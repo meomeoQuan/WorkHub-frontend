@@ -18,7 +18,7 @@ export function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(5);
-
+  
   useEffect(() => {
     const token = searchParams.get('token');
     
@@ -50,69 +50,90 @@ export function ResetPassword() {
     }
   }, [status, navigate]);
 
-  const validateResetToken = async (token: string) => {
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // TODO: Replace with actual API call to validate token
-      // const response = await fetch(`/api/validate-reset-token?token=${token}`);
-      // const data = await response.json();
-
-      // For demo purposes
-      if (token === 'expired') {
-        setStatus('error');
-        setErrorMessage('This password reset link has expired. Please request a new one.');
-      } else if (token === 'invalid') {
-        setStatus('error');
-        setErrorMessage('Invalid reset token. Please check your email for the correct link.');
-      } else {
-        setStatus('valid');
+const validateResetToken = async (token: string) => {
+  try {
+    const res = await fetch(
+      "http://localhost:5222/api/auth/validate-reset-token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
       }
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage('Something went wrong. Please try again later.');
-    }
-  };
+    );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const result = await res.json();
 
-    // Validation
-    if (newPassword.length < 8) {
-      alert('Password must be at least 8 characters long');
+    if (!result.success) {
+      setStatus("error");
+
+      switch (result.message) {
+        case "TOKEN_EXPIRED":
+          setErrorMessage(
+            "This password reset link has expired. Please request a new one."
+          );
+          break;
+
+        case "TOKEN_INVALID":
+          setErrorMessage(
+            "Invalid reset link. Please check your email."
+          );
+          break;
+
+        default:
+          setErrorMessage("Reset link is not valid.");
+      }
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      alert('Passwords do not match');
+    setStatus("valid");
+  } catch {
+    setStatus("error");
+    setErrorMessage("Server error. Please try again later.");
+  }
+};
+
+
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (newPassword !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  
+
+  setIsSubmitting(true);
+
+  try {
+    const res = await fetch(
+      "http://localhost:5222/api/auth/password-reset",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          newPassword,
+        }),
+      }
+    );
+
+    const result = await res.json();
+
+    if (!result.success) {
+      alert(result.message);
       return;
     }
 
-    setIsSubmitting(true);
+    setStatus("success");
+  } catch {
+    alert("Failed to reset password.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-    try {
-      const token = searchParams.get('token');
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // TODO: Replace with actual API call to reset password
-      // const response = await fetch('/api/reset-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token, newPassword })
-      // });
-      // const data = await response.json();
-
-      // Success!
-      setStatus('success');
-    } catch (error) {
-      alert('Failed to reset password. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const getPasswordStrength = (password: string) => {
     if (!password) return { label: '', color: '', width: '0%' };
@@ -130,31 +151,6 @@ export function ResetPassword() {
   };
 
   const passwordStrength = getPasswordStrength(newPassword);
-
-  // Validating Token State
-  if (status === 'validating') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <Card className="max-w-md w-full p-8 text-center border-2 border-[#4FC3F7]/30 shadow-xl">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#4FC3F7]/20 to-[#0288D1]/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <Loader2 className="w-10 h-10 text-[#4FC3F7] animate-spin" />
-            <div className="absolute inset-0 rounded-full border-4 border-[#4FC3F7]/20 animate-ping" />
-          </div>
-          
-          <h2 className="text-[#263238] mb-2 text-2xl">Validating Reset Link...</h2>
-          <p className="text-[#263238]/70 mb-4">
-            Please wait while we verify your password reset request
-          </p>
-          
-          <div className="flex items-center justify-center gap-2 text-sm text-[#263238]/50">
-            <div className="w-2 h-2 bg-[#4FC3F7] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-[#4FC3F7] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-[#4FC3F7] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   // Success State
   if (status === 'success') {
