@@ -5,4 +5,6 @@ export interface UserModel {
   email: string;
   fullName: string;
   userType: UserRole;
+  avatarUrl?: string | null;
+  paymentPlan: string | null;
 }

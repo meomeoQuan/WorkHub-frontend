@@ -1,29 +1,27 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import type { ApiResponse } from '../types/ApiResponse';
+import type { LoginResponseDTO } from '../types/DTOs/LoginResponseDTO';
+import type { UserDTO } from '../types/DTOs/UserDTO ';
+import type { UserModel } from '../types/User';
+import {  mapUserDTOToUser  } from '../mappers/MappingUser';
 
 export type PaymentPlan = 'free' | 'silver' | 'gold' | 'diamond';
 
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  userType: 'user' | 'admin'; // User or Admin role
-  profileImage?: string;
-  paymentPlan: PaymentPlan;
-}
 
 interface AuthContextType {
-  user: User | null;
+  user: UserModel | null;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string>;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (userData: Partial<UserModel>) => void;
   upgradePlan: (plan: PaymentPlan) => void;
+  googleLogin: (idToken: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserModel | null>(null);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -43,43 +41,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+const login = async (email: string, password: string):  Promise<string>  => {
+  const res = await fetch("http://localhost:5222/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
 
-    // Hardcoded credentials check - all users have unified role
-    const validAccounts = [
-      { email: 'jobseeker@gmail.com', password: '123', userType: 'user' as const, fullName: 'John Doe' },
-      { email: 'employer@gmail.com', password: '123', userType: 'user' as const, fullName: 'Company HR' },
-      { email: 'admin@gmail.com', password: '123', userType: 'admin' as const, fullName: 'Admin' }
-    ];
+  const result: ApiResponse<LoginResponseDTO> = await res.json();
 
-    const account = validAccounts.find(acc => acc.email === email && acc.password === password);
+  if (!res.ok || !result.success) {
+    throw new Error(result.message || "Login failed");
+  }
 
-    if (!account) {
-      throw new Error('Invalid credentials');
-    }
+  const data = result.data;
 
-    // Create user data based on matched account
-    const userData: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email: account.email,
-      fullName: account.fullName,
-      userType: account.userType,
-      profileImage: undefined,
-      paymentPlan: 'free' as PaymentPlan,
-    };
+  if (!data || !data.token || !data.userDTO) {
+    throw new Error("Invalid login response");
+  }
 
-    setUser(userData);
-    localStorage.setItem('workhub_user', JSON.stringify(userData));
-  };
+  localStorage.setItem("access_token", data.token);
 
-  const logout = () => {
+  const mappedUser = mapUserDTOToUser(data.userDTO);
+
+  setUser(mappedUser);
+  localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
+  return mappedUser.userType; // 👈 return role
+};
+
+const googleLogin = async (authCode: string): Promise<void> => {
+  const res = await fetch("http://localhost:5222/api/auth/google", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(authCode),
+  });
+
+  const result: ApiResponse<LoginResponseDTO> = await res.json();
+
+  if (!res.ok || !result.success) {
+    throw new Error(result.message || "Google login failed");
+  }
+
+  const data = result.data;
+
+  if (!data || !data.token || !data.userDTO) {
+    throw new Error("Invalid login response");
+  }
+
+  localStorage.setItem("access_token", data.token);
+
+  const mappedUser = mapUserDTOToUser(data.userDTO);
+
+  setUser(mappedUser);
+  localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
+};
+
+const logout = () => {
     setUser(null);
     localStorage.removeItem('workhub_user');
   };
 
-  const updateUser = (userData: Partial<User>) => {
+  const updateUser = (userData: Partial<UserModel>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
@@ -96,20 +122,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoggedIn: !!user,
-        login,
-        logout,
-        updateUser,
-        upgradePlan,
-      }}
-    >
+    <AuthContext.Provider value={{ 
+      user, isLoggedIn: !!user,
+   login, logout, updateUser, upgradePlan, googleLogin 
+   }}>
       {children}
     </AuthContext.Provider>
   );
 }
+
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -118,3 +139,5 @@ export function useAuth() {
   }
   return context;
 }
+
+
