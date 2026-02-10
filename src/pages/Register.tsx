@@ -11,31 +11,58 @@ import { Zap, User, Building2, Mail, Lock, Briefcase, ArrowLeft, Eye, EyeOff } f
 export function Register() {
   const navigate = useNavigate();
 
-  // Candidate state
-  const [candidateName, setCandidateName] = useState('');
-  const [candidateEmail, setCandidateEmail] = useState('');
-  const [candidatePassword, setCandidatePassword] = useState('');
-  const [showCandidatePassword, setShowCandidatePassword] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
+  const [showUserPassword, setShowUserPassword] = useState(false);
+  const [role] = useState<number>(2); // 0 = admin, 1 = user
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  // Employer state
-  const [companyName, setCompanyName] = useState('');
-  const [fieldOfWork, setFieldOfWork] = useState('');
-  const [companyDescription, setCompanyDescription] = useState('');
-  const [employerEmail, setEmployerEmail] = useState('');
-  const [employerPassword, setEmployerPassword] = useState('');
-  const [showEmployerPassword, setShowEmployerPassword] = useState(false);
 
-  const handleCandidateRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock registration - redirect to email confirmation with email parameter
-    navigate(`/email-confirmation?email=${encodeURIComponent(candidateEmail)}`);
+
+const handleUserRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (userPassword !== confirmPassword) {
+    setPasswordError("Passwords do not match");
+    return;
+  }
+
+  setPasswordError("");
+
+  const payload = {
+    email: userEmail,
+    fullName: userName,          // ✅ matches FullName
+    password: userPassword,
+    confirmPassword: confirmPassword, // ✅ REQUIRED
+    role: role,                  // 0 or 1
   };
 
-  const handleEmployerRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock registration - redirect to email confirmation with email parameter
-    navigate(`/email-confirmation?email=${encodeURIComponent(employerEmail)}`);
-  };
+  console.log("Register payload:", payload);
+
+  const res = await fetch("http://localhost:5222/api/auth/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    console.error("Register failed:", result);
+    return;
+  }
+
+  // success → go confirm email
+  navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
+};
+
+
+
+ 
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
@@ -58,26 +85,8 @@ export function Register() {
             <p className="text-[#263238]/70">Start earning with flexible jobs today</p>
           </div>
 
-          <Tabs defaultValue="candidate" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#263238]/5 p-1 rounded-xl h-12">
-              <TabsTrigger 
-                value="candidate" 
-                className="rounded-lg data-[state=active]:bg-[#FF9800] data-[state=active]:text-white data-[state=active]:shadow-md"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Job Seeker
-              </TabsTrigger>
-              <TabsTrigger 
-                value="employer"
-                className="rounded-lg data-[state=active]:bg-[#FF9800] data-[state=active]:text-white data-[state=active]:shadow-md"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Employer
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="candidate">
-              <form onSubmit={handleCandidateRegister} className="space-y-5">
+           
+              <form onSubmit={handleUserRegister} className="space-y-5">
                 <div>
                   <Label htmlFor="candidate-name" className="text-[#263238]">Full Name</Label>
                   <div className="relative mt-1">
@@ -85,8 +94,8 @@ export function Register() {
                     <Input
                       id="candidate-name"
                       placeholder="John Doe"
-                      value={candidateName}
-                      onChange={(e) => setCandidateName(e.target.value)}
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
@@ -101,8 +110,8 @@ export function Register() {
                       id="candidate-email"
                       type="email"
                       placeholder="your@email.com"
-                      value={candidateEmail}
-                      onChange={(e) => setCandidateEmail(e.target.value)}
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
@@ -115,19 +124,42 @@ export function Register() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
                     <Input
                       id="candidate-password"
-                      type={showCandidatePassword ? 'text' : 'password'}
+                      type={showUserPassword ? 'text' : 'password'}
                       placeholder="Create a password"
-                      value={candidatePassword}
-                      onChange={(e) => setCandidatePassword(e.target.value)}
+                      value={userPassword}
+                      onChange={(e) => setUserPassword(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowCandidatePassword(!showCandidatePassword)}
+                      onClick={() => setShowUserPassword(!showUserPassword)}
                     >
-                      {showCandidatePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="confirm-password" className="text-[#263238]">Confirm Password</Label>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                    <Input
+                      id="confirm-password"
+                      type={showUserPassword ? 'text' : 'password'}
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
+                      onClick={() => setShowUserPassword(!showUserPassword)}
+                    >
+                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -141,104 +173,7 @@ export function Register() {
                   By signing up, you agree to our Terms of Service and Privacy Policy
                 </p>
               </form>
-            </TabsContent>
-
-            <TabsContent value="employer">
-              <form onSubmit={handleEmployerRegister} className="space-y-5">
-                <div>
-                  <Label htmlFor="company-name" className="text-[#263238]">Company Name</Label>
-                  <div className="relative mt-1">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="company-name"
-                      placeholder="Your Company Inc."
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="employer-email" className="text-[#263238]">Email</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="employer-email"
-                      type="email"
-                      placeholder="company@email.com"
-                      value={employerEmail}
-                      onChange={(e) => setEmployerEmail(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="employer-password" className="text-[#263238]">Password</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="employer-password"
-                      type={showEmployerPassword ? 'text' : 'password'}
-                      placeholder="Create a password"
-                      value={employerPassword}
-                      onChange={(e) => setEmployerPassword(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowEmployerPassword(!showEmployerPassword)}
-                    >
-                      {showEmployerPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="field-of-work" className="text-[#263238]">Field of Work</Label>
-                  <div className="relative mt-1">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="field-of-work"
-                      placeholder="e.g., Technology, Retail, Food Service"
-                      value={fieldOfWork}
-                      onChange={(e) => setFieldOfWork(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="company-description" className="text-[#263238]">Company Description</Label>
-                  <Textarea
-                    id="company-description"
-                    placeholder="Tell us about your company..."
-                    value={companyDescription}
-                    onChange={(e) => setCompanyDescription(e.target.value)}
-                    rows={4}
-                    className="border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800] resize-none"
-                    required
-                  />
-                </div>
-
-                <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Create Employer Account
-                </Button>
-
-                <p className="text-xs text-center text-[#263238]/60">
-                  By signing up, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </form>
-            </TabsContent>
-          </Tabs>
-
+  
           <p className="text-center mt-6 text-sm text-[#263238]/70">
             Already have an account?{' '}
             <Link to="/login" className="text-[#FF9800] hover:text-[#F57C00]">
@@ -247,12 +182,6 @@ export function Register() {
           </p>
         </Card>
 
-        {/* Trust Badge */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[#263238]/60">
-            ⚡ Free forever • Join 10,000+ job seekers
-          </p>
-        </div>
       </div>
     </div>
   );

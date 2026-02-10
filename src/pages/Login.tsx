@@ -86,7 +86,7 @@ export function Login() {
 
     }
       navigate('/');
-      
+
     } catch (error) {
      toast.error('Invalid credentials. Please try again.', {
         style: {
@@ -237,12 +237,6 @@ export function Login() {
           </p>
         </Card>
 
-        {/* Trust Badge */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[#263238]/60">
-            🔒 Secure login • 10,000+ active job seekers
-          </p>
-        </div>
       </div>
     </div>
   );
