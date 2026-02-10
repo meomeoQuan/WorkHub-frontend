@@ -10,26 +10,8 @@ export function ResendEmailConfirmation() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-   const response = await fetch("http://localhost:5222/api/auth/resend-email", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-    
-
-    console.log("Resend email response:", response);
-    if (!response.ok) {
-      // Handle error (e.g., show a notification)
-      setIsSubmitting(false);
-      return;
-    }
-
-    
     setIsSubmitting(true);
     
     // TODO: Implement actual email resend logic

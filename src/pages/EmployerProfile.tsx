@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Building2, Globe, Users, ArrowLeft, Edit, Save, X } from 'lucide-react';
+import { Mail, Phone, MapPin, Building2, Globe, Users, ArrowLeft, Edit, Save, X, Star, GraduationCap, Briefcase, Calendar, FileText, Settings, Plus, Trash2, Upload } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -13,6 +13,7 @@ import { SkeletonCompanyProfile } from '../components/SkeletonCompanyProfile';
 import { SkeletonCompanyStats } from '../components/SkeletonCompanyStats';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import { ExperienceSection, WeeklyAvailabilitySection, ResumeSection, JobPreferencesSection } from '../components/ProfileEditSections';
 
 export function EmployerProfile() {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ Our mission is to empower businesses through technology while maintaining a comm
       description: 'Accurate and detail-oriented data entry work. Remote options available.',
       salary: '$18-22/hr',
       postedDate: '1 week ago',
+      logo: user?.profileImage,
     },
     {
       id: '8',
@@ -52,6 +54,7 @@ Our mission is to empower businesses through technology while maintaining a comm
       description: 'Build responsive websites for small businesses. React experience preferred.',
       salary: '$50-80/hr',
       postedDate: '2 days ago',
+      logo: user?.profileImage,
     },
   ]);
 
@@ -59,25 +62,77 @@ Our mission is to empower businesses through technology while maintaining a comm
   const [editedData, setEditedData] = useState(companyData);
   const [industryFocus, setIndustryFocus] = useState(['Software Development', 'Cloud Computing', 'Data Analytics', 'AI/ML']);
   const [editedIndustryFocus, setEditedIndustryFocus] = useState(industryFocus);
-  const [cultureBenefits, setCultureBenefits] = useState([
-    'Flexible work arrangements',
-    'Professional development opportunities',
-    'Collaborative team environment',
-    'Competitive compensation'
+  const [credibilityRating] = useState(4.5); // Credibility rating out of 5
+
+  // New profile sections
+  const [education, setEducation] = useState([
+    {
+      id: '1',
+      school: 'Stanford University',
+      degree: 'Bachelor of Science',
+      field: 'Computer Science',
+      startYear: '2015',
+      endYear: '2019',
+      description: 'Focused on software engineering and artificial intelligence.'
+    }
   ]);
-  const [editedCultureBenefits, setEditedCultureBenefits] = useState(cultureBenefits);
+  const [editedEducation, setEditedEducation] = useState(education);
+
+  const [experience, setExperience] = useState([
+    {
+      id: '1',
+      company: 'Tech Solutions Inc.',
+      position: 'Software Developer',
+      startDate: 'Jan 2020',
+      endDate: 'Present',
+      description: 'Developing scalable web applications using React and Node.js. Led a team of 5 developers on multiple successful projects.'
+    }
+  ]);
+  const [editedExperience, setEditedExperience] = useState(experience);
+
+  const [weeklyAvailability, setWeeklyAvailability] = useState({
+    monday: { available: true, hours: '9:00 AM - 5:00 PM' },
+    tuesday: { available: true, hours: '9:00 AM - 5:00 PM' },
+    wednesday: { available: true, hours: '9:00 AM - 5:00 PM' },
+    thursday: { available: true, hours: '9:00 AM - 5:00 PM' },
+    friday: { available: true, hours: '9:00 AM - 5:00 PM' },
+    saturday: { available: false, hours: '' },
+    sunday: { available: false, hours: '' },
+  });
+  const [editedWeeklyAvailability, setEditedWeeklyAvailability] = useState(weeklyAvailability);
+
+  const [resume, setResume] = useState({
+    fileName: 'John_Doe_Resume.pdf',
+    fileUrl: '#',
+    uploadedDate: 'Feb 1, 2025'
+  });
+
+  const [jobPreferences, setJobPreferences] = useState({
+    jobTypes: ['Part-time', 'Freelance'],
+    expectedSalary: '$40-60/hr',
+    preferredLocations: ['San Francisco, CA', 'Remote'],
+    willingToRelocate: false,
+    startDate: 'Immediately'
+  });
+  const [editedJobPreferences, setEditedJobPreferences] = useState(jobPreferences);
 
   const handleEdit = () => {
     setEditedData(companyData);
     setEditedIndustryFocus(industryFocus);
-    setEditedCultureBenefits(cultureBenefits);
+    setEditedEducation(education);
+    setEditedExperience(experience);
+    setEditedWeeklyAvailability(weeklyAvailability);
+    setEditedJobPreferences(jobPreferences);
     setIsEditing(true);
   };
 
   const handleSave = () => {
     setCompanyData(editedData);
     setIndustryFocus(editedIndustryFocus);
-    setCultureBenefits(editedCultureBenefits);
+    setEducation(editedEducation);
+    setExperience(editedExperience);
+    setWeeklyAvailability(editedWeeklyAvailability);
+    setJobPreferences(editedJobPreferences);
     toast.success('Profile updated successfully!');
     setIsEditing(false);
   };
@@ -85,7 +140,10 @@ Our mission is to empower businesses through technology while maintaining a comm
   const handleCancel = () => {
     setEditedData(companyData);
     setEditedIndustryFocus(industryFocus);
-    setEditedCultureBenefits(cultureBenefits);
+    setEditedEducation(education);
+    setEditedExperience(experience);
+    setEditedWeeklyAvailability(weeklyAvailability);
+    setEditedJobPreferences(jobPreferences);
     setIsEditing(false);
   };
 
@@ -97,16 +155,6 @@ Our mission is to empower businesses through technology while maintaining a comm
 
   const removeIndustryTag = (index: number) => {
     setEditedIndustryFocus(editedIndustryFocus.filter((_, i) => i !== index));
-  };
-
-  const addCultureBenefit = (benefit: string) => {
-    if (benefit && !editedCultureBenefits.includes(benefit)) {
-      setEditedCultureBenefits([...editedCultureBenefits, benefit]);
-    }
-  };
-
-  const removeCultureBenefit = (index: number) => {
-    setEditedCultureBenefits(editedCultureBenefits.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
@@ -229,7 +277,38 @@ Our mission is to empower businesses through technology while maintaining a comm
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
                         <h1 className="text-[#263238] mb-2">{companyData.name}</h1>
-                        <Badge className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl">{companyData.industry}</Badge>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Badge className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl">{companyData.industry}</Badge>
+                          {/* Credibility Rating */}
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-xl">
+                            <div className="flex items-center gap-0.5">
+                              {[...Array(5)].map((_, index) => {
+                                const starValue = index + 1;
+                                const isFilled = starValue <= Math.floor(credibilityRating);
+                                const isHalf = !isFilled && starValue === Math.ceil(credibilityRating) && credibilityRating % 1 !== 0;
+                                
+                                return (
+                                  <div key={index} className="relative">
+                                    {isHalf ? (
+                                      <>
+                                        <Star className="w-4 h-4 text-[#FF9800]" />
+                                        <Star 
+                                          className="w-4 h-4 text-[#FF9800] fill-[#FF9800] absolute top-0 left-0" 
+                                          style={{ clipPath: 'inset(0 50% 0 0)' }}
+                                        />
+                                      </>
+                                    ) : (
+                                      <Star 
+                                        className={`w-4 h-4 text-[#FF9800] ${isFilled ? 'fill-[#FF9800]' : ''}`}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <span className="text-sm font-semibold text-[#FF9800] ml-1">{credibilityRating.toFixed(1)}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -276,13 +355,13 @@ Our mission is to empower businesses through technology while maintaining a comm
                     </>
                   ) : (
                     <>
-                      {user?.userType === 'employer' && (
+                      {user && (
                         <Button onClick={handleEdit} className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Profile
                         </Button>
                       )}
-                      {user?.userType === 'employer' && (
+                      {user && (
                         <>
                           <Link to="/applications">
                             <Button variant="outline" className="border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
@@ -306,17 +385,17 @@ Our mission is to empower businesses through technology while maintaining a comm
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* About Company */}
+              {/* Description */}
               <Card className="p-6 border-[#263238]/10 shadow-md">
-                <h2 className="text-[#263238] mb-4">About Company</h2>
+                <h2 className="text-[#263238] mb-4">Description</h2>
                 {isEditing ? (
                   <div>
-                    <Label className="text-[#263238] text-sm mb-2 block">Company Description</Label>
+                    <Label className="text-[#263238] text-sm mb-2 block">Profile Description</Label>
                     <Textarea
                       value={editedData.description}
                       onChange={(e) => setEditedData({ ...editedData, description: e.target.value })}
                       className="border-[#263238]/20 rounded-xl min-h-[200px]"
-                      placeholder="Tell job seekers about your company, mission, and values..."
+                      placeholder="Tell others about yourself, your experience, and what you're looking for..."
                     />
                   </div>
                 ) : (
@@ -324,11 +403,191 @@ Our mission is to empower businesses through technology while maintaining a comm
                 )}
               </Card>
 
+              {/* Education - Only show if exists */}
+              {(education.length > 0 || isEditing) && (
+                <Card className="p-6 border-[#263238]/10 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-[#FF9800]" />
+                      <h2 className="text-[#263238]">Education</h2>
+                    </div>
+                    {isEditing && (
+                      <Button
+                        onClick={() => {
+                          const newEdu = {
+                            id: Date.now().toString(),
+                            school: '',
+                            degree: '',
+                            field: '',
+                            startYear: '',
+                            endYear: '',
+                            description: ''
+                          };
+                          setEditedEducation([...editedEducation, newEdu]);
+                        }}
+                        size="sm"
+                        className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-lg"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Education
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    {isEditing ? (
+                      editedEducation.length > 0 ? (
+                        editedEducation.map((edu, index) => (
+                          <div key={edu.id} className="p-4 border border-[#263238]/10 rounded-lg space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <Label className="text-[#263238] font-semibold">Education #{index + 1}</Label>
+                              <Button
+                                onClick={() => {
+                                  setEditedEducation(editedEducation.filter((_, i) => i !== index));
+                                }}
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-[#263238] text-sm">School/University</Label>
+                                <Input
+                                  value={edu.school}
+                                  onChange={(e) => {
+                                    const updated = [...editedEducation];
+                                    updated[index].school = e.target.value;
+                                    setEditedEducation(updated);
+                                  }}
+                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                  placeholder="e.g., Stanford University"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[#263238] text-sm">Degree</Label>
+                                <Input
+                                  value={edu.degree}
+                                  onChange={(e) => {
+                                    const updated = [...editedEducation];
+                                    updated[index].degree = e.target.value;
+                                    setEditedEducation(updated);
+                                  }}
+                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                  placeholder="e.g., Bachelor of Science"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[#263238] text-sm">Field of Study</Label>
+                                <Input
+                                  value={edu.field}
+                                  onChange={(e) => {
+                                    const updated = [...editedEducation];
+                                    updated[index].field = e.target.value;
+                                    setEditedEducation(updated);
+                                  }}
+                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                  placeholder="e.g., Computer Science"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-[#263238] text-sm">Start Year</Label>
+                                  <Input
+                                    value={edu.startYear}
+                                    onChange={(e) => {
+                                      const updated = [...editedEducation];
+                                      updated[index].startYear = e.target.value;
+                                      setEditedEducation(updated);
+                                    }}
+                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                    placeholder="2015"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[#263238] text-sm">End Year</Label>
+                                  <Input
+                                    value={edu.endYear}
+                                    onChange={(e) => {
+                                      const updated = [...editedEducation];
+                                      updated[index].endYear = e.target.value;
+                                      setEditedEducation(updated);
+                                    }}
+                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                    placeholder="2019"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-[#263238] text-sm">Description (Optional)</Label>
+                              <Textarea
+                                value={edu.description}
+                                onChange={(e) => {
+                                  const updated = [...editedEducation];
+                                  updated[index].description = e.target.value;
+                                  setEditedEducation(updated);
+                                }}
+                                className="border-[#263238]/20 rounded-lg mt-1 min-h-[80px]"
+                                placeholder="Describe your focus areas, achievements, etc."
+                              />
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[#263238]/50 text-sm text-center py-4">No education added yet. Click "Add Education" to add one.</p>
+                      )
+                    ) : (
+                      education.map((edu) => (
+                        <div key={edu.id} className="pb-4 border-b border-[#263238]/10 last:border-0 last:pb-0">
+                          <h3 className="font-semibold text-[#263238]">{edu.school}</h3>
+                          <p className="text-[#263238]/80">{edu.degree} in {edu.field}</p>
+                          <p className="text-sm text-[#263238]/60">{edu.startYear} - {edu.endYear}</p>
+                          {edu.description && (
+                            <p className="text-sm text-[#263238]/70 mt-2">{edu.description}</p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Experience - Only show if exists */}
+              <ExperienceSection
+                experience={experience}
+                editedExperience={editedExperience}
+                isEditing={isEditing}
+                setEditedExperience={setEditedExperience}
+              />
+
+              {/* Weekly Availability - Only show if any day is available */}
+              <WeeklyAvailabilitySection
+                weeklyAvailability={weeklyAvailability}
+                isEditing={isEditing}
+              />
+
+              {/* Resume - Only show if exists */}
+              <ResumeSection
+                resume={resume}
+                isEditing={isEditing}
+                setResume={setResume}
+              />
+
+              {/* Job Preferences - Only show if exists */}
+              <JobPreferencesSection
+                jobPreferences={jobPreferences}
+                editedJobPreferences={editedJobPreferences}
+                isEditing={isEditing}
+                setEditedJobPreferences={setEditedJobPreferences}
+              />
+
               {/* Posted Jobs */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[#263238]">Posted Jobs ({postedJobs.length})</h2>
-                  {user?.userType === 'employer' && (
+                  {user && (
                     <Link to="/post-job">
                       <Button className="bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-white rounded-xl shadow-md hover:shadow-lg transition">
                         Post New Job
@@ -346,9 +605,9 @@ Our mission is to empower businesses through technology while maintaining a comm
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Company Stats */}
+              {/* Statistics */}
               <Card className="p-6 border-[#263238]/10 shadow-md">
-                <h3 className="text-[#263238] mb-4">Company Statistics</h3>
+                <h3 className="text-[#263238] mb-4">Statistics</h3>
                 <div className="space-y-4">
                   <div>
                     <p className="text-2xl text-[#FF9800] font-bold">12</p>
@@ -407,60 +666,6 @@ Our mission is to empower businesses through technology while maintaining a comm
                     ))}
                   </div>
                 )}
-              </Card>
-
-              {/* Company Culture */}
-              <Card className="p-6 border-[#263238]/10 shadow-md">
-                <h3 className="text-[#263238] mb-4">Company Culture</h3>
-                {isEditing ? (
-                  <>
-                    <div className="space-y-3 text-sm mb-4">
-                      {editedCultureBenefits.map((benefit, index) => (
-                        <div key={index} className="flex items-start gap-2 group">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800] mt-2"></div>
-                          <span className="text-[#263238]/70 flex-1">{benefit}</span>
-                          <button
-                            onClick={() => removeCultureBenefit(index)}
-                            className="text-red-500 opacity-0 group-hover:opacity-100 transition text-xs"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <Input
-                      placeholder="Type a benefit and press Enter"
-                      className="h-10 border-[#263238]/20 rounded-xl"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const input = e.currentTarget;
-                          addCultureBenefit(input.value);
-                          input.value = '';
-                        }
-                      }}
-                    />
-                  </>
-                ) : (
-                  <div className="space-y-3 text-sm">
-                    {cultureBenefits.map((benefit, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800] mt-2"></div>
-                        <span className="text-[#263238]/70">{benefit}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              {/* Contact */}
-              <Card className="p-6 bg-[#FAFAFA] border-[#263238]/10 shadow-md">
-                <h3 className="text-[#263238] mb-4">Get in Touch</h3>
-                <p className="text-sm text-[#263238]/70 mb-4">
-                  Interested in working with us? We'd love to hear from you!
-                </p>
-                <Button className="w-full bg-[#4FC3F7] hover:bg-[#4FC3F7]/90 text-white rounded-xl shadow-md hover:shadow-lg transition">
-                  Contact Us
-                </Button>
               </Card>
             </div>
           </div>

@@ -11,7 +11,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
 
 // Event interface
-interface AvailabilityEvent {
+interface CalendarEvent {
   id: string;
   title: string;
   start: Date;
@@ -20,7 +20,7 @@ interface AvailabilityEvent {
 }
 
 // Initial events data - using current week dates
-const getInitialEvents = (): AvailabilityEvent[] => {
+const getInitialEvents = (): CalendarEvent[] => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
@@ -53,21 +53,25 @@ const getInitialEvents = (): AvailabilityEvent[] => {
 };
 
 export function Schedule() {
-  const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
-  const [saved, setSaved] = useState(false);
-  const [events, setEvents] = useState<AvailabilityEvent[]>(getInitialEvents());
+  const navigate = useNavigate();
+
+  // Removed role-based protection - all logged-in users can access
+
+  const [events, setEvents] = useState<CalendarEvent[]>([
+    {
+      id: '1',
+      title: 'Available: Morning Shift',
+      start: new Date(),
+      end: new Date(),
+    },
+  ]);
+
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [eventTitle, setEventTitle] = useState('');
   const [view, setView] = useState<View>('week');
-  
-  // Protect this page - only job seekers can access
-  useEffect(() => {
-    if (!isLoggedIn || user?.userType !== 'jobseeker') {
-      navigate('/unauthorized');
-    }
-  }, [isLoggedIn, user, navigate]);
+  const [saved, setSaved] = useState(false);
   
   // Scroll to top on mount
   useEffect(() => {
@@ -80,7 +84,7 @@ export function Schedule() {
     setEventTitle('Available: ');
   }, []);
 
-  const handleSelectEvent = useCallback((event: AvailabilityEvent) => {
+  const handleSelectEvent = useCallback((event: CalendarEvent) => {
     if (window.confirm(`Delete "${event.title}"?`)) {
       setEvents((prev) => prev.filter((e) => e.id !== event.id));
     }
@@ -92,7 +96,7 @@ export function Schedule() {
       return;
     }
 
-    const newEvent: AvailabilityEvent = {
+    const newEvent: CalendarEvent = {
       id: `event-${Date.now()}`,
       title: eventTitle,
       start: selectedSlot.start,

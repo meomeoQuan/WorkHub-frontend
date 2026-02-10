@@ -11,58 +11,31 @@ import { Zap, User, Building2, Mail, Lock, Briefcase, ArrowLeft, Eye, EyeOff } f
 export function Register() {
   const navigate = useNavigate();
 
-  const [userName, setUserName] = useState('');
-const [userEmail, setUserEmail] = useState('');
-const [userPassword, setUserPassword] = useState('');
-const [showUserPassword, setShowUserPassword] = useState(false);
-const [role, setRole] = useState<number>(2); // 2 = jobseeker, 1 = employer
- const [confirmPassword, setConfirmPassword] = useState('');
-const [passwordError, setPasswordError] = useState('');
+  // Candidate state
+  const [candidateName, setCandidateName] = useState('');
+  const [candidateEmail, setCandidateEmail] = useState('');
+  const [candidatePassword, setCandidatePassword] = useState('');
+  const [showCandidatePassword, setShowCandidatePassword] = useState(false);
 
+  // Employer state
+  const [companyName, setCompanyName] = useState('');
+  const [fieldOfWork, setFieldOfWork] = useState('');
+  const [companyDescription, setCompanyDescription] = useState('');
+  const [employerEmail, setEmployerEmail] = useState('');
+  const [employerPassword, setEmployerPassword] = useState('');
+  const [showEmployerPassword, setShowEmployerPassword] = useState(false);
 
-
-const handleUserRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (userPassword !== confirmPassword) {
-    setPasswordError("Passwords do not match");
-    return;
-  }
-
-  setPasswordError("");
-
-  const payload = {
-    email: userEmail,
-    fullName: userName,          // ✅ matches FullName
-    password: userPassword,
-    confirmPassword: confirmPassword, // ✅ REQUIRED
-    role: role,                  // 1 or 2
+  const handleCandidateRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock registration - redirect to email confirmation with email parameter
+    navigate(`/email-confirmation?email=${encodeURIComponent(candidateEmail)}`);
   };
 
-  console.log("Register payload:", payload);
-
-  const res = await fetch("http://localhost:5222/api/auth/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    console.error("Register failed:", result);
-    return;
-  }
-
-  // success → go confirm email
-  navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
-};
-
-
-
- 
+  const handleEmployerRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock registration - redirect to email confirmation with email parameter
+    navigate(`/email-confirmation?email=${encodeURIComponent(employerEmail)}`);
+  };
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
@@ -85,12 +58,10 @@ const handleUserRegister = async (e: React.FormEvent) => {
             <p className="text-[#263238]/70">Start earning with flexible jobs today</p>
           </div>
 
-          <Tabs  defaultValue="jobseeker"
-                  onValueChange={(value : string) => setRole(value === 'jobseeker' ? 2 : 1)} 
-                  className="w-full">
+          <Tabs defaultValue="candidate" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#263238]/5 p-1 rounded-xl h-12">
               <TabsTrigger 
-                value="jobseeker" 
+                value="candidate" 
                 className="rounded-lg data-[state=active]:bg-[#FF9800] data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 <User className="w-4 h-4 mr-2" />
@@ -105,8 +76,8 @@ const handleUserRegister = async (e: React.FormEvent) => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value={role === 2 ? "jobseeker" : "employer"}>
-              <form onSubmit={handleUserRegister} className="space-y-5">
+            <TabsContent value="candidate">
+              <form onSubmit={handleCandidateRegister} className="space-y-5">
                 <div>
                   <Label htmlFor="candidate-name" className="text-[#263238]">Full Name</Label>
                   <div className="relative mt-1">
@@ -114,8 +85,8 @@ const handleUserRegister = async (e: React.FormEvent) => {
                     <Input
                       id="candidate-name"
                       placeholder="John Doe"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
+                      value={candidateName}
+                      onChange={(e) => setCandidateName(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
@@ -130,8 +101,8 @@ const handleUserRegister = async (e: React.FormEvent) => {
                       id="candidate-email"
                       type="email"
                       placeholder="your@email.com"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
+                      value={candidateEmail}
+                      onChange={(e) => setCandidateEmail(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
@@ -144,42 +115,19 @@ const handleUserRegister = async (e: React.FormEvent) => {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
                     <Input
                       id="candidate-password"
-                      type={showUserPassword ? 'text' : 'password'}
+                      type={showCandidatePassword ? 'text' : 'password'}
                       placeholder="Create a password"
-                      value={userPassword}
-                      onChange={(e) => setUserPassword(e.target.value)}
+                      value={candidatePassword}
+                      onChange={(e) => setCandidatePassword(e.target.value)}
                       className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
                       required
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowUserPassword(!showUserPassword)}
+                      onClick={() => setShowCandidatePassword(!showCandidatePassword)}
                     >
-                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="confirm-password" className="text-[#263238]">Confirm Password</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="confirm-password"
-                      type={showUserPassword ? 'text' : 'password'}
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowUserPassword(!showUserPassword)}
-                    >
-                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showCandidatePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -195,7 +143,100 @@ const handleUserRegister = async (e: React.FormEvent) => {
               </form>
             </TabsContent>
 
-        
+            <TabsContent value="employer">
+              <form onSubmit={handleEmployerRegister} className="space-y-5">
+                <div>
+                  <Label htmlFor="company-name" className="text-[#263238]">Company Name</Label>
+                  <div className="relative mt-1">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                    <Input
+                      id="company-name"
+                      placeholder="Your Company Inc."
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="employer-email" className="text-[#263238]">Email</Label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                    <Input
+                      id="employer-email"
+                      type="email"
+                      placeholder="company@email.com"
+                      value={employerEmail}
+                      onChange={(e) => setEmployerEmail(e.target.value)}
+                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="employer-password" className="text-[#263238]">Password</Label>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                    <Input
+                      id="employer-password"
+                      type={showEmployerPassword ? 'text' : 'password'}
+                      placeholder="Create a password"
+                      value={employerPassword}
+                      onChange={(e) => setEmployerPassword(e.target.value)}
+                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
+                      onClick={() => setShowEmployerPassword(!showEmployerPassword)}
+                    >
+                      {showEmployerPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="field-of-work" className="text-[#263238]">Field of Work</Label>
+                  <div className="relative mt-1">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                    <Input
+                      id="field-of-work"
+                      placeholder="e.g., Technology, Retail, Food Service"
+                      value={fieldOfWork}
+                      onChange={(e) => setFieldOfWork(e.target.value)}
+                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="company-description" className="text-[#263238]">Company Description</Label>
+                  <Textarea
+                    id="company-description"
+                    placeholder="Tell us about your company..."
+                    value={companyDescription}
+                    onChange={(e) => setCompanyDescription(e.target.value)}
+                    rows={4}
+                    className="border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800] resize-none"
+                    required
+                  />
+                </div>
+
+                <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Create Employer Account
+                </Button>
+
+                <p className="text-xs text-center text-[#263238]/60">
+                  By signing up, you agree to our Terms of Service and Privacy Policy
+                </p>
+              </form>
+            </TabsContent>
           </Tabs>
 
           <p className="text-center mt-6 text-sm text-[#263238]/70">

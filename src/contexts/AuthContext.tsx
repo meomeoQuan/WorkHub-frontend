@@ -1,45 +1,41 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { ApiResponse } from '../types/ApiResponse';
-import type { LoginResponseDTO } from '../types/DTOs/LoginResponseDTO';
-import type { UserDTO } from '../types/DTOs/UserDTO ';
-import type { UserModel } from '../types/User';
-import { mapUserDTOToUser as originalMapUserDTOToUser } from '../mappers/MappingUser';
 
-const mapUserDTOToUser = (dto: UserDTO): UserModel => ({
-  id: dto.id,
-  email: dto.email,
-  fullName: dto.fullName,
-  userType:
-    dto.role === 0
-      ? "admin"
-      : dto.role === 1
-      ? "employer"
-      : dto.role === 2
-      ? "jobseeker"
-      : "jobseeker", // fallback (important)
-});
+export type PaymentPlan = 'free' | 'silver' | 'gold' | 'diamond';
 
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  userType: 'user' | 'admin'; // User or Admin role
+  profileImage?: string;
+  paymentPlan: PaymentPlan;
+}
 
 interface AuthContextType {
-  user: UserModel | null;
+  user: User | null;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: Partial<UserModel>) => void;
-  googleLogin: (idToken: string) => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
+  upgradePlan: (plan: PaymentPlan) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserModel | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('workhub_user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Ensure paymentPlan exists for backward compatibility
+        if (!parsedUser.paymentPlan) {
+          parsedUser.paymentPlan = 'free';
+        }
+        setUser(parsedUser);
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('workhub_user');
@@ -47,87 +43,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-const login = async (email: string, password: string) => {
-  const res = await fetch("http://localhost:5222/api/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  const login = async (email: string, password: string) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-  const result: ApiResponse<LoginResponseDTO> = await res.json();
+    // Hardcoded credentials check - all users have unified role
+    const validAccounts = [
+      { email: 'jobseeker@gmail.com', password: '123', userType: 'user' as const, fullName: 'John Doe' },
+      { email: 'employer@gmail.com', password: '123', userType: 'user' as const, fullName: 'Company HR' },
+      { email: 'admin@gmail.com', password: '123', userType: 'admin' as const, fullName: 'Admin' }
+    ];
 
-   console.log("Login response:", result);
-  if (!res.ok || !result.success) {
-    console.log("Login failed:", result.message);
-    throw new Error(result.message || "Login failed");
-  }
+    const account = validAccounts.find(acc => acc.email === email && acc.password === password);
 
-  const data = result.data;
- 
+    if (!account) {
+      throw new Error('Invalid credentials');
+    }
 
-if (!data || !data.token || !data.userDTO) {
-  throw new Error("Invalid login response");
-}
+    // Create user data based on matched account
+    const userData: User = {
+      id: Math.random().toString(36).substr(2, 9),
+      email: account.email,
+      fullName: account.fullName,
+      userType: account.userType,
+      profileImage: undefined,
+      paymentPlan: 'free' as PaymentPlan,
+    };
 
-  console.log("Login data:", data);
-
-  // store JWT
-  localStorage.setItem("access_token", data.token);
-
-  // TEMP user (until /me endpoint)
-const userData = data.userDTO;
-
-  const mappedUser = mapUserDTOToUser(userData);
-   console.log("Mapped User:", mappedUser);
-setUser(mappedUser);
-localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
-
-};
-
-
-const googleLogin = async (authCode: string) => {
-  const res = await fetch("http://localhost:5222/api/auth/google", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(authCode), // raw string ✔
-  });
-
-  const result: ApiResponse<LoginResponseDTO> = await res.json();
-
-  if (!res.ok || !result.success) {
-    throw new Error(result.message || "Google login failed");
-  }
-
-  const data = result.data;
-
-  
-if (!data || !data.token || !data.userDTO) {
-  throw new Error("Invalid login response");
-}
-
-  localStorage.setItem("access_token", data.token);
-
-  const mappedUser = originalMapUserDTOToUser(data.userDTO);
-
-  setUser(mappedUser);
-  localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
-};
-
-
-
+    setUser(userData);
+    localStorage.setItem('workhub_user', JSON.stringify(userData));
+  };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('workhub_user');
   };
 
-  const updateUser = (userData: Partial<UserModel>) => {
+  const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('workhub_user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const upgradePlan = (plan: PaymentPlan) => {
+    if (user) {
+      const updatedUser = { ...user, paymentPlan: plan };
       setUser(updatedUser);
       localStorage.setItem('workhub_user', JSON.stringify(updatedUser));
     }
@@ -141,7 +103,7 @@ if (!data || !data.token || !data.userDTO) {
         login,
         logout,
         updateUser,
-        googleLogin,
+        upgradePlan,
       }}
     >
       {children}

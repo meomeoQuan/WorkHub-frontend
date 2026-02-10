@@ -18,12 +18,17 @@ import { ResetPassword } from './pages/ResetPassword';
 import { EmailConfirmation } from './pages/EmailConfirmation';
 import { ResendEmailConfirmation } from './pages/ResendEmailConfirmation';
 import { Unauthorized } from './pages/Unauthorized';
-import { Layout } from './components/Layout';
+import { Pricing } from './pages/Pricing';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminUserProfile } from './pages/AdminUserProfile';
+import { Policy } from './pages/Policy';
+import { Help } from './pages/Help';
+import { RootLayout } from './components/RootLayout';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Layout />,
+    element: <RootLayout />,
     children: [
       {
         index: true,
@@ -66,6 +71,10 @@ export const router = createBrowserRouter([
         element: <Schedule />,
       },
       {
+        path: 'pricing',
+        element: <Pricing />,
+      },
+      {
         path: 'applications',
         element: <Applications />,
       },
@@ -100,6 +109,22 @@ export const router = createBrowserRouter([
       {
         path: 'unauthorized',
         element: <Unauthorized />,
+      },
+      {
+        path: 'admin',
+        element: <AdminDashboard />,
+      },
+      {
+        path: 'admin/user-profile',
+        element: <AdminUserProfile />,
+      },
+      {
+        path: 'policy',
+        element: <Policy />,
+      },
+      {
+        path: 'help',
+        element: <Help />,
       },
     ],
   },

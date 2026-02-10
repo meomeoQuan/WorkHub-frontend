@@ -1,66 +1,154 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
 import { Card } from '../components/ui/card';
-import { Zap, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Zap, Mail, Lock, ArrowLeft, Eye, EyeOff, UserCircle, Building2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner';
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
-
+import { toast } from 'sonner@2.0.3';
 
 export function Login() {
   const navigate = useNavigate();
-  const { login , googleLogin  } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
- useEffect(() => {
-  const interval = setInterval(() => {
-    if (window.google) {
-      clearInterval(interval);
-
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: "627355940500-p6ho8e6lovbq3glle03fevfsnedrbm61.apps.googleusercontent.com",
-        scope: "openid email profile",
-        ux_mode: "popup",
-        callback: async (response: any) => {
-          await googleLogin(response.code);
-          toast.success('Welcome back! Login successful.');
-      navigate('/');
-        },
-      });
-
-      (window as any).googleClient = client;
-    }
-  }, 200);
-
-  return () => clearInterval(interval);
-}, []);
-
-  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.info('Please enter your email and password.', {
+        style: {
+          background: '#FFB74D',
+          color: '#FFFFFF',
+          border: '2px solid #FF9800',
+          fontSize: '14px',
+          fontWeight: '600',
+        },
+        duration: 3000,
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await login(email, password);
-      toast.success('Welcome back! Login successful.');
-      navigate('/');
+      
+      // Check if admin account and redirect accordingly
+      if (email === 'admin@gmail.com') {
+        toast.success('Welcome Admin! Redirecting to control panel...', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+        navigate('/admin');
+      } else if (email === 'employer@gmail.com') {
+        toast.success('Welcome Employer! Login successful.', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+        navigate('/');
+      } else {
+        toast.success('Welcome Job Seeker! Login successful.', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+        navigate('/');
+      }
     } catch (error) {
-      toast.error('Invalid credentials. Please try again.');
+      toast.error('Invalid credentials. Please try again.', {
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          border: '2px solid #DC2626',
+          fontSize: '14px',
+          fontWeight: '600',
+        },
+        duration: 3000,
+      });
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string, accountType: string) => {
+    setIsLoading(true);
+    
+    toast.loading(`Logging in as ${accountType}...`, {
+      style: {
+        background: '#4FC3F7',
+        color: '#FFFFFF',
+        border: '2px solid #0288D1',
+        fontSize: '14px',
+        fontWeight: '600',
+      },
+    });
+
+    try {
+      await login(demoEmail, demoPassword);
+      
+      setTimeout(() => {
+        if (demoEmail === 'admin@gmail.com') {
+          toast.success(`🎉 Welcome Admin! Access granted to control panel.`, {
+            style: {
+              background: '#4ADE80',
+              color: '#FFFFFF',
+              border: '2px solid #22C55E',
+              fontSize: '14px',
+              fontWeight: '600',
+            },
+            duration: 3000,
+          });
+          navigate('/admin');
+        } else {
+          toast.success(`🎉 Welcome ${accountType}! Login successful.`, {
+            style: {
+              background: '#4ADE80',
+              color: '#FFFFFF',
+              border: '2px solid #22C55E',
+              fontSize: '14px',
+              fontWeight: '600',
+            },
+            duration: 3000,
+          });
+          navigate('/');
+        }
+        setIsLoading(false);
+      }, 1000);
+    } catch (error) {
+      toast.error('Demo login failed. Please try again.', {
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          border: '2px solid #DC2626',
+          fontSize: '14px',
+          fontWeight: '600',
+        },
+        duration: 3000,
+      });
       setIsLoading(false);
     }
   };
@@ -140,7 +228,7 @@ export function Login() {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked : boolean) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                 />
                 <label
                   htmlFor="remember"
@@ -172,11 +260,7 @@ export function Login() {
               </div>
             </div>
 
-            <Button type="button"
-              variant="outline"
-              onClick={() => (window as any).googleClient.requestCode()} 
-              className="w-full h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
-                
+            <Button type="button" variant="outline" className="w-full h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -213,6 +297,49 @@ export function Login() {
             🔒 Secure login • 10,000+ active job seekers
           </p>
         </div>
+
+        {/* Demo Accounts */}
+        <Card className="mt-6 p-4 border-2 border-[#FF9800]/20 bg-[#FF9800]/5">
+          <h3 className="text-sm font-semibold text-[#263238] mb-2">Demo Accounts:</h3>
+          <div className="space-y-2 text-xs text-[#263238]/70 mb-4">
+            <p><strong>Job Seeker:</strong> jobseeker@gmail.com / 123</p>
+            <p><strong>Employer:</strong> employer@gmail.com / 123</p>
+            <p><strong className="text-[#FF9800]">Admin:</strong> <span className="text-[#FF9800]">admin@gmail.com / 123</span></p>
+          </div>
+          
+          <div className="border-t border-[#FF9800]/20 pt-4">
+            <p className="text-xs text-[#263238] font-semibold mb-3">Quick Demo Login:</p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                type="button"
+                onClick={() => handleDemoLogin('jobseeker@gmail.com', '123', 'Job Seeker')}
+                disabled={isLoading}
+                className="h-10 bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2"
+              >
+                <UserCircle className="w-4 h-4" />
+                Login as Job Seeker
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleDemoLogin('employer@gmail.com', '123', 'Employer')}
+                disabled={isLoading}
+                className="h-10 bg-[#4FC3F7] hover:bg-[#0288D1] text-white rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2"
+              >
+                <Building2 className="w-4 h-4" />
+                Login as Employer
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleDemoLogin('admin@gmail.com', '123', 'Admin')}
+                disabled={isLoading}
+                className="h-10 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Login as Admin
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );

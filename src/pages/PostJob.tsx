@@ -12,21 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Briefcase, MapPin, DollarSign, FileText, Zap, Lightbulb } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, FileText, Zap, Lightbulb, Image as ImageIcon, X, Upload, Check } from 'lucide-react';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
+import demoImage from 'figma:asset/8bae24080ec08eff17f8f121670c17b493985d37.png';
 
 export function PostJob() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
 
-  // Protect this page - only employers can access
-  useEffect(() => {
-    if (!isLoggedIn || user?.userType !== 'employer') {
-      navigate('/unauthorized');
-    }
-  }, [isLoggedIn, user, navigate]);
+  // Removed role-based protection - all logged-in users can access
   
   const [formData, setFormData] = useState({
     title: '',
@@ -39,18 +35,100 @@ export function PostJob() {
     requirements: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [jobImages, setJobImages] = useState<string[]>([]);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock job posting - redirect to employer profile
-    navigate('/profile/employer');
+    
+    // Create new job post object
+    const newJobPost = {
+      id: `user-${Date.now()}`,
+      company: user?.email === 'employer@gmail.com' ? 'Your Company' : 'Posted by User',
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email || 'User'}&backgroundColor=FF9800`,
+      username: user?.email?.split('@')[0] || 'user',
+      credibilityRating: 4.5,
+      timestamp: 'Just now',
+      content: formData.description,
+      jobTitle: formData.title,
+      location: formData.location,
+      salary: formData.salary,
+      salaryMin: parseInt(formData.salary.split('-')[0]?.replace(/\D/g, '') || '0'),
+      salaryMax: parseInt(formData.salary.split('-')[1]?.replace(/\D/g, '') || '0'),
+      type: formData.jobType === 'part-time' ? 'Part-time' : formData.jobType === 'freelance' ? 'Freelance' : 'Seasonal',
+      jobImage: jobImages[0] || demoImage,
+      likes: 0,
+      comments: 0,
+      reposts: 0,
+      shares: 0,
+      image: jobImages[0] || null,
+      category: formData.category,
+      experienceLevel: 'Entry Level',
+      workSetting: formData.location.toLowerCase().includes('remote') ? 'Remote' : 'On-site',
+      companySize: 'Small',
+      postedDate: new Date().toISOString(),
+      requirements: formData.requirements,
+      workTime: formData.workTime,
+      allImages: jobImages.length > 0 ? jobImages : [demoImage],
+    };
+    
+    // Save to localStorage
+    const existingPosts = localStorage.getItem('userPostedJobs');
+    const posts = existingPosts ? JSON.parse(existingPosts) : [];
+    posts.unshift(newJobPost); // Add to beginning of array
+    localStorage.setItem('userPostedJobs', JSON.stringify(posts));
+    
+    // Show success message and redirect
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      navigate('/jobs');
+    }, 1500);
   };
 
   const handleCancel = () => {
     navigate('/profile/employer');
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImages: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push(reader.result as string);
+          setJobImages((prevImages) => [...prevImages, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleImageRemove = (index: number) => {
+    setJobImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   return (
-    <div className="bg-[#FAFAFA] min-h-screen py-12">
+    <div className="bg-white min-h-screen py-12">
+      {/* Success Message Overlay */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <Card className="max-w-md w-full p-8 text-center border-2 border-[#4ADE80]/30 shadow-xl bg-white">
+            <div className="w-20 h-20 bg-[#4ADE80]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-[#4ADE80]" />
+            </div>
+            <h2 className="text-[#263238] mb-2 text-2xl">Job Posted Successfully!</h2>
+            <p className="text-[#263238]/70 mb-6">
+              Your job posting is now live and visible to job seekers.
+            </p>
+            <p className="text-sm text-[#263238]/60">
+              Redirecting to Jobs Feed...
+            </p>
+          </Card>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           {/* Back Button */}
@@ -215,6 +293,69 @@ export function PostJob() {
                 <p className="text-sm text-[#263238]/60 mt-2">
                   Enter each requirement on a new line
                 </p>
+              </div>
+
+              {/* Job Images */}
+              <div>
+                <Label className="text-[#263238] flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-[#4FC3F7]" />
+                  Job Images (Optional)
+                </Label>
+                <p className="text-sm text-[#263238]/60 mt-1 mb-3">
+                  Add images to showcase your workplace or job environment
+                </p>
+                
+                <div className="space-y-4">
+                  <input
+                    type="file"
+                    id="job-images"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="job-images"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-lg shadow-[#FF9800]/30 cursor-pointer transition-all"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Images
+                  </label>
+                  
+                  {jobImages.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {jobImages.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image}
+                            alt={`Job Image ${index + 1}`}
+                            className="w-full h-40 object-cover rounded-xl border-2 border-[#263238]/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleImageRemove(index)}
+                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Demo Preview Section */}
+                  <Card className="p-4 bg-gradient-to-br from-[#4FC3F7]/5 to-[#4ADE80]/5 border-2 border-[#4FC3F7]/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ImageIcon className="w-4 h-4 text-[#FF9800]" />
+                      <p className="text-sm text-[#263238]">Preview: Sample Job Image</p>
+                    </div>
+                    <img
+                      src={demoImage}
+                      alt="Demo Job Posting"
+                      className="w-full h-64 object-cover rounded-xl border-2 border-[#263238]/10"
+                    />
+                  </Card>
+                </div>
               </div>
 
               {/* Form Actions */}

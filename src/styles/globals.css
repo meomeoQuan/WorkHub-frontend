@@ -187,3 +187,34 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Toast animation - slide from right to left */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+[data-sonner-toast] {
+  animation: slideInFromRight 0.3s ease-out !important;
+}
+
+[data-sonner-toast][data-removed="true"] {
+  animation: slideOutToRight 0.2s ease-in !important;
+}

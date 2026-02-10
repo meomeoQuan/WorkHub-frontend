@@ -13,6 +13,9 @@ const jobsData: Record<string, any> = {
   '1': {
     title: 'Part-time Barista',
     company: 'Coffee & Co.',
+    companyUsername: '@coffee_and_co',
+    companyEmployees: '50-200 employees',
+    companyRating: '4.8 rating',
     location: 'New York, NY',
     type: 'Part-time',
     salary: '$15-18/hr',
@@ -70,6 +73,7 @@ export function JobDetail() {
   const { id } = useParams();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Simulate loading delay
@@ -101,12 +105,14 @@ export function JobDetail() {
         {/* Header */}
         <div className="bg-gradient-to-br from-[#FF9800] to-[#FFC107] py-8">
           <div className="container mx-auto px-4">
-            <Link to="/">
-              <Button variant="ghost" className="text-white hover:bg-white/20 mb-4 rounded-xl">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Jobs
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="text-white hover:bg-white/20 mb-4 rounded-xl"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Jobs
+            </Button>
           </div>
         </div>
 
@@ -122,12 +128,14 @@ export function JobDetail() {
       {/* Header */}
       <div className="bg-gradient-to-br from-[#FF9800] to-[#FFC107] py-8">
         <div className="container mx-auto px-4">
-          <Link to="/">
-            <Button variant="ghost" className="text-white hover:bg-white/20 mb-4 rounded-xl">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Jobs
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            className="text-white hover:bg-white/20 mb-4 rounded-xl"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Jobs
+          </Button>
         </div>
       </div>
 
@@ -293,11 +301,11 @@ export function JobDetail() {
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Users className="w-4 h-4 text-[#4FC3F7]" />
-                      <span className="text-[#263238]/80">50-200 employees</span>
+                      <span className="text-[#263238]/80">{job.companyEmployees}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Star className="w-4 h-4 text-[#FFC107] fill-[#FFC107]" />
-                      <span className="text-[#263238]/80">4.8 rating</span>
+                      <span className="text-[#263238]/80">{job.companyRating}</span>
                     </div>
                   </div>
 

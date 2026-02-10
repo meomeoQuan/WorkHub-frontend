@@ -27,7 +27,7 @@ export function Unauthorized() {
           
           {isLoggedIn ? (
             <p className="text-[#263238]/60 mb-8">
-              Your current account type ({user?.userType === 'candidate' ? 'Job Seeker' : 'Employer'}) doesn't have access to this resource.
+              Your current account doesn't have access to this resource.
             </p>
           ) : (
             <p className="text-[#263238]/60 mb-8">

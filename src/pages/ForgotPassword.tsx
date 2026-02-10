@@ -10,25 +10,9 @@ export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual password reset logic
-
-   const response = await fetch("http://localhost:5222/api/auth/forgot-password", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    console.log("Forgot password response:", response);
-    if (!response.ok) {
-      // Handle error (e.g., show a notification)
-      console.error("Failed to send password reset email");
-      return;
-    }
-
     setIsSubmitted(true);
   };
 
