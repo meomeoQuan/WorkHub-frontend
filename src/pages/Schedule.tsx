@@ -70,6 +70,8 @@ export function Schedule() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [eventTitle, setEventTitle] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [view, setView] = useState<View>('week');
   const [saved, setSaved] = useState(false);
   
@@ -79,7 +81,12 @@ export function Schedule() {
   }, []);
 
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
-    setSelectedSlot({ start: slotInfo.start as Date, end: slotInfo.end as Date });
+    const start = slotInfo.start as Date;
+    const end = slotInfo.end as Date;
+    
+    setSelectedSlot({ start, end });
+    setStartTime(moment(start).format('YYYY-MM-DDTHH:mm'));
+    setEndTime(moment(end).format('YYYY-MM-DDTHH:mm'));
     setShowEventForm(true);
     setEventTitle('Available: ');
   }, []);
@@ -91,22 +98,32 @@ export function Schedule() {
   }, []);
 
   const handleAddEvent = () => {
-    if (!eventTitle.trim() || !selectedSlot) {
-      alert('Please enter a title');
+    if (!eventTitle.trim() || !startTime || !endTime) {
+      alert('Please enter all required fields');
+      return;
+    }
+
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+
+    if (endDate <= startDate) {
+      alert('End time must be after start time');
       return;
     }
 
     const newEvent: CalendarEvent = {
       id: `event-${Date.now()}`,
       title: eventTitle,
-      start: selectedSlot.start,
-      end: selectedSlot.end,
+      start: startDate,
+      end: endDate,
     };
 
     setEvents((prev) => [...prev, newEvent]);
     
     // Reset form
     setEventTitle('');
+    setStartTime('');
+    setEndTime('');
     setSelectedSlot(null);
     setShowEventForm(false);
   };
@@ -240,15 +257,21 @@ export function Schedule() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-[#263238] mb-2">Start Time</label>
-                    <div className="h-12 px-4 border-2 border-[#263238]/20 rounded-xl bg-[#263238]/5 flex items-center text-[#263238]/70">
-                      {moment(selectedSlot.start).format('MMM DD, YYYY h:mm A')}
-                    </div>
+                    <input
+                      type="datetime-local"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full h-12 px-4 border-2 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:outline-none text-[#263238]"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm text-[#263238] mb-2">End Time</label>
-                    <div className="h-12 px-4 border-2 border-[#263238]/20 rounded-xl bg-[#263238]/5 flex items-center text-[#263238]/70">
-                      {moment(selectedSlot.end).format('MMM DD, YYYY h:mm A')}
-                    </div>
+                    <input
+                      type="datetime-local"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full h-12 px-4 border-2 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:outline-none text-[#263238]"
+                    />
                   </div>
                 </div>
                 
@@ -289,7 +312,8 @@ export function Schedule() {
                 onView={setView}
                 views={['month', 'week', 'day']}
                 defaultView="week"
-                step={60}
+                step={30}
+                timeslots={2}
                 showMultiDayTimes
                 messages={{
                   next: 'Next',
