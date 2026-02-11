@@ -141,12 +141,6 @@ export function ForgotPassword() {
           </form>
         </div>
 
-        {/* Security Badge */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-[#263238]/60">
-            🔒 Secure password reset • Your data is protected
-          </p>
-        </div>
       </div>
     </div>
   );

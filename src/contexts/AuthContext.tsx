@@ -3,29 +3,18 @@ import type { ApiResponse } from '../types/ApiResponse';
 import type { LoginResponseDTO } from '../types/DTOs/LoginResponseDTO';
 import type { UserDTO } from '../types/DTOs/UserDTO ';
 import type { UserModel } from '../types/User';
-import { mapUserDTOToUser as originalMapUserDTOToUser } from '../mappers/MappingUser';
+import {  mapUserDTOToUser  } from '../mappers/MappingUser';
 
-const mapUserDTOToUser = (dto: UserDTO): UserModel => ({
-  id: dto.id,
-  email: dto.email,
-  fullName: dto.fullName,
-  userType:
-    dto.role === 0
-      ? "admin"
-      : dto.role === 1
-      ? "employer"
-      : dto.role === 2
-      ? "jobseeker"
-      : "jobseeker", // fallback (important)
-});
+export type PaymentPlan = 'free' | 'silver' | 'gold' | 'diamond';
 
 
 interface AuthContextType {
   user: UserModel | null;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string>;
   logout: () => void;
   updateUser: (userData: Partial<UserModel>) => void;
+  upgradePlan: (plan: PaymentPlan) => void;
   googleLogin: (idToken: string) => Promise<void>;
 }
 
@@ -39,7 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem('workhub_user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Ensure paymentPlan exists for backward compatibility
+        if (!parsedUser.paymentPlan) {
+          parsedUser.paymentPlan = 'free';
+        }
+        setUser(parsedUser);
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('workhub_user');
@@ -47,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-const login = async (email: string, password: string) => {
+const login = async (email: string, password: string):  Promise<string>  => {
   const res = await fetch("http://localhost:5222/api/auth/login", {
     method: "POST",
     headers: {
@@ -58,42 +52,32 @@ const login = async (email: string, password: string) => {
 
   const result: ApiResponse<LoginResponseDTO> = await res.json();
 
-   console.log("Login response:", result);
   if (!res.ok || !result.success) {
-    console.log("Login failed:", result.message);
     throw new Error(result.message || "Login failed");
   }
 
   const data = result.data;
- 
 
-if (!data || !data.token || !data.userDTO) {
-  throw new Error("Invalid login response");
-}
+  if (!data || !data.token || !data.userDTO) {
+    throw new Error("Invalid login response");
+  }
 
-  console.log("Login data:", data);
-
-  // store JWT
   localStorage.setItem("access_token", data.token);
 
-  // TEMP user (until /me endpoint)
-const userData = data.userDTO;
+  const mappedUser = mapUserDTOToUser(data.userDTO);
 
-  const mappedUser = mapUserDTOToUser(userData);
-   console.log("Mapped User:", mappedUser);
-setUser(mappedUser);
-localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
-
+  setUser(mappedUser);
+  localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
+  return mappedUser.userType; // 👈 return role
 };
 
-
-const googleLogin = async (authCode: string) => {
+const googleLogin = async (authCode: string): Promise<void> => {
   const res = await fetch("http://localhost:5222/api/auth/google", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(authCode), // raw string ✔
+    body: JSON.stringify(authCode),
   });
 
   const result: ApiResponse<LoginResponseDTO> = await res.json();
@@ -104,23 +88,19 @@ const googleLogin = async (authCode: string) => {
 
   const data = result.data;
 
-  
-if (!data || !data.token || !data.userDTO) {
-  throw new Error("Invalid login response");
-}
+  if (!data || !data.token || !data.userDTO) {
+    throw new Error("Invalid login response");
+  }
 
   localStorage.setItem("access_token", data.token);
 
-  const mappedUser = originalMapUserDTOToUser(data.userDTO);
+  const mappedUser = mapUserDTOToUser(data.userDTO);
 
   setUser(mappedUser);
   localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
 };
 
-
-
-
-  const logout = () => {
+const logout = () => {
     setUser(null);
     localStorage.removeItem('workhub_user');
   };
@@ -133,21 +113,24 @@ if (!data || !data.token || !data.userDTO) {
     }
   };
 
+  const upgradePlan = (plan: PaymentPlan) => {
+    if (user) {
+      const updatedUser = { ...user, paymentPlan: plan };
+      setUser(updatedUser);
+      localStorage.setItem('workhub_user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoggedIn: !!user,
-        login,
-        logout,
-        updateUser,
-        googleLogin,
-      }}
-    >
+    <AuthContext.Provider value={{ 
+      user, isLoggedIn: !!user,
+   login, logout, updateUser, upgradePlan, googleLogin 
+   }}>
       {children}
     </AuthContext.Provider>
   );
 }
+
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -156,3 +139,5 @@ export function useAuth() {
   }
   return context;
 }
+
+

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router';
-import { User, Zap, LogOut, Settings, Briefcase, FileText, Calendar } from 'lucide-react';
+import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -10,25 +10,27 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '../contexts/AuthContext';
+import type { PaymentPlan } from '../contexts/AuthContext';
 
 interface User {
   id: string;
   email: string;
   fullName: string;
-  userType: 'candidate' | 'employer';
+  userType: 'user' | 'admin';
   profileImage?: string;
+  paymentPlan: PaymentPlan;
 }
 
 interface HeaderProps {
   isLoggedIn?: boolean;
-  userType?: 'candidate' | 'employer';
+  userType?: 'user' | 'admin';
   user?: User | null;
+  currentPath?: string;
 }
 
-export function Header({ isLoggedIn = false, userType = 'candidate', user }: HeaderProps) {
-  const location = useLocation();
+export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderProps) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, upgradePlan } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -36,10 +38,30 @@ export function Header({ isLoggedIn = false, userType = 'candidate', user }: Hea
   };
 
   const handleProfileClick = () => {
-    if (user?.userType === 'candidate') {
-      navigate('/profile/candidate');
-    } else {
-      navigate('/profile/employer');
+    navigate('/profile/candidate');
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'silver':
+        return 'text-gray-500';
+      case 'gold':
+        return 'text-yellow-500';
+      case 'diamond':
+        return 'text-cyan-400';
+      default:
+        return 'text-[#263238]';
+    }
+  };
+
+  const getPlanIcon = (plan: string) => {
+    switch (plan) {
+      case 'silver':
+      case 'gold':
+      case 'diamond':
+        return <Crown className="w-4 h-4" />;
+      default:
+        return <Zap className="w-4 h-4" />;
     }
   };
 
@@ -58,36 +80,54 @@ export function Header({ isLoggedIn = false, userType = 'candidate', user }: Hea
             </div>
           </Link>
 
-          {/* Center Navigation for Job Seekers */}
-          {isLoggedIn && userType === 'candidate' && (
+          {/* Center Navigation */}
+          {isLoggedIn && (
             <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
               <Link to="/jobs">
                 <Button 
                   variant="ghost" 
                   className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${
-                    location.pathname === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
+                    currentPath === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
                   }`}
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
                   Browse Jobs
                 </Button>
               </Link>
-              <Link to="/my-applications">
-                <Button 
-                  variant="ghost" 
-                  className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${
-                    location.pathname === '/my-applications' ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]' : 'text-[#263238]/70'
-                  }`}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  My Applications
-                </Button>
-              </Link>
+              
+              {/* My Applications with Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${
+                      currentPath === '/my-applications' || currentPath === '/applications'
+                        ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]' 
+                        : 'text-[#263238]/70'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    My Applications
+                    <ChevronDown className="w-4 h-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56">
+                  <DropdownMenuItem onClick={() => navigate('/applications')}>
+                    <Inbox className="mr-2 h-4 w-4" />
+                    <span>Applications</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-applications')}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>My Applications</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Link to="/schedule">
                 <Button 
                   variant="ghost" 
                   className={`rounded-xl hover:bg-[#4ADE80]/10 hover:text-[#4ADE80] ${
-                    location.pathname === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
+                    currentPath === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
                   }`}
                 >
                   <Calendar className="w-4 h-4 mr-2" />
@@ -100,20 +140,11 @@ export function Header({ isLoggedIn = false, userType = 'candidate', user }: Hea
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                {userType === 'employer' && (
-                  <>
-                    <Link to="/applications">
-                      <Button variant="outline" className="border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
-                        Applications
-                      </Button>
-                    </Link>
-                    <Link to="/post-job">
-                      <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
-                        Post a Job
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                <Link to="/post-job">
+                  <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
+                    Post a Job
+                  </Button>
+                </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -146,7 +177,7 @@ export function Header({ isLoggedIn = false, userType = 'candidate', user }: Hea
                             className="w-8 h-8 rounded-full mr-2"
                           />
                         ) : (
-                          <User className="w-8 h-8 rounded-full mr-2" />
+                          <UserIcon className="w-8 h-8 rounded-full mr-2" />
                         )}
                         <div>
                           <p className="text-sm font-medium leading-none">{user?.fullName}</p>
@@ -157,10 +188,44 @@ export function Header({ isLoggedIn = false, userType = 'candidate', user }: Hea
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    
+                    {/* Payment Plan Section */}
+                    <div className="px-2 py-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={getPlanColor(user?.paymentPlan || 'free')}>
+                            {getPlanIcon(user?.paymentPlan || 'free')}
+                          </div>
+                          <span className="text-sm font-medium capitalize">
+                            {user?.paymentPlan || 'Free'} Plan
+                          </span>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => navigate('/pricing')}
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-[#FF9800] to-[#4FC3F7] hover:from-[#F57C00] hover:to-[#4FC3F7] text-white"
+                      >
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Upgrade Plan
+                      </Button>
+                    </div>
+                    
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleProfileClick}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/policy')}>
+                      <Scale className="mr-2 h-4 w-4" />
+                      <span>Policy</span>
+                    </DropdownMenuItem>
+                    {user?.userType === 'admin' && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Shield className="mr-2 h-4 w-4 text-[#FF9800]" />
+                        <span className="text-[#FF9800] font-medium">Admin Dashboard</span>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>

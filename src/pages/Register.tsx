@@ -12,12 +12,12 @@ export function Register() {
   const navigate = useNavigate();
 
   const [userName, setUserName] = useState('');
-const [userEmail, setUserEmail] = useState('');
-const [userPassword, setUserPassword] = useState('');
-const [showUserPassword, setShowUserPassword] = useState(false);
-const [role, setRole] = useState<number>(2); // 2 = jobseeker, 1 = employer
- const [confirmPassword, setConfirmPassword] = useState('');
-const [passwordError, setPasswordError] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
+  const [showUserPassword, setShowUserPassword] = useState(false);
+  const [role] = useState<number>(2); // 0 = admin, 1 = user
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
 
 
@@ -36,7 +36,7 @@ const handleUserRegister = async (e: React.FormEvent) => {
     fullName: userName,          // ✅ matches FullName
     password: userPassword,
     confirmPassword: confirmPassword, // ✅ REQUIRED
-    role: role,                  // 1 or 2
+    role: role,                  // 0 or 1
   };
 
   console.log("Register payload:", payload);
@@ -85,27 +85,7 @@ const handleUserRegister = async (e: React.FormEvent) => {
             <p className="text-[#263238]/70">Start earning with flexible jobs today</p>
           </div>
 
-          <Tabs  defaultValue="jobseeker"
-                  onValueChange={(value : string) => setRole(value === 'jobseeker' ? 2 : 1)} 
-                  className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#263238]/5 p-1 rounded-xl h-12">
-              <TabsTrigger 
-                value="jobseeker" 
-                className="rounded-lg data-[state=active]:bg-[#FF9800] data-[state=active]:text-white data-[state=active]:shadow-md"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Job Seeker
-              </TabsTrigger>
-              <TabsTrigger 
-                value="employer"
-                className="rounded-lg data-[state=active]:bg-[#FF9800] data-[state=active]:text-white data-[state=active]:shadow-md"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Employer
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={role === 2 ? "jobseeker" : "employer"}>
+           
               <form onSubmit={handleUserRegister} className="space-y-5">
                 <div>
                   <Label htmlFor="candidate-name" className="text-[#263238]">Full Name</Label>
@@ -193,11 +173,7 @@ const handleUserRegister = async (e: React.FormEvent) => {
                   By signing up, you agree to our Terms of Service and Privacy Policy
                 </p>
               </form>
-            </TabsContent>
-
-        
-          </Tabs>
-
+  
           <p className="text-center mt-6 text-sm text-[#263238]/70">
             Already have an account?{' '}
             <Link to="/login" className="text-[#FF9800] hover:text-[#F57C00]">
@@ -206,12 +182,6 @@ const handleUserRegister = async (e: React.FormEvent) => {
           </p>
         </Card>
 
-        {/* Trust Badge */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[#263238]/60">
-            ⚡ Free forever • Join 10,000+ job seekers
-          </p>
-        </div>
       </div>
     </div>
   );

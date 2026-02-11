@@ -118,9 +118,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
+                <Link to="/pricing" className="text-white/70 hover:text-[#FF9800] transition">
                   Pricing Plans
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
@@ -135,24 +135,24 @@ export function Footer() {
             <h3 className="text-white mb-4 text-sm">Support</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
+                <Link to="/help" className="text-white/70 hover:text-[#FF9800] transition">
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
+                <Link to="/help" className="text-white/70 hover:text-[#FF9800] transition">
                   Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
-                  Terms of Service
-                </a>
+                <Link to="/policy" className="text-white/70 hover:text-[#FF9800] transition">
+                  Terms & Policies
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/70 hover:text-[#FF9800] transition">
+                <Link to="/policy#privacy" className="text-white/70 hover:text-[#FF9800] transition">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useState, useEffect } from "react";
+import Slider from "react-slick";
 import {
   Search,
   TrendingUp,
@@ -10,6 +11,8 @@ import {
   Users,
   Briefcase,
   Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,6 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { useNavigate } from "react-router";
+import howItWorksImg from "figma:asset/35710fa8a2ad22f1bc7ef5e3899f7b6a4daf97c0.png";
+import howItWorksStepsImg from "figma:asset/0c6a40c7b2f80c5d86943571cde7f7780fb26351.png";
 
 // Mock job data
 const jobs = [
@@ -130,7 +136,102 @@ const featuredCompanies = [
   { name: "Quick Delivery", jobs: 15, rating: 4.6 },
 ];
 
+// Advertisement data
+const advertisements = [
+  {
+    id: 1,
+    title: "Need Quick Cash?",
+    description: "Get paid daily with instant job opportunities in your area",
+    bgGradient: "from-[#FF9800] to-[#F57C00]",
+    buttonText: "Find Jobs Now",
+    buttonLink: "/jobs",
+    image: "https://images.unsplash.com/photo-1669012520437-5102e3fd4589?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjByZWNlaXZpbmclMjBjYXNoJTIwcGF5bWVudHxlbnwxfHx8fDE3NzA3MTc0Njd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: 2,
+    title: "Get Hired in 3 Simple Steps",
+    description: "Search, apply, and start earning with our streamlined process",
+    bgGradient: "from-[#4FC3F7] to-[#0288D1]",
+    buttonText: "See How It Works",
+    buttonLink: "/jobs",
+    image: howItWorksImg,
+  },
+  {
+    id: 3,
+    title: "Seasonal Hiring Now",
+    description: "Top companies are hiring for seasonal positions. Apply today!",
+    bgGradient: "from-[#4ADE80] to-[#22C55E]",
+    buttonText: "See Seasonal Jobs",
+    buttonLink: "/jobs?type=seasonal",
+    image: "https://images.unsplash.com/photo-1559523182-a284c3fb7cff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWFtJTIwaGlyaW5nJTIwcmVjcnVpdG1lbnQlMjBvZmZpY2V8ZW58MXx8fHwxNzcwNzE3NDY4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+];
+
+// Custom arrow components for carousel
+const NextArrow = (props: any) => {
+  const { onClick } = props;
+  return (
+    <button
+      onClick={onClick}
+      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition"
+    >
+      <ChevronRight className="w-5 h-5 text-[#263238]" />
+    </button>
+  );
+};
+
+const PrevArrow = (props: any) => {
+  const { onClick } = props;
+  return (
+    <button
+      onClick={onClick}
+      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition"
+    >
+      <ChevronLeft className="w-5 h-5 text-[#263238]" />
+    </button>
+  );
+};
+
 export function Home() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("all-cities");
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) {
+      params.set("q", searchQuery.trim());
+    }
+    if (selectedLocation && selectedLocation !== "all-cities") {
+      params.set("location", selectedLocation);
+    }
+    const queryString = params.toString();
+    navigate(`/jobs${queryString ? `?${queryString}` : ""}`);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // Carousel settings
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 800,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    pauseOnHover: true,
+    pauseOnFocus: true,
+    cssEase: "ease-in-out",
+    nextArrow: <NextArrow />,
+    prevArrow: <PrevArrow />,
+    dotsClass: "slick-dots !bottom-4",
+  };
+
   return (
     <div className="bg-white">
       {/* Hero Section */}
@@ -169,11 +270,18 @@ export function Home() {
                     <Input
                       placeholder="What job are you looking for?"
                       className="pl-12 border-0 focus-visible:ring-0 h-14 text-[#263238] bg-transparent w-full"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={handleKeyPress}
                     />
                   </div>
                   <div className="flex-1 relative flex items-center">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/60 z-10 pointer-events-none" />
-                    <Select defaultValue="all-cities">
+                    <Select
+                      defaultValue="all-cities"
+                      value={selectedLocation}
+                      onValueChange={setSelectedLocation}
+                    >
                       <SelectTrigger className="border-0 h-14 text-[#263238] focus:ring-0 pl-12 pr-3 py-0 bg-transparent w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -208,14 +316,12 @@ export function Home() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Link
-                    to="/jobs"
-                    className="md:w-auto flex items-center"
+                  <Button
+                    onClick={handleSearch}
+                    className="bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 px-8 rounded-xl w-full md:w-auto shadow-lg shadow-[#FF9800]/30"
                   >
-                    <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 px-8 rounded-xl w-full md:w-auto shadow-lg shadow-[#FF9800]/30">
-                      Find Jobs
-                    </Button>
-                  </Link>
+                    Find Jobs
+                  </Button>
                 </div>
               </div>
 
@@ -258,6 +364,166 @@ export function Home() {
         </div>
       </section>
 
+      {/* Advertisement Carousel */}
+      <section className="py-12 bg-[#FAFAFA]">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <style>{`
+              .slick-slider {
+                position: relative;
+                display: block;
+                box-sizing: border-box;
+                user-select: none;
+                touch-action: pan-y;
+              }
+              .slick-list {
+                position: relative;
+                display: block;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+              }
+              .slick-track {
+                position: relative;
+                top: 0;
+                left: 0;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
+              .slick-track:before,
+              .slick-track:after {
+                display: table;
+                content: '';
+              }
+              .slick-track:after {
+                clear: both;
+              }
+              .slick-loading .slick-track {
+                visibility: hidden;
+              }
+              .slick-slide {
+                display: none;
+                float: left;
+                height: 100%;
+                min-height: 1px;
+              }
+              [dir='rtl'] .slick-slide {
+                float: right;
+              }
+              .slick-slide img {
+                display: block;
+              }
+              .slick-slide.slick-loading img {
+                display: none;
+              }
+              .slick-slide.dragging img {
+                pointer-events: none;
+              }
+              .slick-initialized .slick-slide {
+                display: block;
+              }
+              .slick-loading .slick-slide {
+                visibility: hidden;
+              }
+              .slick-vertical .slick-slide {
+                display: block;
+                height: auto;
+                border: 1px solid transparent;
+              }
+              .slick-arrow.slick-hidden {
+                display: none;
+              }
+              .slick-dots {
+                position: absolute;
+                bottom: 1rem;
+                display: flex !important;
+                justify-content: center;
+                align-items: center;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 0;
+                margin: 0;
+                list-style: none;
+                z-index: 20;
+              }
+              .slick-dots li {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                margin: 0;
+                padding: 0;
+                cursor: pointer;
+              }
+              .slick-dots li button {
+                display: block;
+                width: 8px;
+                height: 8px;
+                padding: 0;
+                border: none;
+                border-radius: 100%;
+                background-color: rgba(255, 255, 255, 0.5);
+                text-indent: -9999px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              }
+              .slick-dots li button:hover {
+                background-color: rgba(255, 255, 255, 0.8);
+              }
+              .slick-dots li.slick-active button {
+                background-color: white;
+                width: 24px;
+                border-radius: 4px;
+              }
+            `}</style>
+            <Slider {...carouselSettings}>
+              {advertisements.map((ad) => (
+                <div key={ad.id} className="px-2">
+                  <div
+                    className={`relative bg-gradient-to-r ${ad.bgGradient} rounded-3xl overflow-hidden shadow-2xl`}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center p-8 md:p-12">
+                      {/* Left Content */}
+                      <div className="text-white z-10 relative">
+                        <div className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs mb-4">
+                          Featured
+                        </div>
+                        <h2 className="text-white mb-4 text-3xl md:text-4xl">
+                          {ad.title}
+                        </h2>
+                        <p className="text-white/95 text-lg mb-6">
+                          {ad.description}
+                        </p>
+                        <Link to={ad.buttonLink}>
+                          <Button className="bg-white text-[#263238] hover:bg-white/90 h-12 px-6 rounded-xl shadow-lg">
+                            {ad.buttonText}
+                          </Button>
+                        </Link>
+                      </div>
+
+                      {/* Right Image */}
+                      <div className="hidden md:block relative">
+                        <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                          <ImageWithFallback
+                            src={ad.image}
+                            alt={ad.title}
+                            className="w-full h-64 object-cover"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+                  </div>
+                </div>
+              ))}
+            </Slider>
+          </div>
+        </div>
+      </section>
+
       {/* Quick Job Categories */}
       <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
@@ -272,7 +538,7 @@ export function Home() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {quickJobs.map((category, index) => (
-              <Link key={index} to="/jobs">
+              <Link key={index} to={`/jobs?category=${encodeURIComponent(category.title)}`}>
                 <Card className="p-6 hover:shadow-lg transition cursor-pointer border-2 hover:border-[#FF9800] group">
                   <div
                     className={`w-16 h-16 ${category.color} rounded-2xl flex items-center justify-center mb-4 text-3xl group-hover:scale-110 transition`}
@@ -400,6 +666,141 @@ export function Home() {
         </div>
       </section>
 
+      {/* Featured Companies Carousel */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-[#263238]">Featured Companies</h2>
+            <Link to="/jobs">
+              <Button
+                variant="ghost"
+                className="text-[#FF9800] hover:text-[#F57C00] hover:bg-[#FF9800]/10 flex items-center gap-2"
+              >
+                See All Companies
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          {/* Companies Carousel */}
+          <div className="max-w-6xl mx-auto">
+            <Slider
+              {...{
+                dots: false,
+                infinite: true,
+                speed: 500,
+                slidesToShow: 5,
+                slidesToScroll: 1,
+                autoplay: true,
+                autoplaySpeed: 3000,
+                pauseOnHover: true,
+                arrows: false,
+                responsive: [
+                  {
+                    breakpoint: 1024,
+                    settings: {
+                      slidesToShow: 4,
+                    },
+                  },
+                  {
+                    breakpoint: 768,
+                    settings: {
+                      slidesToShow: 3,
+                    },
+                  },
+                  {
+                    breakpoint: 640,
+                    settings: {
+                      slidesToShow: 2,
+                    },
+                  },
+                ],
+              }}
+            >
+              {/* Coffee & Co. */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">☕</div>
+                    <p className="text-sm font-semibold text-[#263238]">Coffee & Co.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* TechCorp */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">💻</div>
+                    <p className="text-sm font-semibold text-[#263238]">TechCorp</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Design Studio */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🎨</div>
+                    <p className="text-sm font-semibold text-[#263238]">Design Studio</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Delivery */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🚚</div>
+                    <p className="text-sm font-semibold text-[#263238]">Quick Delivery</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fashion Boutique */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">👔</div>
+                    <p className="text-sm font-semibold text-[#263238]">Fashion Boutique</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Marketing Agency */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">📱</div>
+                    <p className="text-sm font-semibold text-[#263238]">Marketing Agency</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Food Services */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🍔</div>
+                    <p className="text-sm font-semibold text-[#263238]">Food Services</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Retail Plus */}
+              <div className="px-3">
+                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🏪</div>
+                    <p className="text-sm font-semibold text-[#263238]">Retail Plus</p>
+                  </div>
+                </div>
+              </div>
+            </Slider>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
@@ -412,7 +813,8 @@ export function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Step 1: Search Jobs */}
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-[#FF9800] to-[#FFC107] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#FF9800]/30">
                 <Search className="w-10 h-10 text-white" />
@@ -428,6 +830,7 @@ export function Home() {
               </p>
             </div>
 
+            {/* Step 2: Quick Apply */}
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-[#4FC3F7] to-[#4ADE80] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#4FC3F7]/30">
                 <Zap className="w-10 h-10 text-white" />
@@ -443,6 +846,7 @@ export function Home() {
               </p>
             </div>
 
+            {/* Step 3: Start Earning */}
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-[#4ADE80] to-[#FFC107] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#4ADE80]/30">
                 <DollarSign className="w-10 h-10 text-white" />

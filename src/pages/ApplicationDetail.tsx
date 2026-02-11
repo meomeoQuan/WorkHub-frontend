@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
 import {
   Select,
@@ -12,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Textarea } from '../components/ui/textarea';
 import {
   ArrowLeft,
   Mail,
@@ -25,7 +23,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Send,
+  Paperclip,
+  Upload,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner@2.0.3';
 
 // Mock application data
 const applicationData: Record<string, any> = {
@@ -56,7 +59,11 @@ export function ApplicationDetail() {
   const application = applicationData[id || '1'] || applicationData['1'];
   
   const [status, setStatus] = useState(application.status);
-  const [notes, setNotes] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(application.status);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const statusConfig = {
     pending: {
@@ -85,8 +92,57 @@ export function ApplicationDetail() {
   const StatusIcon = currentStatus.icon;
 
   const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus);
-    // In a real app, this would update the backend
+    setSelectedStatus(newStatus);
+  };
+
+  const handleSaveStatus = () => {
+    setStatus(selectedStatus);
+    toast.success('Status updated successfully!', {
+      style: {
+        background: '#4ADE80',
+        color: '#ffffff',
+        border: '2px solid #22C55E',
+        borderRadius: '12px',
+        padding: '16px',
+        fontSize: '14px',
+        fontWeight: '500',
+      },
+    });
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name === 'subject') {
+      setEmailSubject(value);
+    } else if (name === 'message') {
+      setEmailMessage(value);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      setAttachments(Array.from(files));
+    }
+  };
+
+  const handleSendEmail = () => {
+    setIsSendingEmail(true);
+    // Simulate email sending
+    setTimeout(() => {
+      setIsSendingEmail(false);
+      toast.success('Email sent successfully!', {
+        style: {
+          background: '#4ADE80',
+          color: '#ffffff',
+          border: '2px solid #22C55E',
+          borderRadius: '12px',
+          padding: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+      });
+    }, 2000);
   };
 
   return (
@@ -210,6 +266,120 @@ export function ApplicationDetail() {
                 </Button>
               </div>
             </Card>
+
+            {/* Send Email Notification */}
+            <Card className="p-8 border-2 border-[#263238]/10 bg-gradient-to-br from-[#263238] to-[#37474F]">
+              <div className="flex items-center gap-2 mb-4">
+                <Send className="w-5 h-5 text-[#FF9800]" />
+                <h3 className="text-white text-lg">Send Email Notification</h3>
+              </div>
+              <p className="text-white/60 text-sm mb-6">
+                Send important announcements, policy updates, or notifications to this user.
+              </p>
+
+              <div className="space-y-5">
+                {/* Email Subject */}
+                <div>
+                  <label className="block text-white text-sm mb-2">Email Subject</label>
+                  <input
+                    type="text"
+                    name="subject"
+                    value={emailSubject}
+                    onChange={handleEmailChange}
+                    placeholder="e.g., Important: Policy Update on WorkHub"
+                    className="w-full px-4 py-3 bg-[#1A1F2E] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF9800] focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label className="block text-white text-sm mb-2">Message</label>
+                  <textarea
+                    name="message"
+                    value={emailMessage}
+                    onChange={handleEmailChange}
+                    placeholder={`Dear ${application.candidate.name},\n\nWe're writing to inform you about important updates to our platform policies...`}
+                    rows={6}
+                    className="w-full px-4 py-3 bg-[#1A1F2E] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF9800] focus:border-transparent transition-all resize-none"
+                  />
+                </div>
+
+                {/* Send Email Button */}
+                <Button
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail || !emailSubject || !emailMessage}
+                  className="bg-gradient-to-r from-[#FF9800] to-[#F57C00] hover:shadow-lg text-white rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{isSendingEmail ? 'Sending...' : 'Send Email'}</span>
+                </Button>
+
+                {/* Recipient Info */}
+                <div className="flex items-center gap-3 p-4 bg-[#1A1F2E] rounded-xl border border-[#4FC3F7]/20">
+                  <Mail className="w-5 h-5 text-[#4FC3F7]" />
+                  <div className="flex-1">
+                    <span className="text-[#4FC3F7] text-sm font-medium">Recipient: </span>
+                    <span className="text-white text-sm">
+                      {application.candidate.name} ({application.candidate.email})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Attachments */}
+                <div>
+                  <label className="block text-white text-sm mb-3">Attachments (Optional)</label>
+                  <div className="flex flex-col gap-3">
+                    <label htmlFor="email-file-upload" className="cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-3 bg-[#1A1F2E] border border-white/20 border-dashed rounded-xl hover:border-[#FF9800] hover:bg-[#1A1F2E]/70 transition-all">
+                        <Upload className="w-5 h-5 text-[#FF9800]" />
+                        <span className="text-white/70 text-sm">Add Files</span>
+                      </div>
+                      <input
+                        id="email-file-upload"
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.txt"
+                      />
+                    </label>
+
+                    {/* Attachment List */}
+                    {attachments.length > 0 && (
+                      <div className="space-y-2">
+                        {attachments.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-[#1A1F2E] rounded-xl border border-white/10"
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <Paperclip className="w-4 h-4 text-[#4FC3F7] flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-white truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-white/50">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttachments(attachments.filter((_, i) => i !== index))
+                              }
+                              className="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                            >
+                              <X className="w-4 h-4 text-white/50 hover:text-white" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -235,7 +405,7 @@ export function ApplicationDetail() {
             {/* Status Management */}
             <Card className="p-6 border-2 border-[#263238]/10">
               <h3 className="text-[#263238] mb-4">Update Status</h3>
-              <Select value={status} onValueChange={handleStatusChange}>
+              <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="border-2 border-[#263238]/20 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -246,22 +416,12 @@ export function ApplicationDetail() {
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Separator className="my-4 bg-[#263238]/10" />
-
-              <div className="space-y-3">
-                <Label className="text-[#263238]">Internal Notes</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add notes about this candidate..."
-                  rows={4}
-                  className="border-2 border-[#263238]/20 focus:border-[#FF9800] rounded-xl"
-                />
-                <Button className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl">
-                  Save Notes
-                </Button>
-              </div>
+              <Button 
+                className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl mt-4"
+                onClick={handleSaveStatus}
+              >
+                Save Status
+              </Button>
             </Card>
 
             {/* Quick Actions */}
@@ -271,10 +431,6 @@ export function ApplicationDetail() {
                 <Button variant="outline" className="w-full justify-start border-2 border-[#263238]/20 hover:border-[#4ADE80] hover:text-[#4ADE80] rounded-xl">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Schedule Interview
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-2 border-[#263238]/20 hover:border-[#4FC3F7] hover:text-[#4FC3F7] rounded-xl">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Send Message
                 </Button>
                 <Link to="/profile/candidate">
                   <Button variant="outline" className="w-full justify-start border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">

@@ -113,16 +113,12 @@ const statusLabels = {
 export function Applications() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
+
+  // Removed role-based protection - all logged-in users can access
+
   const [searchQuery, setSearchQuery] = useState('');
   const [jobFilter, setJobFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-
-  // Protect this page - only employers can access
-  useEffect(() => {
-    if (!isLoggedIn || user?.userType !== 'employer') {
-      navigate('/unauthorized');
-    }
-  }, [isLoggedIn, user, navigate]);
 
   // Filter applications
   const filteredApplications = applications.filter((app) => {

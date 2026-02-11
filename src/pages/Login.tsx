@@ -37,7 +37,18 @@ export function Login() {
         ux_mode: "popup",
         callback: async (response: any) => {
           await googleLogin(response.code);
-          toast.success('Welcome back! Login successful.');
+
+          toast.success('Welcome back! Login successful.', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+
       navigate('/');
         },
       });
@@ -55,11 +66,38 @@ export function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      toast.success('Welcome back! Login successful.');
+    var role = await login(email, password);
+
+      toast.success('Welcome back, Admin! Login successful.', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+
+    if (role === 'admin') {
+    
+      navigate('/admin');
+      return;
+
+    }
       navigate('/');
+
     } catch (error) {
-      toast.error('Invalid credentials. Please try again.');
+     toast.error('Invalid credentials. Please try again.', {
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          border: '2px solid #DC2626',
+          fontSize: '14px',
+          fontWeight: '600',
+        },
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -86,14 +124,6 @@ export function Login() {
             <p className="text-[#263238]/70">Sign in to continue your job journey</p>
           </div>
 
-          {/* Test Credentials Info */}
-          <div className="mb-6 p-4 bg-[#4FC3F7]/10 border border-[#4FC3F7]/30 rounded-xl">
-            <p className="text-sm text-[#263238] font-medium mb-2">Test Accounts:</p>
-            <div className="space-y-1 text-xs text-[#263238]/70">
-              <p>👤 <strong>Job Seeker:</strong> jobseeker@gmail.com / 123</p>
-              <p>🏢 <strong>Employer:</strong> employer@gmail.com / 123</p>
-            </div>
-          </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
@@ -207,12 +237,6 @@ export function Login() {
           </p>
         </Card>
 
-        {/* Trust Badge */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[#263238]/60">
-            🔒 Secure login • 10,000+ active job seekers
-          </p>
-        </div>
       </div>
     </div>
   );
