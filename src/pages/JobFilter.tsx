@@ -49,6 +49,9 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
+import { SkeletonFeedPostGrid } from "../components/SkeletonFeedPost";
+import { SkeletonCommentModal } from "../components/SkeletonCommentModal";
+import { SkeletonNewPostModal } from "../components/SkeletonNewPostModal";
 
 // Mock job posts data
 const jobPosts = [
@@ -81,6 +84,7 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 2 * 60 * 60 * 1000) as unknown as string, // 2 hours ago
+    attachedJobs: [] as string[],
   },
   {
     id: "2",
@@ -88,6 +92,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Design&backgroundColor=4FC3F7",
     username: "design_studio",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.6 rating",
     credibilityRating: 4.6,
     timestamp: "5h",
     content:
@@ -111,6 +117,7 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Small",
     postedDate: new Date(Date.now() - 5 * 60 * 60 * 1000) as unknown as string, // 5 hours ago
+    attachedJobs: [] as string[],
   },
   {
     id: "3",
@@ -118,6 +125,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Fashion&backgroundColor=4ADE80",
     username: "fashion_boutique",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.3 rating",
     credibilityRating: 4.3,
     timestamp: "1d",
     content:
@@ -140,6 +149,7 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) as unknown as string, // 1 day ago
+    attachedJobs: [] as string[],
   },
   {
     id: "4",
@@ -147,6 +157,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Tech&backgroundColor=263238",
     username: "techcorp_jobs",
+    companyEmployees: "500+ employees",
+    companyRating: "4.5 rating",
     credibilityRating: 4.5,
     timestamp: "2d",
     content:
@@ -169,6 +181,7 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Large",
     postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) as unknown as string, // 2 days ago
+    attachedJobs: [] as string[],
   },
   {
     id: "5",
@@ -176,6 +189,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Marketing&backgroundColor=FF9800",
     username: "marketing_pro",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.7 rating",
     credibilityRating: 4.7,
     timestamp: "3d",
     content:
@@ -199,6 +214,7 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) as unknown as string, // 3 days ago
+    attachedJobs: [] as string[],
   },
   {
     id: "6",
@@ -206,6 +222,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Quick&backgroundColor=4FC3F7",
     username: "quick_delivery",
+    companyEmployees: "500+ employees",
+    companyRating: "4.4 rating",
     credibilityRating: 4.4,
     timestamp: "4d",
     content:
@@ -228,6 +246,7 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Large",
     postedDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) as unknown as string, // 4 days ago
+    attachedJobs: [] as string[],
   },
   {
     id: "7",
@@ -235,6 +254,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Health&backgroundColor=4ADE80",
     username: "healthplus_clinic",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.9 rating",
     credibilityRating: 4.9,
     timestamp: "12h",
     content:
@@ -256,6 +277,7 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 12 * 60 * 60 * 1000) as unknown as string, // 12 hours ago
+    attachedJobs: [] as string[],
   },
   {
     id: "8",
@@ -263,6 +285,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Edu&backgroundColor=FF9800",
     username: "edutech_sol",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.2 rating",
     credibilityRating: 4.2,
     timestamp: "6h",
     content:
@@ -284,6 +308,7 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Small",
     postedDate: new Date(Date.now() - 6 * 60 * 60 * 1000) as unknown as string, // 6 hours ago
+    attachedJobs: [] as string[],
   },
   {
     id: "9",
@@ -291,6 +316,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Build&backgroundColor=263238",
     username: "build_construct",
+    companyEmployees: "500+ employees",
+    companyRating: "4.6 rating",
     credibilityRating: 4.6,
     timestamp: "5d",
     content:
@@ -312,6 +339,7 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Large",
     postedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) as unknown as string, // 5 days ago
+    attachedJobs: [] as string[],
   },
   {
     id: "10",
@@ -319,6 +347,8 @@ const jobPosts = [
     avatar:
       "https://api.dicebear.com/7.x/initials/svg?seed=Web&backgroundColor=4FC3F7",
     username: "creative_web",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.1 rating",
     credibilityRating: 4.1,
     timestamp: "8h",
     content:
@@ -340,12 +370,15 @@ const jobPosts = [
     workSetting: "Hybrid",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 8 * 60 * 60 * 1000) as unknown as string, // 8 hours ago
+    attachedJobs: [] as string[],
   },
   {
     id: "11",
     company: "Digital Marketing Pro",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=DMP&backgroundColor=4ADE80",
     username: "digital_marketing",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.6 rating",
     credibilityRating: 4.6,
     timestamp: "1d",
     content: "Social media manager needed! 📱 Manage campaigns across platforms. Remote-friendly position.",
@@ -366,12 +399,15 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Small",
     postedDate: new Date(Date.now() - 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "12",
     company: "FitLife Gym",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=FitLife&backgroundColor=FF9800",
     username: "fitlife_gym",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.4 rating",
     credibilityRating: 4.4,
     timestamp: "1d",
     content: "Personal trainers wanted! 💪 Help members achieve their fitness goals. Certification required.",
@@ -392,12 +428,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 26 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "13",
     company: "BookWorm Library",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Book&backgroundColor=4FC3F7",
     username: "bookworm_lib",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.7 rating",
     credibilityRating: 4.7,
     timestamp: "2d",
     content: "Library assistant position open! 📚 Help patrons, organize shelves, and manage checkouts.",
@@ -418,12 +457,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "14",
     company: "GreenThumb Landscaping",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Green&backgroundColor=4ADE80",
     username: "greenthumb_ls",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.5 rating",
     credibilityRating: 4.5,
     timestamp: "2d",
     content: "Seasonal landscapers needed! 🌱 Mowing, planting, and outdoor maintenance work.",
@@ -444,12 +486,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "15",
     company: "TechStart Inc",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=TechStart&backgroundColor=FF9800",
     username: "techstart_inc",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.9 rating",
     credibilityRating: 4.9,
     timestamp: "3d",
     content: "Junior developer needed! 💻 Great opportunity to learn and grow with mentorship from senior devs.",
@@ -470,12 +515,15 @@ const jobPosts = [
     workSetting: "Hybrid",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "16",
     company: "EventPro Management",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Event&backgroundColor=4FC3F7",
     username: "eventpro_mgmt",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.3 rating",
     credibilityRating: 4.3,
     timestamp: "3d",
     content: "Event coordinators wanted! 🎉 Plan and execute amazing events for clients.",
@@ -496,12 +544,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "17",
     company: "QuickServe Restaurant",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Quick&backgroundColor=FF9800",
     username: "quickserve_rest",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.1 rating",
     credibilityRating: 4.1,
     timestamp: "4d",
     content: "Servers and hosts needed! 🍽️ Fast-paced environment with great team atmosphere.",
@@ -522,12 +573,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "18",
     company: "Pet Paradise",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Pet&backgroundColor=4ADE80",
     username: "pet_paradise",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.8 rating",
     credibilityRating: 4.8,
     timestamp: "5d",
     content: "Dog walkers and pet sitters needed! 🐕 Flexible schedule, work with adorable animals.",
@@ -548,12 +602,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "19",
     company: "HomeHelp Services",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Home&backgroundColor=4FC3F7",
     username: "homehelp_svc",
+    companyEmployees: "10-50 employees",
+    companyRating: "4.6 rating",
     credibilityRating: 4.6,
     timestamp: "6d",
     content: "House cleaners wanted! 🧹 Flexible scheduling, competitive pay, and supportive team.",
@@ -574,12 +631,15 @@ const jobPosts = [
     workSetting: "On-site",
     companySize: "Small",
     postedDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
   {
     id: "20",
     company: "StreamTech Media",
     avatar: "https://api.dicebear.com/7.x/initials/svg?seed=Stream&backgroundColor=FF9800",
     username: "streamtech_media",
+    companyEmployees: "50-200 employees",
+    companyRating: "4.7 rating",
     credibilityRating: 4.7,
     timestamp: "1w",
     content: "Video editors wanted! 🎬 Edit content for social media and streaming platforms.",
@@ -600,6 +660,7 @@ const jobPosts = [
     workSetting: "Remote",
     companySize: "Medium",
     postedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) as unknown as string,
+    attachedJobs: [] as string[],
   },
 ];
 
@@ -619,6 +680,11 @@ export function JobFilter() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [postContent, setPostContent] = useState("");
+  
+  // Initial loading state
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isCommentModalLoading, setIsCommentModalLoading] = useState(false);
+  const [isNewPostModalLoading, setIsNewPostModalLoading] = useState(false);
   
   // Load user-posted jobs from localStorage
   const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
@@ -799,6 +865,15 @@ export function JobFilter() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Simulate initial loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Track scroll position for scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
@@ -823,6 +898,30 @@ export function JobFilter() {
       document.body.style.overflow = 'unset';
     };
   }, [selectedPostForComment, showNewPostModal]);
+
+  // Handle comment modal loading
+  useEffect(() => {
+    if (selectedPostForComment) {
+      setIsCommentModalLoading(true);
+      const timer = setTimeout(() => {
+        setIsCommentModalLoading(false);
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectedPostForComment]);
+
+  // Handle new post modal loading
+  useEffect(() => {
+    if (showNewPostModal) {
+      setIsNewPostModalLoading(true);
+      const timer = setTimeout(() => {
+        setIsNewPostModalLoading(false);
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showNewPostModal]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1795,7 +1894,9 @@ export function JobFilter() {
 
         {/* Job Posts Feed */}
         <div className="divide-y divide-[#263238]/10">
-          {filteredJobs.length === 0 && !searchQuery && activeFiltersCount === 0 && activeTab === "following" ? (
+          {isInitialLoading ? (
+            <SkeletonFeedPostGrid count={5} />
+          ) : filteredJobs.length === 0 && !searchQuery && activeFiltersCount === 0 && activeTab === "following" ? (
             <div className="bg-white py-16 text-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-16 h-16 bg-[#FAFAFA] rounded-full flex items-center justify-center">
@@ -2154,11 +2255,16 @@ export function JobFilter() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedPostForComment(null)}
         >
-          <div
-            className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
+          {isCommentModalLoading ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <SkeletonCommentModal />
+            </div>
+          ) : (
+            <div
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
               <h2 className="font-semibold text-[#263238]">
                 {selectedPostForComment.company}'s Post
@@ -3187,6 +3293,7 @@ export function JobFilter() {
               </div>
             </div>
           </div>
+        )}
         </div>
       )}
 
@@ -3206,11 +3313,16 @@ export function JobFilter() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowNewPostModal(false)}
         >
-          <div
-            className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
+          {isNewPostModalLoading ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <SkeletonNewPostModal />
+            </div>
+          ) : (
+            <div
+              className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
               <button
                 onClick={() => {
@@ -3463,8 +3575,11 @@ export function JobFilter() {
                   if (newPostContent.trim()) {
                     if (editingPost) {
                       // Update existing post
+                      const existingPost = userPostedJobs.find(p => p.id === editingPost.id);
+                      if (!existingPost) return;
+                      
                       const updatedPost = {
-                        ...userPostedJobs.find(p => p.id === editingPost.id),
+                        ...existingPost,
                         content: newPostContent,
                         jobTitle: newPostTopic || '',
                         image: newPostImage,
@@ -3494,6 +3609,8 @@ export function JobFilter() {
                         company: user?.email?.split('@')[0] || 'User',
                         avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email || 'User'}&backgroundColor=FF9800`,
                         username: user?.email?.split('@')[0] || 'user',
+                        companyEmployees: '10-50 employees',
+                        companyRating: '4.5 rating',
                         credibilityRating: 4.5,
                         timestamp: 'Just now',
                         content: newPostContent,
@@ -3536,12 +3653,13 @@ export function JobFilter() {
                   }
                 }}
                 disabled={!newPostContent.trim()}
-                className="bg-[#263238] hover:bg-[#263238]/90 disabled:bg-[#263238]/20 disabled:text-[#263238]/40 text-white rounded-full px-6 h-9 text-sm font-medium"
+                className="bg-[#263238] hover:bg-[#263238]/90 text-white rounded-full px-6 h-9 text-sm font-medium disabled:bg-[#263238]/20 disabled:text-[#263238]/40 transition-colors"
               >
                 {editingPost ? 'Update' : 'Post'}
               </Button>
             </div>
           </div>
+        )}
         </div>
       )}
     </div>
