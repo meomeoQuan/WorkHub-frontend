@@ -5,6 +5,8 @@ import type { UserDTO } from '../types/DTOs/UserDTO ';
 import type { UserModel } from '../types/User';
 import {  mapUserDTOToUser  } from '../mappers/MappingUser';
 
+const API = import.meta.env.VITE_API_URL;
+
 export type PaymentPlan = 'free' | 'silver' | 'gold' | 'diamond';
 
 
@@ -42,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
 const login = async (email: string, password: string):  Promise<string>  => {
-  const res = await fetch("http://localhost:5222/api/auth/login", {
+  const res = await fetch(`${API}/api/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -72,7 +74,7 @@ const login = async (email: string, password: string):  Promise<string>  => {
 };
 
 const googleLogin = async (authCode: string): Promise<void> => {
-  const res = await fetch("http://localhost:5222/api/auth/google", {
+  const res = await fetch(`${API}/api/auth/google`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

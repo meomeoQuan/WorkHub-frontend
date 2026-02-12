@@ -4,6 +4,8 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { CheckCircle2, XCircle, Loader2, Lock, Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
 
+const API = import.meta.env.VITE_API_URL;
+
 type ResetStatus = 'validating' | 'valid' | 'success' | 'error' | 'invalid';
 
 export function ResetPassword() {
@@ -53,7 +55,7 @@ export function ResetPassword() {
 const validateResetToken = async (token: string) => {
   try {
     const res = await fetch(
-      "http://localhost:5222/api/auth/validate-reset-token",
+      `${API}/api/auth/validate-reset-token`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
