@@ -9,6 +9,9 @@ import { Zap, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
+
+
+
 declare global {
   interface Window {
     google: any;

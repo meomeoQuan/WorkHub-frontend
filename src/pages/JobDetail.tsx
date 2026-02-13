@@ -309,7 +309,7 @@ export function JobDetail() {
                     </div>
                   </div>
 
-                  <Link to="/profile/employer">
+                  <Link to="/profile/user">
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
                       View company profile →
                     </Button>

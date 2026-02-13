@@ -81,12 +81,12 @@ export function PostJob() {
     // Show success message and redirect
     setShowSuccessMessage(true);
     setTimeout(() => {
-      navigate('/jobs');
+      navigate('/post-job');
     }, 1500);
   };
 
   const handleCancel = () => {
-    navigate('/profile/employer');
+    navigate('/profile/user');
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +123,7 @@ export function PostJob() {
               Your job posting is now live and visible to job seekers.
             </p>
             <p className="text-sm text-[#263238]/60">
-              Redirecting to Jobs Feed...
+              Redirecting to Your Posts...
             </p>
           </Card>
         </div>

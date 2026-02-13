@@ -115,7 +115,7 @@ export function Pricing() {
       setSelectedPlan(null);
       // Show success message (you can add a toast notification here)
       alert(`Successfully upgraded to ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan!`);
-      navigate('/profile/candidate');
+      navigate('/profile/user');
     }, 1500);
   };
 

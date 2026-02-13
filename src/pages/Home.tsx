@@ -3,9 +3,6 @@ import { useState, useEffect } from "react";
 import Slider from "react-slick";
 import {
   Search,
-  TrendingUp,
-  MapPin,
-  Clock,
   Zap,
   DollarSign,
   Users,
@@ -13,11 +10,11 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import { JobCard } from "../components/JobCard";
 import { SkeletonCardGrid } from "../components/SkeletonCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -30,77 +27,11 @@ import {
 } from "../components/ui/select";
 import { useNavigate } from "react-router";
 import howItWorksImg from "figma:asset/35710fa8a2ad22f1bc7ef5e3899f7b6a4daf97c0.png";
-import howItWorksStepsImg from "figma:asset/0c6a40c7b2f80c5d86943571cde7f7780fb26351.png";
+import type { RecruitmentOverviewInfoDTO } from "../types/DTOs/ModelDTOs/RecruitmentOverviewInfoDTO";
+import type { UserFeatureDTO } from "../types/DTOs/ModelDTOs/HomeDTOs/UserFeatureDTO";
+import type { ApiResponse } from "../types/ApiResponse";
 
-// Mock job data
-const jobs = [
-  {
-    id: "1",
-    title: "Part-time Barista",
-    company: "Coffee & Co.",
-    location: "New York, NY",
-    type: "Part-time" as const,
-    description:
-      "Looking for enthusiastic barista to join our team. Flexible hours, great tips, and free coffee!",
-    salary: "$15-18/hr",
-    postedDate: "2 days ago",
-  },
-  {
-    id: "2",
-    title: "Freelance Graphic Designer",
-    company: "Design Studio",
-    location: "Remote",
-    type: "Freelance" as const,
-    description:
-      "Create stunning visuals for various client projects. Portfolio required.",
-    salary: "$40-60/hr",
-    postedDate: "1 day ago",
-  },
-  {
-    id: "3",
-    title: "Seasonal Retail Associate",
-    company: "Fashion Boutique",
-    location: "Chicago, IL",
-    type: "Seasonal" as const,
-    description:
-      "Help customers find their perfect outfit during our busy season. Great employee discount!",
-    salary: "$14-16/hr",
-    postedDate: "3 days ago",
-  },
-  {
-    id: "4",
-    title: "Part-time Data Entry Specialist",
-    company: "TechCorp",
-    location: "San Francisco, CA",
-    type: "Part-time" as const,
-    description:
-      "Accurate and detail-oriented data entry work. Remote options available.",
-    salary: "$18-22/hr",
-    postedDate: "1 week ago",
-  },
-  {
-    id: "5",
-    title: "Freelance Content Writer",
-    company: "Marketing Agency",
-    location: "Remote",
-    type: "Freelance" as const,
-    description:
-      "Write engaging blog posts and website content for various clients.",
-    salary: "$30-50/hr",
-    postedDate: "4 days ago",
-  },
-  {
-    id: "6",
-    title: "Seasonal Delivery Driver",
-    company: "Quick Delivery",
-    location: "Boston, MA",
-    type: "Seasonal" as const,
-    description:
-      "Deliver packages during our peak season. Own vehicle required.",
-    salary: "$16-20/hr",
-    postedDate: "5 days ago",
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL;
 
 const quickJobs = [
   {
@@ -129,13 +60,6 @@ const quickJobs = [
   },
 ];
 
-const featuredCompanies = [
-  { name: "Coffee & Co.", jobs: 5, rating: 4.8 },
-  { name: "TechCorp", jobs: 12, rating: 4.9 },
-  { name: "Design Studio", jobs: 8, rating: 4.7 },
-  { name: "Quick Delivery", jobs: 15, rating: 4.6 },
-];
-
 // Advertisement data
 const advertisements = [
   {
@@ -145,7 +69,7 @@ const advertisements = [
     bgGradient: "from-[#FF9800] to-[#F57C00]",
     buttonText: "Find Jobs Now",
     buttonLink: "/jobs",
-    image: "https://images.unsplash.com/photo-1669012520437-5102e3fd4589?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjByZWNlaXZpbmclMjBjYXNoJTIwcGF5bWVudHxlbnwxfHx8fDE3NzA3MTc0Njd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    image: "https://images.unsplash.com/photo-1669012520437-5102e3fd4589?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZW9wbGUlMjB3b3JraW5nJTIwbGFwdG9wJTIwY29mZmVlfGVufDF8fHx8fDE3NzA3MTc0Njd8MA&ixlib=rb-4.1.0&q=80&w=1080",
   },
   {
     id: 2,
@@ -196,6 +120,41 @@ export function Home() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("all-cities");
+
+  const [latestJobs, setLatestJobs] = useState<RecruitmentOverviewInfoDTO[]>([]);
+  const [featuredUsers, setFeaturedUsers] = useState<UserFeatureDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch top 4 jobs
+        const jobsRes = await fetch(`${API_URL}/api/Home/top4`);
+        if (jobsRes.ok) {
+          const jobsData: ApiResponse<RecruitmentOverviewInfoDTO[]> = await jobsRes.json();
+          if (jobsData.success && jobsData.data) {
+            setLatestJobs(jobsData.data);
+          }
+        }
+
+        // Fetch top credibility users
+        const usersRes = await fetch(`${API_URL}/api/Home/top-credibility-user`);
+        if (usersRes.ok) {
+          const usersData: ApiResponse<UserFeatureDTO[]> = await usersRes.json();
+          if (usersData.success && usersData.data) {
+            setFeaturedUsers(usersData.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching home data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -584,9 +543,23 @@ export function Home() {
               </div>
 
               <div className="space-y-4">
-                {jobs.slice(0, 6).map((job) => (
-                  <JobCard key={job.id} {...job} />
-                ))}
+                {loading ? (
+                  <SkeletonCardGrid />
+                ) : (
+                  latestJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      id={job.id.toString()}
+                      title={job.jobName}
+                      company="Unknown Company" // Placeholder
+                      location={job.location || "Remote"}
+                      type={(job.jobType as "Part-time" | "Freelance" | "Seasonal") || "Part-time"}
+                      description={job.description || "No description available"}
+                      salary={job.salary}
+                      postedDate="Recently" // Placeholder
+                    />
+                  ))
+                )}
               </div>
             </div>
 
@@ -618,7 +591,7 @@ export function Home() {
                   </h3>
                 </div>
                 <div className="space-y-4">
-                  {featuredCompanies.map((company, index) => (
+                  {featuredUsers.slice(0, 4).map((user, index) => (
                     <Link
                       key={index}
                       to="/jobs"
@@ -627,21 +600,24 @@ export function Home() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="text-sm text-[#263238] mb-1 group-hover:text-[#FF9800] transition">
-                            {company.name}
+                            {user.fullName}
                           </h4>
                           <p className="text-xs text-[#263238]/60">
-                            {company.jobs} open jobs
+                            {user.activeJob} open jobs
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-[#FFC107] fill-[#FFC107]" />
                           <span className="text-sm text-[#263238]">
-                            {company.rating}
+                            {user.ratingCount || "N/A"}
                           </span>
                         </div>
                       </div>
                     </Link>
                   ))}
+                  {featuredUsers.length === 0 && !loading && (
+                    <p className="text-sm text-[#263238]/60">No featured users found.</p>
+                  )}
                 </div>
               </Card>
 
@@ -684,119 +660,54 @@ export function Home() {
 
           {/* Companies Carousel */}
           <div className="max-w-6xl mx-auto">
-            <Slider
-              {...{
-                dots: false,
-                infinite: true,
-                speed: 500,
-                slidesToShow: 5,
-                slidesToScroll: 1,
-                autoplay: true,
-                autoplaySpeed: 3000,
-                pauseOnHover: true,
-                arrows: false,
-                responsive: [
-                  {
-                    breakpoint: 1024,
-                    settings: {
-                      slidesToShow: 4,
+            {featuredUsers.length > 0 ? (
+              <Slider
+                {...{
+                  dots: false,
+                  infinite: featuredUsers.length > 4, // Only infinite if enough items
+                  speed: 500,
+                  slidesToShow: Math.min(5, featuredUsers.length), // Adjust slides to show
+                  slidesToScroll: 1,
+                  autoplay: true,
+                  autoplaySpeed: 3000,
+                  pauseOnHover: true,
+                  arrows: false,
+                  responsive: [
+                    {
+                      breakpoint: 1024,
+                      settings: {
+                        slidesToShow: Math.min(4, featuredUsers.length),
+                      },
                     },
-                  },
-                  {
-                    breakpoint: 768,
-                    settings: {
-                      slidesToShow: 3,
+                    {
+                      breakpoint: 768,
+                      settings: {
+                        slidesToShow: Math.min(3, featuredUsers.length),
+                      },
                     },
-                  },
-                  {
-                    breakpoint: 640,
-                    settings: {
-                      slidesToShow: 2,
+                    {
+                      breakpoint: 640,
+                      settings: {
+                        slidesToShow: Math.min(2, featuredUsers.length),
+                      },
                     },
-                  },
-                ],
-              }}
-            >
-              {/* Coffee & Co. */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">☕</div>
-                    <p className="text-sm font-semibold text-[#263238]">Coffee & Co.</p>
+                  ],
+                }}
+              >
+                {featuredUsers.map((user, index) => (
+                  <div key={index} className="px-3">
+                    <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
+                      <div className="text-center">
+                        <div className="text-3xl mb-2 group-hover:scale-110 transition">🏢</div>
+                        <p className="text-sm font-semibold text-[#263238]">{user.fullName}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              {/* TechCorp */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">💻</div>
-                    <p className="text-sm font-semibold text-[#263238]">TechCorp</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Design Studio */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🎨</div>
-                    <p className="text-sm font-semibold text-[#263238]">Design Studio</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Delivery */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🚚</div>
-                    <p className="text-sm font-semibold text-[#263238]">Quick Delivery</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Fashion Boutique */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">👔</div>
-                    <p className="text-sm font-semibold text-[#263238]">Fashion Boutique</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Marketing Agency */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">📱</div>
-                    <p className="text-sm font-semibold text-[#263238]">Marketing Agency</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Food Services */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🍔</div>
-                    <p className="text-sm font-semibold text-[#263238]">Food Services</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Retail Plus */}
-              <div className="px-3">
-                <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2 group-hover:scale-110 transition">🏪</div>
-                    <p className="text-sm font-semibold text-[#263238]">Retail Plus</p>
-                  </div>
-                </div>
-              </div>
-            </Slider>
+                ))}
+              </Slider>
+            ) : (
+              <div className="text-center text-[#263238]/60 py-8">Loading featured companies...</div>
+            )}
           </div>
         </div>
       </section>

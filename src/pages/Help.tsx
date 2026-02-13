@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Mail, Paperclip, X, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 
 export function Help() {
   const navigate = useNavigate();

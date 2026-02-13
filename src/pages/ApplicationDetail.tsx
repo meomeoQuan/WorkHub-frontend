@@ -28,7 +28,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 // Mock application data
 const applicationData: Record<string, any> = {
@@ -432,7 +432,7 @@ export function ApplicationDetail() {
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Schedule Interview
                 </Button>
-                <Link to="/profile/candidate">
+                <Link to="/profile/user">
                   <Button variant="outline" className="w-full justify-start border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
                     <Briefcase className="w-4 h-4 mr-2" />
                     View Full Profile

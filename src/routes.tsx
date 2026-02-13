@@ -1,12 +1,13 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Home } from './pages/Home';
-import { JobFilter } from './pages/JobFilter';
+import JobFilter from './pages/JobFilter';
 import { JobDetail } from './pages/JobDetail';
-import { CandidateProfile } from './pages/CandidateProfile';
-import { EmployerProfile } from './pages/EmployerProfile';
+import { UserProfile } from './pages/UserProfile';
 import { PostJob } from './pages/PostJob';
+import { UserPosts } from './pages/UserPosts';
+import { UserJobs } from './pages/UserJobs';
 import { Schedule } from './pages/Schedule';
 import { Applications } from './pages/Applications';
 import { MyApplications } from './pages/MyApplications';
@@ -44,7 +45,20 @@ export const router = createBrowserRouter([
       },
       {
         path: 'jobs',
-        element: <JobFilter />,
+        children: [
+          {
+            index: true,
+            element: <JobFilter />,
+          },
+          {
+            path: ':id',
+            element: <JobDetail />,
+          },
+          {
+            path: ':id/apply',
+            element: <ApplyJob />,
+          },
+        ],
       },
       {
         path: 'job/:id',
@@ -55,16 +69,33 @@ export const router = createBrowserRouter([
         element: <ApplyJob />,
       },
       {
+        path: 'profile/user',
+        element: <UserProfile />,
+      },
+      {
         path: 'profile/candidate',
-        element: <CandidateProfile />,
+        element: <Navigate to="/profile/user" replace />,
       },
       {
         path: 'profile/employer',
-        element: <EmployerProfile />,
+        element: <Navigate to="/profile/user" replace />,
       },
       {
         path: 'post-job',
-        element: <PostJob />,
+        children: [
+          {
+            index: true,
+            element: <UserPosts />,
+          },
+          {
+            path: 'create',
+            element: <PostJob />,
+          },
+        ],
+      },
+      {
+        path: 'user-jobs',
+        element: <UserJobs />,
       },
       {
         path: 'schedule',

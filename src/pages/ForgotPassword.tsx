@@ -5,6 +5,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Zap, Mail, ArrowLeft, Send } from 'lucide-react';
 
+const API = import.meta.env.VITE_API_URL;
+
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -14,7 +16,7 @@ export function ForgotPassword() {
     e.preventDefault();
     // TODO: Implement actual password reset logic
 
-   const response = await fetch("http://localhost:5222/api/auth/forgot-password", {
+   const response = await fetch(`${API}/api/auth/forgot-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

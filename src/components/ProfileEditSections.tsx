@@ -155,6 +155,27 @@ export function ExperienceSection({
 
 // Weekly Availability Section
 export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any) {
+  // Get the current week's dates
+  const getCurrentWeekDates = () => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1)); // Get Monday of current week
+    
+    const dates: { [key: string]: string } = {};
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    dayNames.forEach((dayName, index) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + index);
+      dates[dayName] = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    });
+    
+    return dates;
+  };
+
+  const weekDates = getCurrentWeekDates();
+
   return (
     (Object.values(weeklyAvailability).some((day: any) => day.available) || isEditing) && (
       <Card className="p-6 border-[#263238]/10 shadow-md">
@@ -178,9 +199,12 @@ export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any
         <div className="space-y-2">
           {Object.entries(weeklyAvailability).map(([day, info]: [string, any]) => 
             info.available && (
-              <div key={day} className="flex items-center justify-between py-2 px-3 bg-[#FAFAFA] rounded-lg">
-                <span className="font-medium text-[#263238] capitalize">{day}</span>
-                <span className="text-sm text-[#263238]/70">{info.hours}</span>
+              <div key={day} className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-lg border border-[#263238]/5">
+                <div className="flex flex-col">
+                  <span className="font-medium text-[#263238] capitalize">{day}</span>
+                  <span className="text-xs text-[#263238]/50 mt-0.5">{weekDates[day]}</span>
+                </div>
+                <span className="text-sm text-[#263238]/70 font-medium">{info.hours}</span>
               </div>
             )
           )}
