@@ -675,7 +675,7 @@ const mapCategoryName = (category: string): string => {
   return mapping[category] || category;
 };
 
-export function JobFilter() {
+export default function JobFilter() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1970,7 +1970,7 @@ export function JobFilter() {
                 <div className="px-4 py-6">
                   {/* Post Header */}
                   <div className="flex gap-3">
-                    <Link to="/profile/employer">
+                    <Link to="/profile/user">
                       <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
@@ -1984,7 +1984,7 @@ export function JobFilter() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Link to="/profile/employer">
+                            <Link to="/profile/user">
                               <span className="font-semibold text-[#263238] hover:underline cursor-pointer">
                                 {post.company}
                               </span>
@@ -2282,7 +2282,7 @@ export function JobFilter() {
               {/* Post Content */}
               <div className="p-4 border-b border-[#263238]/10">
                 <div className="flex gap-3">
-                  <Link to="/profile/employer" onClick={() => setSelectedPostForComment(null)}>
+                  <Link to="/profile/user" onClick={() => setSelectedPostForComment(null)}>
                     <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                       <AvatarImage
                         src={selectedPostForComment.avatar}
@@ -2296,7 +2296,7 @@ export function JobFilter() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Link 
-                        to="/profile/employer" 
+                        to="/profile/user" 
                         onClick={() => setSelectedPostForComment(null)}
                         className="font-semibold text-[#263238] hover:underline cursor-pointer"
                       >

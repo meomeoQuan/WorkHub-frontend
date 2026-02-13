@@ -109,7 +109,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link to="/post-job" className="text-white/70 hover:text-[#FF9800] transition">
-                  Post a Job
+                  User Posts
                 </Link>
               </li>
               <li>

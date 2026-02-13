@@ -38,7 +38,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
   };
 
   const handleProfileClick = () => {
-    navigate('/profile/candidate');
+    navigate('/profile/user');
   };
 
   const getPlanColor = (plan: string) => {
@@ -140,9 +140,9 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                <Link to="/post-job">
+                <Link to="/post-job/create">
                   <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
-                    Post a Job
+                    Add New Job
                   </Button>
                 </Link>
                 <DropdownMenu>

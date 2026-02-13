@@ -1,5 +1,5 @@
 // mappers/MappingUser.ts
-import type { UserDTO } from "../types/DTOs/UserDTO ";
+import type { UserDTO } from "../types/DTOs/ModelDTOs/UserDTO";
 import type { UserModel, UserRole } from "../types/User";
 
 const roleMap: Record<number, UserRole> = {
@@ -14,5 +14,7 @@ export function mapUserDTOToUser(dto: UserDTO): UserModel {
     email: dto.email,
     fullName: dto.fullName,
     userType: roleMap[dto.role] ?? "jobseeker", // safe fallback
+    avatarUrl: dto.avatarUrl ?? null,
+    paymentPlan: null, // UserDTO does not have paymentPlan yet
   };
 }
