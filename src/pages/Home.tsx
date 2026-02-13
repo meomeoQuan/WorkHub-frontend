@@ -614,7 +614,7 @@ export function Home() {
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-[#FF9800]" />
                   <h3 className="text-[#263238]">
-                    Top Rated Companies
+                    Top Rated User
                   </h3>
                 </div>
                 <div className="space-y-4">
