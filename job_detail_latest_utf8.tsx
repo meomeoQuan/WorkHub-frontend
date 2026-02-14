@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router';
+﻿import { useParams, Link, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { MapPin, Clock, DollarSign, Briefcase, Calendar, ArrowLeft, Zap, Building2, Users, Star, Bookmark } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -40,14 +40,13 @@ export function JobDetail() {
 
         if (data.success && data.data) {
           const p = data.data.post;
-          const firstJob = p.jobs && p.jobs.length > 0 ? p.jobs[0] : null;
           // Map DTO to component expected structure
           setJob({
-            title: firstJob?.jobName || p.header || 'Job Title',
+            title: p.jobName || p.header || 'Job Title',
             company: p.fullName,
-            location: firstJob?.location || 'Remote',
-            type: firstJob?.jobType || 'Full-time',
-            salary: firstJob?.salary || 'Negotiable',
+            location: p.jobLocation || 'Remote',
+            type: p.jobType || 'Full-time',
+            salary: p.jobSalaryRange || 'Negotiable',
             postedDate: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recently',
             description: p.content || 'No description provided.',
             requirements: [], // API doesn't provide these yet
@@ -74,11 +73,11 @@ export function JobDetail() {
   };
 
   const typeIcons: Record<string, string> = {
-    'Part-time': '⏰',
-    'Freelance': '💼',
-    'Seasonal': '🌟',
-    'Full-time': '🏢',
-    'Contract': '📑',
+    'Part-time': 'ΓÅ░',
+    'Freelance': '≡ƒÆ╝',
+    'Seasonal': '≡ƒîƒ',
+    'Full-time': '≡ƒÅó',
+    'Contract': '≡ƒôæ',
   };
 
   if (loading || !job) {
@@ -293,7 +292,7 @@ export function JobDetail() {
 
                   <Link to="/profile/user">
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
-                      View company profile →
+                      View company profile ΓåÆ
                     </Button>
                   </Link>
                 </div>

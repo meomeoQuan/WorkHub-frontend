@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { useState, useEffect } from "react";
 import Slider from "react-slick";
 import {
@@ -35,25 +35,25 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const quickJobs = [
   {
-    icon: "☕",
+    icon: "Γÿò",
     title: "Food & Beverage",
     count: "234 jobs",
     color: "bg-orange-100",
   },
   {
-    icon: "💻",
+    icon: "≡ƒÆ╗",
     title: "Tech & IT",
     count: "189 jobs",
     color: "bg-blue-100",
   },
   {
-    icon: "🚗",
+    icon: "≡ƒÜù",
     title: "Delivery & Driving",
     count: "156 jobs",
     color: "bg-green-100",
   },
   {
-    icon: "✏️",
+    icon: "Γ£Å∩╕Å",
     title: "Creative & Design",
     count: "142 jobs",
     color: "bg-purple-100",
@@ -123,7 +123,6 @@ export function Home() {
 
   const [latestJobs, setLatestJobs] = useState<RecruitmentOverviewInfoDTO[]>([]);
   const [featuredUsers, setFeaturedUsers] = useState<UserFeatureDTO[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -145,15 +144,6 @@ export function Home() {
           const usersData: ApiResponse<UserFeatureDTO[]> = await usersRes.json();
           if (usersData.success && usersData.data) {
             setFeaturedUsers(usersData.data);
-          }
-        }
-
-        // Fetch cities
-        const citiesRes = await fetch(`${API_URL}/api/JobPost/cities-filter`);
-        if (citiesRes.ok) {
-          const citiesData: ApiResponse<string[]> = await citiesRes.json();
-          if (citiesData.success && citiesData.data) {
-            setCities(citiesData.data);
           }
         }
       } catch (error) {
@@ -258,11 +248,27 @@ export function Home() {
                         <SelectItem value="all-cities">
                           All Cities
                         </SelectItem>
-                        {cities.map((city) => (
-                          <SelectItem key={city} value={city.toLowerCase().replace(/ /g, '-')}>
-                            {city}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="new-york">
+                          New York, NY
+                        </SelectItem>
+                        <SelectItem value="san-francisco">
+                          San Francisco, CA
+                        </SelectItem>
+                        <SelectItem value="chicago">
+                          Chicago, IL
+                        </SelectItem>
+                        <SelectItem value="boston">
+                          Boston, MA
+                        </SelectItem>
+                        <SelectItem value="los-angeles">
+                          Los Angeles, CA
+                        </SelectItem>
+                        <SelectItem value="seattle">
+                          Seattle, WA
+                        </SelectItem>
+                        <SelectItem value="austin">
+                          Austin, TX
+                        </SelectItem>
                         <SelectItem value="remote">
                           Remote
                         </SelectItem>
@@ -531,7 +537,7 @@ export function Home() {
                     variant="ghost"
                     className="text-[#FF9800] hover:text-[#F57C00] hover:bg-[#FF9800]/10"
                   >
-                    View All →
+                    View All ΓåÆ
                   </Button>
                 </Link>
               </div>
@@ -545,7 +551,7 @@ export function Home() {
                       key={job.id}
                       id={job.id.toString()}
                       title={job.jobName}
-                      company={job.userName} // Placeholder
+                      company="Unknown Company" // Placeholder
                       location={job.location || "Remote"}
                       type={(job.jobType as "Part-time" | "Freelance" | "Seasonal") || "Part-time"}
                       description={job.description || "No description available"}
@@ -692,7 +698,7 @@ export function Home() {
                   <div key={index} className="px-3">
                     <div className="bg-[#FAFAFA] rounded-2xl p-8 h-32 flex items-center justify-center hover:shadow-lg transition group cursor-pointer">
                       <div className="text-center">
-                        <div className="text-3xl mb-2 group-hover:scale-110 transition">🏢</div>
+                        <div className="text-3xl mb-2 group-hover:scale-110 transition">≡ƒÅó</div>
                         <p className="text-sm font-semibold text-[#263238]">{user.fullName}</p>
                       </div>
                     </div>
@@ -806,7 +812,7 @@ export function Home() {
             </div>
 
             <p className="text-sm text-white/60 mt-6">
-              No credit card required • Start in 2 minutes
+              No credit card required ΓÇó Start in 2 minutes
             </p>
           </div>
         </div>

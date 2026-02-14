@@ -184,41 +184,65 @@ export default function JobFilter() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
-  const fetchPosts = useCallback(async (pageNum: number) => {
+  const fetchPosts = useCallback(async (pageNum: number, query: string = "", filters: any = {}) => {
     try {
       if (pageNum === 1) setIsInitialLoading(true);
       else setIsLoadingMore(true);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-post?pageIndex=${pageNum}&pageSize=${pageSize}`);
+      const params = new URLSearchParams();
+      params.set("pageIndex", pageNum.toString());
+      params.set("pageSize", pageSize.toString());
+      if (query) params.set("searchQuery", query);
+
+      // Add filters to params
+      if (filters.jobType && filters.jobType !== 'all') params.set("jobType", filters.jobType);
+      if (filters.location && filters.location !== 'all-cities') params.set("location", filters.location);
+      if (filters.salaryRange && filters.salaryRange !== 'all') params.set("salaryRange", filters.salaryRange);
+      if (filters.postedDate && filters.postedDate !== 'anytime') params.set("postedDate", filters.postedDate);
+      if (filters.experienceLevel && filters.experienceLevel !== 'all') params.set("experienceLevel", filters.experienceLevel);
+      if (filters.category && filters.category !== 'all') params.set("category", filters.category);
+      if (filters.workSetting && filters.workSetting !== 'all') params.set("workSetting", filters.workSetting);
+      if (filters.companySize && filters.companySize !== 'all') params.set("companySize", filters.companySize);
+
+      const isSearching = query || Object.values(filters).some(v => v && v !== 'all' && v !== 'all-cities' && v !== 'anytime');
+
+      const endpoint = isSearching
+        ? `${import.meta.env.VITE_API_URL}/api/JobPost/search?${params.toString()}`
+        : `${import.meta.env.VITE_API_URL}/api/JobPost/all-post?pageIndex=${pageNum}&pageSize=${pageSize}`;
+
+      const response = await fetch(endpoint);
       const data: ApiResponse<JobPostDTO[]> = await response.json();
 
       if (data.success && data.data) {
-        const mappedPosts = data.data.map(p => ({
-          id: p.postId.toString(),
-          company: p.fullName,
-          avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
-          username: p.fullName.toLowerCase().replace(/\s/g, "_"),
-          companyEmployees: "50-200 employees",
-          companyRating: `${p.rating || 4.5} rating`,
-          credibilityRating: p.rating || 4.5,
-          timestamp: "Recently",
-          content: p.content,
-          jobTitle: p.jobName,
-          location: p.jobLocation || "Remote",
-          salary: p.jobSalaryRange || "Competitive",
-          type: p.jobType || "Full-time",
-          likes: p.likeCount,
-          comments: p.commentCount,
-          reposts: 0,
-          shares: 0,
-          image: null,
-          category: "Other",
-          experienceLevel: "Mid-level",
-          workSetting: "Remote",
-          companySize: "Medium",
-          postedDate: new Date(p.createdAt || Date.now()).toISOString(),
-          attachedJobs: []
-        }));
+        const mappedPosts = data.data.map(p => {
+          const firstJob = p.jobs && p.jobs.length > 0 ? p.jobs[0] : null;
+          return {
+            id: p.postId.toString(),
+            company: p.fullName,
+            avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+            username: p.fullName.toLowerCase().replace(/\s/g, "_"),
+            companyEmployees: "50-200 employees",
+            companyRating: `${p.rating || 4.5} rating`,
+            credibilityRating: p.rating || 4.5,
+            timestamp: "Recently",
+            content: p.content,
+            jobTitle: firstJob?.jobName || p.header || "No Title",
+            location: firstJob?.location || "Remote",
+            salary: firstJob?.salary || "Competitive",
+            type: firstJob?.jobType || "Full-time",
+            likes: p.likeCount,
+            comments: p.commentCount,
+            reposts: 0,
+            shares: 0,
+            image: p.postImage || null,
+            category: firstJob?.category || "Other",
+            experienceLevel: firstJob?.experienceLevel || "Mid-level",
+            workSetting: firstJob?.workSetting || "Remote",
+            companySize: firstJob?.companySize || "Medium",
+            postedDate: new Date(p.createdAt || Date.now()).toISOString(),
+            attachedJobs: p.jobs || []
+          };
+        });
 
         if (pageNum === 1) {
           setApiPosts(mappedPosts);
@@ -240,12 +264,17 @@ export default function JobFilter() {
       setIsInitialLoading(false);
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [pageSize]);
 
-  // Initial fetch
+  // Handle search refetching with debounce
   useEffect(() => {
-    fetchPosts(1);
-  }, [fetchPosts]);
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchPosts(1, searchQuery);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchPosts]);
 
   // Load user-posted jobs and social posts from localStorage
   useEffect(() => {
@@ -421,6 +450,7 @@ export default function JobFilter() {
   useEffect(() => {
     const queryParam = searchParams.get("q");
     const locationParam = searchParams.get("location");
+    const categoryParam = searchParams.get("category");
 
     if (queryParam) {
       setSearchQuery(queryParam);
@@ -428,21 +458,55 @@ export default function JobFilter() {
 
     if (locationParam) {
       const locationMap: Record<string, string> = {
-        "new-york": "New York",
-        "san-francisco": "San Francisco",
-        "chicago": "Chicago",
-        "boston": "Boston",
-        "los-angeles": "Los Angeles",
-        "seattle": "Seattle",
-        "austin": "Austin",
+        "new-york": "New York, NY",
+        "san-francisco": "San Francisco, CA",
+        "chicago": "Chicago, IL",
+        "boston": "Boston, MA",
+        "los-angeles": "Los Angeles, CA",
+        "seattle": "Seattle, WA",
+        "austin": "Austin, TX",
         "remote": "Remote",
       };
-      const mappedLocation = locationMap[locationParam];
-      if (mappedLocation) {
-        setSelectedLocation(mappedLocation);
-      }
+      const mappedLocation = locationMap[locationParam] || locationParam.replace(/-/g, ' ');
+      setSelectedLocation(mappedLocation);
     }
-  }, []);
+
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams]);
+
+  // Handle Search and Filters Trigger
+  useEffect(() => {
+    const filters = {
+      jobType: selectedJobType,
+      location: selectedLocation,
+      salaryRange: selectedSalaryRange,
+      postedDate: selectedPostedDate,
+      experienceLevel: selectedExperience,
+      category: selectedCategory,
+      workSetting: selectedWorkSetting,
+      companySize: selectedCompanySize
+    };
+
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchPosts(1, searchQuery, filters);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    searchQuery,
+    selectedJobType,
+    selectedLocation,
+    selectedSalaryRange,
+    selectedPostedDate,
+    selectedExperience,
+    selectedCategory,
+    selectedWorkSetting,
+    selectedCompanySize,
+    fetchPosts
+  ]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -663,8 +727,8 @@ export default function JobFilter() {
 
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
-    fetchPosts(nextPage);
-  }, [isLoadingMore, hasMore, currentPage, fetchPosts]);
+    fetchPosts(nextPage, searchQuery);
+  }, [isLoadingMore, hasMore, currentPage, fetchPosts, searchQuery]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
