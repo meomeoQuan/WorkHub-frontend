@@ -6,4 +6,6 @@ export interface RecruitmentOverviewInfoDTO {
     salary?: string;
     status: string;
     description: string;
+    userName: string;
+    avatar?: string;
 }

@@ -103,10 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('workhub_user');
-  };
+const logout = () => {
+  setUser(null);
+  localStorage.removeItem("workhub_user");
+  localStorage.removeItem("access_token"); // IMPORTANT
+};
+
 
   const updateUser = (userData: Partial<UserModel>) => {
     if (user) {

@@ -7,4 +7,5 @@ export interface CommentDTO {
     parentCommentId?: number;
     content?: string;
     createdAt?: string;
+    replies?: CommentDTO[];
 }

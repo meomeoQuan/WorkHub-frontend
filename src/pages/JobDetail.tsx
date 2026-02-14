@@ -7,67 +7,14 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { SkeletonJobDetail } from '../components/SkeletonJobDetail';
 import { SkeletonJobSidebar } from '../components/SkeletonJobSidebar';
+import { JobPostDTO } from '../types/DTOs/ModelDTOs/JobsDTOs/JobPostDTO';
+import type { ApiResponse } from '../types/ApiResponse';
 
-// Mock job data
-const jobsData: Record<string, any> = {
-  '1': {
-    title: 'Part-time Barista',
-    company: 'Coffee & Co.',
-    companyUsername: '@coffee_and_co',
-    companyEmployees: '50-200 employees',
-    companyRating: '4.8 rating',
-    location: 'New York, NY',
-    type: 'Part-time',
-    salary: '$15-18/hr',
-    postedDate: '2 days ago',
-    description: `We are looking for an enthusiastic and friendly barista to join our team at Coffee & Co. 
-    
-    As a barista, you will be responsible for preparing and serving a variety of coffee drinks, tea, and other beverages to our customers. You'll work in a fast-paced environment where customer satisfaction is our top priority.
-    
-    This is a great opportunity for students or anyone looking for flexible part-time work with a supportive team.`,
-    requirements: [
-      'Previous barista or customer service experience preferred',
-      'Ability to work in a fast-paced environment',
-      'Excellent communication and interpersonal skills',
-      'Availability to work early mornings and weekends',
-      'Food handler certification (or willing to obtain)',
-    ],
-    benefits: [
-      'Flexible scheduling',
-      'Free coffee and staff discounts',
-      'Tips in addition to hourly wage',
-      'Training provided',
-    ],
-    schedule: 'Monday-Sunday, 6:00 AM - 2:00 PM shifts available',
-  },
-  '2': {
-    title: 'Freelance Graphic Designer',
-    company: 'Design Studio',
-    location: 'Remote',
-    type: 'Freelance',
-    salary: '$40-60/hr',
-    postedDate: '1 day ago',
-    description: `Design Studio is seeking a talented freelance graphic designer to work on various client projects.
-    
-    You'll be creating visual concepts, using computer software or by hand, to communicate ideas that inspire, inform, and captivate consumers. You'll work on projects ranging from brand identity to marketing materials.
-    
-    This is a remote position with flexible hours, perfect for experienced designers looking for project-based work.`,
-    requirements: [
-      'Bachelor\'s degree in Graphic Design or related field',
-      'Minimum 2 years of professional design experience',
-      'Proficiency in Adobe Creative Suite (Photoshop, Illustrator, InDesign)',
-      'Strong portfolio demonstrating creative and technical skills',
-      'Excellent time management and communication skills',
-    ],
-    benefits: [
-      'Fully remote work',
-      'Flexible hours',
-      'Diverse project portfolio',
-      'Competitive hourly rate',
-    ],
-    schedule: 'Flexible, project-based',
-  },
-};
+// Types for API response
+interface SinglePostResponse {
+  postId: number;
+  post: JobPostDTO;
+}
 
 export function JobDetail() {
   const { id } = useParams();
@@ -76,27 +23,61 @@ export function JobDetail() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simulate loading delay
-    setLoading(true);
-    const timer = setTimeout(() => {
-      const jobData = jobsData[id || '1'] || jobsData['1'];
-      setJob(jobData);
-      setLoading(false);
-    }, 800);
+    const fetchJobDetail = async () => {
+      if (!id) return;
 
-    return () => clearTimeout(timer);
+      setLoading(true);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/single-post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ postId: parseInt(id) }),
+        });
+
+        const data: ApiResponse<SinglePostResponse> = await response.json();
+
+        if (data.success && data.data) {
+          const p = data.data.post;
+          // Map DTO to component expected structure
+          setJob({
+            title: p.jobName || p.header || 'Job Title',
+            company: p.fullName,
+            location: p.jobLocation || 'Remote',
+            type: p.jobType || 'Full-time',
+            salary: p.jobSalaryRange || 'Negotiable',
+            postedDate: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recently',
+            description: p.content || 'No description provided.',
+            requirements: [], // API doesn't provide these yet
+            benefits: [], // API doesn't provide these yet
+            schedule: 'Flexible schedule',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching job detail:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobDetail();
   }, [id]);
 
-  const typeColors = {
+  const typeColors: Record<string, string> = {
     'Part-time': 'bg-[#4FC3F7]/20 text-[#1E293B] border border-[#4FC3F7]/30',
     'Freelance': 'bg-[#FF9800]/20 text-[#1E293B] border border-[#FF9800]/30',
     'Seasonal': 'bg-[#4ADE80]/20 text-[#1E293B] border border-[#4ADE80]/30',
+    'Full-time': 'bg-[#FF9800]/20 text-[#1E293B] border border-[#FF9800]/30',
+    'Contract': 'bg-[#4FC3F7]/20 text-[#1E293B] border border-[#4FC3F7]/30',
   };
 
-  const typeIcons = {
+  const typeIcons: Record<string, string> = {
     'Part-time': '⏰',
     'Freelance': '💼',
     'Seasonal': '🌟',
+    'Full-time': '🏢',
+    'Contract': '📑',
   };
 
   if (loading || !job) {
@@ -105,8 +86,8 @@ export function JobDetail() {
         {/* Header */}
         <div className="bg-gradient-to-br from-[#FF9800] to-[#FFC107] py-8">
           <div className="container mx-auto px-4">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-white hover:bg-white/20 mb-4 rounded-xl"
               onClick={() => navigate(-1)}
             >
@@ -128,8 +109,8 @@ export function JobDetail() {
       {/* Header */}
       <div className="bg-gradient-to-br from-[#FF9800] to-[#FFC107] py-8">
         <div className="container mx-auto px-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="text-white hover:bg-white/20 mb-4 rounded-xl"
             onClick={() => navigate(-1)}
           >
