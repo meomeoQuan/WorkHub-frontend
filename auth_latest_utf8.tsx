@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+﻿import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { ApiResponse } from '../types/ApiResponse';
 import type { LoginResponseDTO } from '../types/DTOs/AuthDTOs/LoginResponseDTO';
 import type { UserDTO } from '../types/DTOs/ModelDTOs/UserDTO';
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(mappedUser);
     localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
-    return mappedUser.userType; // 👈 return role
+    return mappedUser.userType; // ≡ƒæê return role
   };
 
   const googleLogin = async (authCode: string): Promise<void> => {

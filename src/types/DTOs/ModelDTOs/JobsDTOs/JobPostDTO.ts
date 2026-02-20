@@ -1,3 +1,5 @@
+import { JobDTO } from "./JobDTO";
+
 export interface JobPostDTO {
     // Post
     postId: number;
@@ -13,11 +15,7 @@ export interface JobPostDTO {
     avatarUrl?: string;
 
     // Job info
-    jobId: number;
-    jobLocation?: string;
-    jobSalaryRange?: string;
-    jobType?: string;
-    jobName?: string;
+    jobs: JobDTO[];
 
     // Engagement
     likeCount: number;

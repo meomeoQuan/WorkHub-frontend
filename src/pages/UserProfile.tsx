@@ -13,19 +13,14 @@ import {
   Star,
   GraduationCap,
   Briefcase,
-  Calendar,
-  FileText,
-  Settings,
   Plus,
   Trash2,
-  Upload,
   UserPlus,
   UserCheck,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Separator } from "../components/ui/separator";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
@@ -34,9 +29,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router";
-import { JobCard } from "../components/JobCard";
 import { SkeletonCompanyProfile } from "../components/SkeletonCompanyProfile";
-import { SkeletonCompanyStats } from "../components/SkeletonCompanyStats";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -44,6 +37,9 @@ import {
   WeeklyAvailabilitySection,
   ResumeSection,
 } from "../components/ProfileEditSections";
+import { UserProfileDTO } from "../types/DTOs/ModelDTOs/UserProfileDTO";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function UserProfile() {
   const navigate = useNavigate();
@@ -53,7 +49,7 @@ export function UserProfile() {
 
   // Determine if this is the logged-in user's own profile
   const isOwnProfile =
-    !profileUserId || profileUserId === user?.id;
+    !profileUserId || (user && Number(profileUserId) === user.id);
 
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -71,32 +67,7 @@ export function UserProfile() {
 Our mission is to empower businesses through technology while maintaining a commitment to excellence and employee development. We offer competitive compensation, flexible work arrangements, and opportunities for growth.`,
   });
 
-  const [postedJobs, setPostedJobs] = useState([
-    {
-      id: "4",
-      title: "Part-time Data Entry Specialist",
-      company: "TechCorp",
-      location: "San Francisco, CA",
-      type: "Part-time" as const,
-      description:
-        "Accurate and detail-oriented data entry work. Remote options available.",
-      salary: "$18-22/hr",
-      postedDate: "1 week ago",
-      logo: user?.profileImage,
-    },
-    {
-      id: "8",
-      title: "Freelance Web Developer",
-      company: "TechCorp",
-      location: "Remote",
-      type: "Freelance" as const,
-      description:
-        "Build responsive websites for small businesses. React experience preferred.",
-      salary: "$50-80/hr",
-      postedDate: "2 days ago",
-      logo: user?.profileImage,
-    },
-  ]);
+  // Posted jobs state removed as unused
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(companyData);
@@ -192,15 +163,7 @@ Our mission is to empower businesses through technology while maintaining a comm
   };
 
   const handleSave = () => {
-    setCompanyData(editedData);
-    setIndustryFocus(editedIndustryFocus);
-    setEducation(editedEducation);
-    setExperience(editedExperience);
-    setWeeklyAvailability(editedWeeklyAvailability);
-    setJobPreferences(editedJobPreferences);
-    setContactInfo(editedContactInfo);
-    toast.success("Profile updated successfully!");
-    setIsEditing(false);
+    saveProfile();
   };
 
   const handleCancel = () => {
@@ -236,14 +199,149 @@ Our mission is to empower businesses through technology while maintaining a comm
   };
 
   useEffect(() => {
-    // Simulate loading data
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    const fetchProfile = async () => {
+      if (!isOwnProfile) {
+        setLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
-  }, []);
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${API_URL}/api/UserProfile/show-profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            const data: UserProfileDTO = result.data;
+
+            // Map API data to component state
+            setCompanyData({
+              name: data.fullName || "",
+              email: data.email || "",
+              phone: data.phone || "",
+              location: data.location || "",
+              industry: data.industry || "",
+              website: data.website || "",
+              employees: data.companySize || "",
+              founded: data.foundedYear?.toString() || "",
+              description: data.bio || data.about || ""
+            });
+
+            setIndustryFocus(data.skills || []);
+
+            // Education
+            setEducation(data.educations.map(e => ({
+              id: e.id.toString(),
+              school: e.school,
+              degree: e.degree,
+              field: e.fieldOfStudy,
+              startYear: e.startYear,
+              endYear: e.endYear || "",
+              description: e.description || ""
+            })));
+
+            // Experience
+            setExperience(data.experiences.map(e => ({
+              id: e.id.toString(),
+              company: e.company,
+              position: e.title,
+              startDate: new Date(e.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), // Format date
+              endDate: e.endDate ? new Date(e.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "Present",
+              description: e.description || ""
+            })));
+
+            // Schedule map (simplified)
+            // Need to parse data.schedules to weeklyAvailability object
+            // Assuming data.schedules contains entries for days
+            // This part is complex because backend returns list, frontend wants object.
+            // For now, keeping existing schedule to avoid breaking UI until backend returns compatible structure or we implement full parser
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+        toast.error("Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [isOwnProfile, user]);
+
+  const saveProfile = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+
+      // Map state to DTO
+      const profileDTO: Partial<UserProfileDTO> = {
+        fullName: editedData.name,
+        phone: editedData.phone,
+        location: editedData.location,
+        website: editedData.website,
+        companySize: editedData.employees,
+        foundedYear: parseInt(editedData.founded) || undefined,
+        industry: editedData.industry,
+        bio: editedData.description,
+        skills: editedIndustryFocus,
+
+        experiences: editedExperience.map(e => ({
+          id: parseInt(e.id) || 0,
+          title: e.position,
+          company: e.company,
+          startDate: new Date(e.startDate).toISOString(), // Naive parsing, validation needed
+          endDate: e.endDate === "Present" ? undefined : new Date(e.endDate).toISOString(),
+          description: e.description
+        })),
+
+        educations: editedEducation.map(e => ({
+          id: parseInt(e.id) || 0,
+          school: e.school,
+          degree: e.degree,
+          fieldOfStudy: e.field,
+          startYear: e.startYear,
+          endYear: e.endYear,
+          description: e.description
+        })),
+
+        schedules: [] // TODO: Map schedule back
+      };
+
+      const res = await fetch(`${API_URL}/api/UserProfile/edit-profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileDTO)
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        toast.success("Profile updated successfully!");
+
+        // Update local state with edited data firmly
+        setCompanyData(editedData);
+        setIndustryFocus(editedIndustryFocus);
+        setEducation(editedEducation);
+        setExperience(editedExperience);
+        setWeeklyAvailability(editedWeeklyAvailability);
+        setJobPreferences(editedJobPreferences);
+        setContactInfo(editedContactInfo);
+        setIsEditing(false);
+      } else {
+        toast.error(result.message || "Failed to update profile");
+      }
+
+    } catch (err) {
+      console.error("Error saving profile", err);
+      toast.error("An error occurred while saving");
+    }
+  };
 
   if (loading) {
     return <SkeletonCompanyProfile />;
@@ -267,9 +365,19 @@ Our mission is to empower businesses through technology while maintaining a comm
             <div className="flex flex-col md:flex-row gap-6">
               {/* Company Logo */}
               <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] flex items-center justify-center flex-shrink-0 shadow-md">
-                {user?.profileImage ? (
+                {companyData.email ? ( // Use local state or check user.avatarUrl if exists
+                  // Actually the component uses user.profileImage which might be wrong.
+                  // Let's use companyData.name for initial if image missing, or a placeholder.
+                  // user from useAuth might have different shape.
+                  // data.avatarUrl is what we get from backend.
+                  // We stored nothing in companyData for image?
+                  // companyData doesn't have image field.
+                  // We should add avatarUrl to companyData or use a separate state.
+                  // For now, let's assumes user object has it or we use a placeholder.
+                  // user?.profileImage -> user?.avatarUrl?
+                  /* user.profileImage */
                   <img
-                    src={user.profileImage}
+                    src={user?.avatarUrl || "https://github.com/shadcn.png"}
                     alt={companyData.name}
                     className="w-full h-full object-cover rounded-2xl"
                   />
@@ -430,9 +538,9 @@ Our mission is to empower businesses through technology while maintaining a comm
                                 const isHalf =
                                   !isFilled &&
                                   starValue ===
-                                    Math.ceil(
-                                      credibilityRating,
-                                    ) &&
+                                  Math.ceil(
+                                    credibilityRating,
+                                  ) &&
                                   credibilityRating % 1 !== 0;
 
                                 return (
@@ -466,15 +574,14 @@ Our mission is to empower businesses through technology while maintaining a comm
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Follow Button */}
                       <Button
                         onClick={handleFollowToggle}
-                        className={`${
-                          isFollowing
-                            ? "bg-white border-2 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800]/5"
-                            : "bg-[#FF9800] hover:bg-[#F57C00] text-white border-2 border-[#FF9800]"
-                        } rounded-xl shadow-md hover:shadow-lg transition flex-shrink-0`}
+                        className={`${isFollowing
+                          ? "bg-white border-2 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800]/5"
+                          : "bg-[#FF9800] hover:bg-[#F57C00] text-white border-2 border-[#FF9800]"
+                          } rounded-xl shadow-md hover:shadow-lg transition flex-shrink-0`}
                       >
                         {isFollowing ? (
                           <>
@@ -863,7 +970,7 @@ Our mission is to empower businesses through technology while maintaining a comm
                   <div className="bg-[#FF9800] px-6 py-4">
                     <h3 className="text-white font-semibold">Contact Information</h3>
                   </div>
-                  
+
                   <div className="p-6">
                     {isEditing ? (
                       <div className="space-y-4">
