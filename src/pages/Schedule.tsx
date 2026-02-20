@@ -1,12 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
-import { Card } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Calendar as CalendarIcon, Check, ArrowLeft, Clock, Plus, X } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { Calendar, momentLocalizer, View, SlotInfo } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import {
+  Calendar as CalendarIcon,
+  Check,
+  ArrowLeft,
+  Clock,
+  Plus,
+  X,
+  Edit2,
+  Trash2,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  Calendar,
+  momentLocalizer,
+  View,
+  SlotInfo,
+} from "react-big-calendar";
+import moment from "moment";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const localizer = momentLocalizer(moment);
 
@@ -22,32 +36,52 @@ interface CalendarEvent {
 // Initial events data - using current week dates
 const getInitialEvents = (): CalendarEvent[] => {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+
   return [
     {
-      id: '1',
-      title: 'Available: Morning Shift',
+      id: "1",
+      title: "Available: Morning Shift",
       start: new Date(today.getTime() + 8 * 60 * 60 * 1000), // 8 AM today
       end: new Date(today.getTime() + 12 * 60 * 60 * 1000), // 12 PM today
     },
     {
-      id: '2',
-      title: 'Available: Afternoon',
+      id: "2",
+      title: "Available: Afternoon",
       start: new Date(today.getTime() + 13 * 60 * 60 * 1000), // 1 PM today
       end: new Date(today.getTime() + 17 * 60 * 60 * 1000), // 5 PM today
     },
     {
-      id: '3',
-      title: 'Available: Evening',
-      start: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000), // 6 PM tomorrow
-      end: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 22 * 60 * 60 * 1000), // 10 PM tomorrow
+      id: "3",
+      title: "Available: Evening",
+      start: new Date(
+        today.getTime() +
+        24 * 60 * 60 * 1000 +
+        18 * 60 * 60 * 1000,
+      ), // 6 PM tomorrow
+      end: new Date(
+        today.getTime() +
+        24 * 60 * 60 * 1000 +
+        22 * 60 * 60 * 1000,
+      ), // 10 PM tomorrow
     },
     {
-      id: '4',
-      title: 'Available: Full Day',
-      start: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000), // 8 AM in 2 days
-      end: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000 + 20 * 60 * 60 * 1000), // 8 PM in 2 days
+      id: "4",
+      title: "Available: Full Day",
+      start: new Date(
+        today.getTime() +
+        2 * 24 * 60 * 60 * 1000 +
+        8 * 60 * 60 * 1000,
+      ), // 8 AM in 2 days
+      end: new Date(
+        today.getTime() +
+        2 * 24 * 60 * 60 * 1000 +
+        20 * 60 * 60 * 1000,
+      ), // 8 PM in 2 days
     },
   ];
 };
@@ -60,21 +94,27 @@ export function Schedule() {
 
   const [events, setEvents] = useState<CalendarEvent[]>([
     {
-      id: '1',
-      title: 'Available: Morning Shift',
+      id: "1",
+      title: "Available: Morning Shift",
       start: new Date(),
       end: new Date(),
     },
   ]);
 
   const [showEventForm, setShowEventForm] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
-  const [eventTitle, setEventTitle] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [view, setView] = useState<View>('week');
+  const [selectedSlot, setSelectedSlot] = useState<{
+    start: Date;
+    end: Date;
+  } | null>(null);
+  const [eventTitle, setEventTitle] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [view, setView] = useState<View>("week");
   const [saved, setSaved] = useState(false);
-  
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [showEventActions, setShowEventActions] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -83,23 +123,25 @@ export function Schedule() {
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
     const start = slotInfo.start as Date;
     const end = slotInfo.end as Date;
-    
+
     setSelectedSlot({ start, end });
-    setStartTime(moment(start).format('YYYY-MM-DDTHH:mm'));
-    setEndTime(moment(end).format('YYYY-MM-DDTHH:mm'));
+    setStartTime(moment(start).format("YYYY-MM-DDTHH:mm"));
+    setEndTime(moment(end).format("YYYY-MM-DDTHH:mm"));
     setShowEventForm(true);
-    setEventTitle('Available: ');
+    setEventTitle("Available: ");
   }, []);
 
-  const handleSelectEvent = useCallback((event: CalendarEvent) => {
-    if (window.confirm(`Delete "${event.title}"?`)) {
-      setEvents((prev) => prev.filter((e) => e.id !== event.id));
-    }
-  }, []);
+  const handleSelectEvent = useCallback(
+    (event: CalendarEvent) => {
+      setSelectedEvent(event);
+      setShowEventActions(true);
+    },
+    [],
+  );
 
   const handleAddEvent = () => {
     if (!eventTitle.trim() || !startTime || !endTime) {
-      alert('Please enter all required fields');
+      alert("Please enter all required fields");
       return;
     }
 
@@ -107,23 +149,41 @@ export function Schedule() {
     const endDate = new Date(endTime);
 
     if (endDate <= startDate) {
-      alert('End time must be after start time');
+      alert("End time must be after start time");
       return;
     }
 
-    const newEvent: CalendarEvent = {
-      id: `event-${Date.now()}`,
-      title: eventTitle,
-      start: startDate,
-      end: endDate,
-    };
+    if (editingEventId) {
+      // Update existing event
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === editingEventId
+            ? {
+              ...event,
+              title: eventTitle,
+              start: startDate,
+              end: endDate,
+            }
+            : event
+        )
+      );
+      setEditingEventId(null);
+    } else {
+      // Add new event
+      const newEvent: CalendarEvent = {
+        id: `event-${Date.now()}`,
+        title: eventTitle,
+        start: startDate,
+        end: endDate,
+      };
 
-    setEvents((prev) => [...prev, newEvent]);
-    
+      setEvents((prev) => [...prev, newEvent]);
+    }
+
     // Reset form
-    setEventTitle('');
-    setStartTime('');
-    setEndTime('');
+    setEventTitle("");
+    setStartTime("");
+    setEndTime("");
     setSelectedSlot(null);
     setShowEventForm(false);
   };
@@ -132,24 +192,47 @@ export function Schedule() {
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
-      navigate('/profile/candidate');
+      navigate("/profile/candidate");
     }, 2000);
+  };
+
+  const handleEditEvent = () => {
+    if (!selectedEvent) return;
+
+    setEditingEventId(selectedEvent.id);
+    setEventTitle(selectedEvent.title);
+    setStartTime(moment(selectedEvent.start).format("YYYY-MM-DDTHH:mm"));
+    setEndTime(moment(selectedEvent.end).format("YYYY-MM-DDTHH:mm"));
+    setSelectedSlot({ start: selectedEvent.start, end: selectedEvent.end });
+    setShowEventActions(false);
+    setShowEventForm(true);
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteEvent = () => {
+    if (!selectedEvent) return;
+
+    if (window.confirm(`Delete "${selectedEvent.title}"?`)) {
+      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
+    }
+    setShowEventActions(false);
+    setSelectedEvent(null);
   };
 
   const eventStyleGetter = () => {
     return {
       style: {
-        backgroundColor: '#FF9800',
-        borderRadius: '8px',
+        backgroundColor: "#FF9800",
+        borderRadius: "8px",
         opacity: 0.9,
-        color: 'white',
-        border: '0px',
-        display: 'flex',
-        alignItems: 'center',
-        fontWeight: '500',
-        padding: '2px 6px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        color: "white",
+        border: "0px",
+        display: "flex",
+        alignItems: "center",
+        fontWeight: "500",
+        padding: "2px 6px",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
       },
     };
   };
@@ -161,7 +244,9 @@ export function Schedule() {
           <div className="w-20 h-20 bg-[#4ADE80]/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-[#4ADE80]" />
           </div>
-          <h2 className="text-[#263238] mb-2 text-2xl">Schedule Saved!</h2>
+          <h2 className="text-[#263238] mb-2 text-2xl">
+            Schedule Saved!
+          </h2>
           <p className="text-[#263238]/70 mb-6">
             Your availability has been updated successfully.
           </p>
@@ -190,9 +275,12 @@ export function Schedule() {
                 <CalendarIcon className="w-7 h-7 text-white" />
               </div>
               <div className="flex-1">
-                <h1 className="text-[#263238] mb-2 text-3xl">Manage Your Schedule</h1>
+                <h1 className="text-[#263238] mb-2 text-3xl">
+                  Manage Your Schedule
+                </h1>
                 <p className="text-[#263238]/70">
-                  Set your availability to let employers know when you're free to work
+                  Set your availability to let employers know
+                  when you're free to work
                 </p>
               </div>
             </div>
@@ -206,20 +294,28 @@ export function Schedule() {
                   <Clock className="w-5 h-5 text-[#FF9800]" />
                 </div>
                 <div>
-                  <p className="text-2xl text-[#FF9800] font-bold">{events.length}</p>
-                  <p className="text-xs text-[#263238]/60">Availability Slots</p>
+                  <p className="text-2xl text-[#FF9800] font-bold">
+                    {events.length}
+                  </p>
+                  <p className="text-xs text-[#263238]/60">
+                    Availability Slots
+                  </p>
                 </div>
               </div>
             </Card>
-            
+
             <Card className="p-4 border-2 border-[#4FC3F7]/20 bg-gradient-to-br from-[#4FC3F7]/5 to-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#4FC3F7]/20 rounded-xl flex items-center justify-center">
                   <CalendarIcon className="w-5 h-5 text-[#4FC3F7]" />
                 </div>
                 <div>
-                  <p className="text-2xl text-[#4FC3F7] font-bold capitalize">{view}</p>
-                  <p className="text-xs text-[#263238]/60">Current View</p>
+                  <p className="text-2xl text-[#4FC3F7] font-bold capitalize">
+                    {view}
+                  </p>
+                  <p className="text-xs text-[#263238]/60">
+                    Current View
+                  </p>
                 </div>
               </div>
             </Card>
@@ -230,62 +326,92 @@ export function Schedule() {
             <Card className="p-6 mb-6 border-2 border-[#FF9800]/20 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[#263238] flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#FF9800]" />
-                  Add Availability Slot
+                  {editingEventId ? (
+                    <>
+                      <Edit2 className="w-5 h-5 text-[#4FC3F7]" />
+                      Update Availability Slot
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 text-[#FF9800]" />
+                      Add Availability Slot
+                    </>
+                  )}
                 </h3>
                 <button
-                  onClick={() => setShowEventForm(false)}
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setEditingEventId(null);
+                  }}
                   className="text-[#263238]/50 hover:text-[#263238] transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#263238] mb-2">Title</label>
+                  <label className="block text-sm text-[#263238] mb-2">
+                    Title
+                  </label>
                   <input
                     type="text"
                     value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
+                    onChange={(e) =>
+                      setEventTitle(e.target.value)
+                    }
                     placeholder="e.g., Available: Morning Shift"
                     className="w-full h-12 px-4 border-2 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:outline-none"
                     autoFocus
                   />
                 </div>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#263238] mb-2">Start Time</label>
+                    <label className="block text-sm text-[#263238] mb-2">
+                      Start Time
+                    </label>
                     <input
                       type="datetime-local"
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
+                      onChange={(e) =>
+                        setStartTime(e.target.value)
+                      }
                       className="w-full h-12 px-4 border-2 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:outline-none text-[#263238]"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#263238] mb-2">End Time</label>
+                    <label className="block text-sm text-[#263238] mb-2">
+                      End Time
+                    </label>
                     <input
                       type="datetime-local"
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
+                      onChange={(e) =>
+                        setEndTime(e.target.value)
+                      }
                       className="w-full h-12 px-4 border-2 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:outline-none text-[#263238]"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <Button
                     onClick={handleAddEvent}
-                    className="flex-1 bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-xl"
+                    className={`flex-1 ${editingEventId
+                        ? "bg-[#4FC3F7] hover:bg-[#0398D4]"
+                        : "bg-[#4ADE80] hover:bg-[#22C55E]"
+                      } text-white rounded-xl`}
                   >
                     <Check className="w-4 h-4 mr-2" />
-                    Add Slot
+                    {editingEventId ? "Update Slot" : "Add Slot"}
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setShowEventForm(false)}
+                    onClick={() => {
+                      setShowEventForm(false);
+                      setEditingEventId(null);
+                    }}
                     className="flex-1 border-2 border-[#263238]/20 hover:border-[#263238] rounded-xl"
                   >
                     Cancel
@@ -310,70 +436,71 @@ export function Schedule() {
                 eventPropGetter={eventStyleGetter}
                 view={view}
                 onView={setView}
-                views={['month', 'week', 'day']}
+                views={["month", "week", "day"]}
                 defaultView="week"
                 step={30}
                 timeslots={2}
                 showMultiDayTimes
                 messages={{
-                  next: 'Next',
-                  previous: 'Previous',
-                  today: 'Today',
-                  month: 'Month',
-                  week: 'Week',
-                  day: 'Day',
+                  next: "Next",
+                  previous: "Previous",
+                  today: "Today",
+                  month: "Month",
+                  week: "Week",
+                  day: "Day",
                 }}
               />
             </div>
           </Card>
-
-          {/* How to Use Guide */}
-          <Card className="p-6 mb-6 bg-gradient-to-br from-[#4FC3F7]/5 to-white border-2 border-[#4FC3F7]/20">
-            <h3 className="text-[#263238] mb-4 flex items-center gap-2">
-              <div className="w-6 h-1 bg-[#4FC3F7] rounded"></div>
-              How to Use
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl border-2 border-[#FF9800] bg-gradient-to-br from-[#FF9800] to-[#F57C00] flex items-center justify-center flex-shrink-0">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-[#263238] font-medium mb-1">Add Availability</p>
-                  <p className="text-[#263238]/60">Click and drag on empty calendar space to create a new availability slot</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl border-2 border-[#263238]/20 bg-white flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-[#263238]" />
-                </div>
-                <div>
-                  <p className="text-[#263238] font-medium mb-1">Delete Events</p>
-                  <p className="text-[#263238]/60">Click on any slot and confirm to remove it from your schedule</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              onClick={handleSave}
-              className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30"
-            >
-              <Check className="w-5 h-5 mr-2" />
-              Save Schedule
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 h-12 border-2 border-[#263238]/20 hover:border-[#263238] rounded-xl"
-              onClick={() => navigate('/profile/candidate')}
-            >
-              Cancel
-            </Button>
-          </div>
         </div>
       </div>
+
+      {/* Event Actions Modal */}
+      {showEventActions && selectedEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md p-6 border-2 border-[#FF9800]/30 shadow-2xl">
+            <div className="mb-6">
+              <h3 className="text-[#263238] text-xl font-semibold mb-2">
+                {selectedEvent.title}
+              </h3>
+              <div className="text-sm text-[#263238]/60 space-y-1">
+                <p className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {moment(selectedEvent.start).format("MMM D, YYYY h:mm A")} -{" "}
+                  {moment(selectedEvent.end).format("h:mm A")}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleEditEvent}
+                className="w-full bg-[#4FC3F7] hover:bg-[#0398D4] text-white h-11 rounded-xl shadow-md"
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Event
+              </Button>
+              <Button
+                onClick={handleDeleteEvent}
+                className="w-full bg-red-500 hover:bg-red-600 text-white h-11 rounded-xl shadow-md"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Event
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEventActions(false);
+                  setSelectedEvent(null);
+                }}
+                className="w-full h-11 border-2 border-[#263238]/20 hover:border-[#263238] rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Custom Styles for React Big Calendar */}
       <style>{`
