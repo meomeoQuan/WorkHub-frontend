@@ -12,18 +12,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Briefcase, MapPin, DollarSign, FileText, Zap, Lightbulb, Image as ImageIcon, X, Upload, Check } from 'lucide-react';
-import { ArrowLeft } from 'lucide-react';
+import {
+  Briefcase,
+  MapPin,
+  DollarSign,
+  FileText,
+  Zap,
+  Lightbulb,
+  Image as ImageIcon,
+  X,
+  Upload,
+  Check,
+  ArrowLeft
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import demoImage from 'figma:asset/8bae24080ec08eff17f8f121670c17b493985d37.png';
 
 export function PostJob() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  useAuth();
 
   // Removed role-based protection - all logged-in users can access
-  
+
   const [formData, setFormData] = useState({
     title: '',
     location: '',
@@ -36,53 +48,78 @@ export function PostJob() {
   });
 
   const [jobImages, setJobImages] = useState<string[]>([]);
+  const [jobFiles, setJobFiles] = useState<File[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [jobTypes, setJobTypes] = useState<{ id: number, name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number, name: string }[]>([]);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const typesRes = await fetch(`${API_URL}/api/Job/get-jobtypes`);
+        const catsRes = await fetch(`${API_URL}/api/Job/get-categories`);
+
+        if (typesRes.ok) {
+          const result = await typesRes.json();
+          if (result.success) setJobTypes(result.data);
+        }
+        if (catsRes.ok) {
+          const result = await catsRes.json();
+          if (result.success) setCategories(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch metadata", error);
+      }
+    };
+    fetchMetadata();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create new job post object
-    const newJobPost = {
-      id: `user-${Date.now()}`,
-      company: user?.email === 'employer@gmail.com' ? 'Your Company' : 'Posted by User',
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email || 'User'}&backgroundColor=FF9800`,
-      username: user?.email?.split('@')[0] || 'user',
-      credibilityRating: 4.5,
-      timestamp: 'Just now',
-      content: formData.description,
-      jobTitle: formData.title,
-      location: formData.location,
-      salary: formData.salary,
-      salaryMin: parseInt(formData.salary.split('-')[0]?.replace(/\D/g, '') || '0'),
-      salaryMax: parseInt(formData.salary.split('-')[1]?.replace(/\D/g, '') || '0'),
-      type: formData.jobType === 'part-time' ? 'Part-time' : formData.jobType === 'freelance' ? 'Freelance' : 'Seasonal',
-      jobImage: jobImages[0] || demoImage,
-      likes: 0,
-      comments: 0,
-      reposts: 0,
-      shares: 0,
-      image: jobImages[0] || null,
-      category: formData.category,
-      experienceLevel: 'Entry Level',
-      workSetting: formData.location.toLowerCase().includes('remote') ? 'Remote' : 'On-site',
-      companySize: 'Small',
-      postedDate: new Date().toISOString(),
-      requirements: formData.requirements,
-      workTime: formData.workTime,
-      allImages: jobImages.length > 0 ? jobImages : [demoImage],
-    };
-    
-    // Save to localStorage
-    const existingPosts = localStorage.getItem('userPostedJobs');
-    const posts = existingPosts ? JSON.parse(existingPosts) : [];
-    posts.unshift(newJobPost); // Add to beginning of array
-    localStorage.setItem('userPostedJobs', JSON.stringify(posts));
-    
-    // Show success message and redirect
-    setShowSuccessMessage(true);
-    setTimeout(() => {
-      navigate('/post-job');
-    }, 1500);
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const formDataToSend = new FormData();
+
+      formDataToSend.append("JobTitle", formData.title);
+      formDataToSend.append("Location", formData.location);
+      formDataToSend.append("Category", formData.category);
+      formDataToSend.append("JobType", formData.jobType);
+      formDataToSend.append("WorkTime", formData.workTime);
+      formDataToSend.append("SalaryRange", formData.salary);
+      formDataToSend.append("JobDescription", formData.description);
+      formDataToSend.append("Requirements", formData.requirements);
+
+      jobFiles.forEach((file) => {
+        formDataToSend.append("JobImages", file);
+      });
+
+      const res = await fetch(`${API_URL}/api/Job/create-job`, {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setShowSuccessMessage(true);
+          setTimeout(() => {
+            navigate('/post-job');
+          }, 1500);
+        } else {
+          toast.error(result.message || "Failed to post job");
+        }
+      } else {
+        toast.error("An error occurred while posting the job");
+      }
+    } catch (error) {
+      console.error("Error submitting job:", error);
+      toast.error("Failed to submit job");
+    }
   };
 
   const handleCancel = () => {
@@ -92,12 +129,13 @@ export function PostJob() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newImages: string[] = [];
+      const newFiles = Array.from(files);
+      setJobFiles((prev) => [...prev, ...newFiles]);
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const reader = new FileReader();
         reader.onloadend = () => {
-          newImages.push(reader.result as string);
           setJobImages((prevImages) => [...prevImages, reader.result as string]);
         };
         reader.readAsDataURL(file);
@@ -107,6 +145,7 @@ export function PostJob() {
 
   const handleImageRemove = (index: number) => {
     setJobImages((prevImages) => prevImages.filter((_, i) => i !== index));
+    setJobFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
   return (
@@ -192,20 +231,18 @@ export function PostJob() {
                   <Label htmlFor="category" className="text-[#263238]">Category *</Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, category: value })}
                     required
                   >
                     <SelectTrigger id="category" className="mt-2 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="food">Food & Beverage</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="delivery">Delivery</SelectItem>
-                      <SelectItem value="creative">Creative</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -217,16 +254,18 @@ export function PostJob() {
                   <Label htmlFor="job-type" className="text-[#263238]">Job Type *</Label>
                   <Select
                     value={formData.jobType}
-                    onValueChange={(value) => setFormData({ ...formData, jobType: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, jobType: value })}
                     required
                   >
                     <SelectTrigger id="job-type" className="mt-2 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]">
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="part-time">⏰ Part-time</SelectItem>
-                      <SelectItem value="freelance">💼 Freelance</SelectItem>
-                      <SelectItem value="seasonal">🌟 Seasonal</SelectItem>
+                      {jobTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id.toString()}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -304,7 +343,7 @@ export function PostJob() {
                 <p className="text-sm text-[#263238]/60 mt-1 mb-3">
                   Add images to showcase your workplace or job environment
                 </p>
-                
+
                 <div className="space-y-4">
                   <input
                     type="file"
@@ -321,7 +360,7 @@ export function PostJob() {
                     <Upload className="w-4 h-4" />
                     Upload Images
                   </label>
-                  
+
                   {jobImages.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {jobImages.map((image, index) => (
@@ -342,7 +381,7 @@ export function PostJob() {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Demo Preview Section */}
                   <Card className="p-4 bg-gradient-to-br from-[#4FC3F7]/5 to-[#4ADE80]/5 border-2 border-[#4FC3F7]/20">
                     <div className="flex items-center gap-2 mb-3">

@@ -4,12 +4,12 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
-import { 
-  ArrowLeft, 
-  Plus, 
-  MapPin, 
-  DollarSign, 
-  Clock, 
+import {
+  ArrowLeft,
+  Plus,
+  MapPin,
+  DollarSign,
+  Clock,
   Briefcase,
   Edit,
   Trash2,
@@ -78,113 +78,45 @@ export function UserPosts() {
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load user's posted jobs from localStorage
-    const loadUserPosts = () => {
+    const loadUserPosts = async () => {
       setLoading(true);
       try {
-        const storedPosts = localStorage.getItem('userPostedJobs');
-        if (storedPosts) {
-          const posts = JSON.parse(storedPosts);
-          setUserPosts(posts);
-        } else {
-          // Add demo posts for visualization
-          const demoPosts: JobPost[] = [
-            {
-              id: 'demo-1',
-              company: 'TechStart Inc.',
-              avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=100',
-              username: user?.email || 'employer@gmail.com',
-              credibilityRating: 4.8,
-              timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-              content: 'We are looking for a talented frontend developer to join our dynamic team. You will work on exciting projects using React and modern web technologies.',
-              jobTitle: 'Frontend Developer',
-              location: 'San Francisco, CA',
-              salary: '$45-65/hour',
-              salaryMin: 45,
-              salaryMax: 65,
-              type: 'Part-Time',
-              jobImage: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',
-              likes: 24,
-              comments: 8,
-              reposts: 5,
-              shares: 12,
-              image: null,
-              category: 'Technology',
-              experienceLevel: 'Intermediate',
-              workSetting: 'Hybrid',
-              companySize: '50-200',
-              postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-              requirements: 'React, TypeScript, CSS',
-              workTime: 'Flexible Hours',
-              allImages: ['https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800']
-            },
-            {
-              id: 'demo-2',
-              company: 'Creative Studios',
-              avatar: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100',
-              username: user?.email || 'employer@gmail.com',
-              credibilityRating: 4.5,
-              timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-              content: 'Join our creative team for the summer season! We need a graphic designer who can create stunning visuals for our marketing campaigns.',
-              jobTitle: 'Graphic Designer',
-              location: 'Los Angeles, CA',
-              salary: '$35-50/hour',
-              salaryMin: 35,
-              salaryMax: 50,
-              type: 'Seasonal',
-              jobImage: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800',
-              likes: 18,
-              comments: 5,
-              reposts: 3,
-              shares: 8,
-              image: null,
-              category: 'Design',
-              experienceLevel: 'Entry Level',
-              workSetting: 'Remote',
-              companySize: '10-50',
-              postedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-              requirements: 'Adobe Creative Suite, Portfolio',
-              workTime: 'Part-time',
-              allImages: ['https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800']
-            },
-            {
-              id: 'demo-3',
-              company: 'Marketing Pro',
-              avatar: 'https://images.unsplash.com/photo-1553484771-371a605b060b?w=100',
-              username: user?.email || 'employer@gmail.com',
-              credibilityRating: 4.9,
-              timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-              content: 'Seeking an experienced content writer for ongoing freelance projects. You will create engaging blog posts, social media content, and marketing copy.',
-              jobTitle: 'Content Writer',
-              location: 'Remote',
-              salary: '$30-45/hour',
-              salaryMin: 30,
-              salaryMax: 45,
-              type: 'Freelance',
-              jobImage: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800',
-              likes: 32,
-              comments: 12,
-              reposts: 7,
-              shares: 15,
-              image: null,
-              category: 'Writing',
-              experienceLevel: 'Intermediate',
-              workSetting: 'Remote',
-              companySize: '10-50',
-              postedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-              requirements: 'SEO knowledge, Portfolio',
-              workTime: 'Flexible Hours',
-              allImages: ['https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800']
-            }
-          ];
-          setUserPosts(demoPosts);
-          localStorage.setItem('userPostedJobs', JSON.stringify(demoPosts));
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/all-user-posts`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            // Map backend JobPostDTO to internal JobPost interface
+            const mappedPosts = result.data.map((p: any) => ({
+              id: p.postId.toString(),
+              company: p.fullName,
+              avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+              username: p.fullName.toLowerCase().replace(/\s/g, "_"),
+              credibilityRating: p.rating || 4.5,
+              timestamp: p.createdAt,
+              content: p.content,
+              jobTitle: p.jobs?.[0]?.jobName || p.header || "Social Post",
+              location: p.jobs?.[0]?.location || "Remote",
+              salary: p.jobs?.[0]?.salary || "Competitive",
+              type: p.jobs?.[0]?.jobType || "Other",
+              likes: p.likeCount,
+              comments: p.commentCount,
+              image: p.postImage,
+              postedDate: p.createdAt,
+            }));
+            setUserPosts(mappedPosts);
+          }
         }
       } catch (error) {
         console.error('Error loading user posts:', error);
         toast.error('Failed to load your posts');
       } finally {
-        setTimeout(() => setLoading(false), 800);
+        setLoading(false);
       }
     };
 
@@ -229,7 +161,7 @@ export function UserPosts() {
     const date = new Date(timestamp);
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -373,7 +305,7 @@ export function UserPosts() {
                               <UserPlus className="w-4 h-4" />
                               Follow
                             </button>
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteClick(post.id);

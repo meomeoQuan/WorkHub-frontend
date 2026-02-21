@@ -27,41 +27,46 @@ interface Job {
 
 export function UserJobs() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [postedJobs, setPostedJobs] = useState<Job[]>([
-    {
-      id: '4',
-      title: 'Part-time Data Entry Specialist',
-      company: 'TechCorp',
-      location: 'San Francisco, CA',
-      type: 'Part-time',
-      description: 'Accurate and detail-oriented data entry work. Remote options available.',
-      salary: '$18-22/hr',
-      postedDate: '1 week ago',
-      logo: user?.avatarUrl || undefined,
-    },
-    {
-      id: '8',
-      title: 'Freelance Web Developer',
-      company: 'TechCorp',
-      location: 'Remote',
-      type: 'Freelance',
-      description: 'Build responsive websites for small businesses. React experience preferred.',
-      salary: '$50-80/hr',
-      postedDate: '2 days ago',
-      logo: user?.avatarUrl || undefined,
-    },
-  ]);
+  const [postedJobs, setPostedJobs] = useState<Job[]>([]);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // Simulate loading data
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${API_URL}/api/UserProfile/all-user-jobs`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-    return () => clearTimeout(timer);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            const mappedJobs = result.data.map((j: any) => ({
+              id: j.id.toString(),
+              title: j.jobName,
+              company: j.companyName || "Your Company",
+              location: j.location,
+              type: j.jobType,
+              description: j.description || "No description provided.",
+              salary: j.salary,
+              postedDate: new Date(j.createdAt).toLocaleDateString(),
+              logo: j.avatarUrl
+            }));
+            setPostedJobs(mappedJobs);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
   }, []);
 
   const typeColors: Record<string, string> = {
