@@ -3,11 +3,11 @@ import { useNavigate, Link } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  DollarSign, 
-  Clock, 
+import {
+  ArrowLeft,
+  MapPin,
+  DollarSign,
+  Clock,
   Briefcase,
   Zap
 } from 'lucide-react';
@@ -18,7 +18,7 @@ interface Job {
   title: string;
   company: string;
   location: string;
-  type: 'Part-time' | 'Freelance' | 'Seasonal';
+  type: string;
   description: string;
   salary: string;
   postedDate: string;
@@ -27,54 +27,66 @@ interface Job {
 
 export function UserJobs() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [postedJobs, setPostedJobs] = useState<Job[]>([
-    {
-      id: '4',
-      title: 'Part-time Data Entry Specialist',
-      company: 'TechCorp',
-      location: 'San Francisco, CA',
-      type: 'Part-time',
-      description: 'Accurate and detail-oriented data entry work. Remote options available.',
-      salary: '$18-22/hr',
-      postedDate: '1 week ago',
-      logo: user?.profileImage,
-    },
-    {
-      id: '8',
-      title: 'Freelance Web Developer',
-      company: 'TechCorp',
-      location: 'Remote',
-      type: 'Freelance',
-      description: 'Build responsive websites for small businesses. React experience preferred.',
-      salary: '$50-80/hr',
-      postedDate: '2 days ago',
-      logo: user?.profileImage,
-    },
-  ]);
+  const [postedJobs, setPostedJobs] = useState<Job[]>([]);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // Simulate loading data
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${API_URL}/api/UserProfile/all-user-jobs`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-    return () => clearTimeout(timer);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            const mappedJobs = result.data.map((j: any) => ({
+              id: j.id.toString(),
+              title: j.jobName,
+              company: j.companyName || "Your Company",
+              location: j.location,
+              type: j.jobType,
+              description: j.description || "No description provided.",
+              salary: j.salary,
+              postedDate: new Date(j.createdAt).toLocaleDateString(),
+              logo: j.avatarUrl
+            }));
+            setPostedJobs(mappedJobs);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
   }, []);
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'Part-time':
-        return 'bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30';
-      case 'Freelance':
-        return 'bg-[#FF9800]/20 text-[#FF9800] border-[#FF9800]/30';
-      case 'Seasonal':
-        return 'bg-[#4ADE80]/20 text-[#4ADE80] border-[#4ADE80]/30';
-      default:
-        return 'bg-[#263238]/20 text-[#263238] border-[#263238]/30';
-    }
+  const typeColors: Record<string, string> = {
+    'Part-time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
+    'Part Time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
+    'Freelance': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Seasonal': 'bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20',
+    'Full-time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Full Time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Contract': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
+  };
+
+  const typeIcons: Record<string, string> = {
+    'Part-time': '⏰',
+    'Part Time': '⏰',
+    'Freelance': '💼',
+    'Seasonal': '🌟',
+    'Full-time': '🏢',
+    'Full Time': '🏢',
+    'Contract': '📑',
   };
 
   if (loading) {
@@ -156,8 +168,8 @@ export function UserJobs() {
                           <h3 className="text-xl font-semibold text-[#263238] mb-1">{job.title}</h3>
                           <p className="text-[#263238]/70">{job.company}</p>
                         </div>
-                        <Badge className={`rounded-xl ${getTypeColor(job.type)}`}>
-                          <Briefcase className="w-3 h-3 mr-1" />
+                        <Badge className={`${typeColors[job.type as keyof typeof typeColors] || 'bg-[#263238]/10 text-[#263238]'} rounded-xl px-3 py-1 flex items-center gap-1`}>
+                          <span className="mr-1">{typeIcons[job.type as keyof typeof typeIcons] || '💼'}</span>
                           {job.type}
                         </Badge>
                       </div>

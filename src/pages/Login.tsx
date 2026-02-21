@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -22,76 +22,85 @@ declare global {
 
 export function Login() {
   const navigate = useNavigate();
-  const { login , googleLogin  } = useAuth();
+  const { login, googleLogin } = useAuth();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
- useEffect(() => {
-  const interval = setInterval(() => {
-    if (window.google) {
-      clearInterval(interval);
+  useEffect(() => {
+    if (searchParams.get('expired') === 'true') {
+      toast.error('Session expired. Please log in again.', {
+        id: 'session-expired'
+      });
+    }
+  }, [searchParams]);
 
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: "627355940500-p6ho8e6lovbq3glle03fevfsnedrbm61.apps.googleusercontent.com",
-        scope: "openid email profile",
-        ux_mode: "popup",
-        callback: async (response: any) => {
-          await googleLogin(response.code);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (window.google) {
+        clearInterval(interval);
 
-          toast.success('Welcome back! Login successful.', {
-          style: {
-            background: '#4ADE80',
-            color: '#FFFFFF',
-            border: '2px solid #22C55E',
-            fontSize: '14px',
-            fontWeight: '600',
+        const client = window.google.accounts.oauth2.initCodeClient({
+          client_id: "627355940500-p6ho8e6lovbq3glle03fevfsnedrbm61.apps.googleusercontent.com",
+          scope: "openid email profile",
+          ux_mode: "popup",
+          callback: async (response: any) => {
+            await googleLogin(response.code);
+
+            toast.success('Welcome back! Login successful.', {
+              style: {
+                background: '#4ADE80',
+                color: '#FFFFFF',
+                border: '2px solid #22C55E',
+                fontSize: '14px',
+                fontWeight: '600',
+              },
+              duration: 3000,
+            });
+
+            navigate('/');
           },
-          duration: 3000,
         });
 
-      navigate('/');
-        },
-      });
+        (window as any).googleClient = client;
+      }
+    }, 200);
 
-      (window as any).googleClient = client;
-    }
-  }, 200);
+    return () => clearInterval(interval);
+  }, []);
 
-  return () => clearInterval(interval);
-}, []);
 
-  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-    var role = await login(email, password);
+      var role = await login(email, password);
 
       toast.success('Welcome back, Admin! Login successful.', {
-          style: {
-            background: '#4ADE80',
-            color: '#FFFFFF',
-            border: '2px solid #22C55E',
-            fontSize: '14px',
-            fontWeight: '600',
-          },
-          duration: 3000,
-        });
+        style: {
+          background: '#4ADE80',
+          color: '#FFFFFF',
+          border: '2px solid #22C55E',
+          fontSize: '14px',
+          fontWeight: '600',
+        },
+        duration: 3000,
+      });
 
-    if (role === 'admin') {
-    
-      navigate('/admin');
-      return;
+      if (role === 'admin') {
 
-    }
+        navigate('/admin');
+        return;
+
+      }
       navigate('/');
 
     } catch (error) {
-     toast.error('Invalid credentials. Please try again.', {
+      toast.error('Invalid credentials. Please try again.', {
         style: {
           background: '#EF4444',
           color: '#FFFFFF',
@@ -173,7 +182,7 @@ export function Login() {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked : boolean) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked: boolean) => setRememberMe(checked as boolean)}
                 />
                 <label
                   htmlFor="remember"
@@ -207,9 +216,9 @@ export function Login() {
 
             <Button type="button"
               variant="outline"
-              onClick={() => (window as any).googleClient.requestCode()} 
+              onClick={() => (window as any).googleClient.requestCode()}
               className="w-full h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
-                
+
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"

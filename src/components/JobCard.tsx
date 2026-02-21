@@ -9,7 +9,7 @@ interface JobCardProps {
   title: string;
   company: string;
   location: string;
-  type: "Part-time" | "Freelance" | "Seasonal";
+  type: string;
   description: string;
   salary?: string;
   postedDate?: string;
@@ -27,18 +27,24 @@ export function JobCard({
   postedDate,
   logo,
 }: JobCardProps) {
-  const typeColors = {
+  const typeColors: Record<string, string> = {
     "Part-time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    "Part Time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
     Freelance: "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
     Seasonal: "bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20",
     "Full-time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    "Full Time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
     Contract: "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
   };
 
-  const typeIcons = {
+  const typeIcons: Record<string, string> = {
     "Part-time": "⏰",
+    "Part Time": "⏰",
     Freelance: "💼",
     Seasonal: "🌟",
+    "Full-time": "🏢",
+    "Full Time": "🏢",
+    Contract: "📑",
   };
 
   return (
@@ -70,8 +76,8 @@ export function JobCard({
                 {company}
               </p>
             </div>
-            <Badge className={typeColors[type]}>
-              <span className="mr-1">{typeIcons[type]}</span>
+            <Badge className={`${typeColors[type as keyof typeof typeColors] || 'bg-[#263238]/10 text-[#263238]'} rounded-xl px-3 py-1 flex items-center gap-1`}>
+              <span className="mr-1">{typeIcons[type as keyof typeof typeIcons] || '💼'}</span>
               {type}
             </Badge>
           </div>

@@ -33,6 +33,7 @@ export interface UserProfileDTO {
     location?: string;
     role: number;
     provider?: string;
+    rating: number;
 
     // Extended
     bio?: string;
@@ -45,6 +46,7 @@ export interface UserProfileDTO {
     companySize?: string;
     foundedYear?: number;
     industry?: string;
+    description?: string;
 
     // Collections
     skills: string[];

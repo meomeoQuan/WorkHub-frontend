@@ -23,6 +23,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+
+// Global fetch interceptor for session expiry
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401) {
+    // Clear auth data
+    localStorage.removeItem("workhub_user");
+    localStorage.removeItem("access_token");
+
+    // Force redirect to login
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login?expired=true';
+    }
+  }
+  return response;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserModel | null>(null);
 
@@ -103,11 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
   };
 
-const logout = () => {
-  setUser(null);
-  localStorage.removeItem("workhub_user");
-  localStorage.removeItem("access_token"); // IMPORTANT
-};
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("workhub_user");
+    localStorage.removeItem("access_token"); // IMPORTANT
+  };
 
 
   const updateUser = (userData: Partial<UserModel>) => {
