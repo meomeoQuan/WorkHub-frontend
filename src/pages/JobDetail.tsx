@@ -50,9 +50,10 @@ export function JobDetail() {
             experienceLevel: p.experienceLevel || 'Entry Level',
             workSetting: p.workSetting || 'On-site',
             category: p.category || 'General',
-            companyBio: p.companyBio || `${p.userName} is committed to providing excellent service and a great work environment for all employees.`,
-            companyEmployees: '50-200 employees', // Placeholder
-            companyRating: `${p.companyRating || 4.5} rating`,
+            companyBio: p.companyDescription || p.companyBio || `${p.userName} is committed to providing excellent service and a great work environment for all employees.`,
+            companyLocation: p.companyLocation,
+            companyEmployees: p.companySize,
+            companyRating: p.companyRating,
             companyIndustry: p.companyIndustry || 'Technology',
           });
         }
@@ -297,24 +298,32 @@ export function JobDetail() {
                     </p>
                   </div>
 
-                  <div className="space-y-3 p-4 bg-white rounded-xl border border-[#263238]/10">
-                    <div className="flex items-center gap-3 text-sm">
-                      <MapPin className="w-4 h-4 text-[#FF9800]" />
-                      <span className="text-[#263238]/80">{job.location}</span>
+                  {(job.companyLocation || job.companyEmployees || job.companyRating) && (
+                    <div className="space-y-3 p-4 bg-white rounded-xl border border-[#263238]/10">
+                      {job.companyLocation && (
+                        <div className="flex items-center gap-3 text-sm">
+                          <MapPin className="w-4 h-4 text-[#FF9800]" />
+                          <span className="text-[#263238]/80">{job.companyLocation}</span>
+                        </div>
+                      )}
+                      {job.companyEmployees && (
+                        <div className="flex items-center gap-3 text-sm">
+                          <Users className="w-4 h-4 text-[#4FC3F7]" />
+                          <span className="text-[#263238]/80">{job.companyEmployees}</span>
+                        </div>
+                      )}
+                      {job.companyRating && (
+                        <div className="flex items-center gap-3 text-sm">
+                          <Star className="w-4 h-4 text-[#FFC107] fill-[#FFC107]" />
+                          <span className="text-[#263238]/80">{job.companyRating} rating</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Users className="w-4 h-4 text-[#4FC3F7]" />
-                      <span className="text-[#263238]/80">{job.companyEmployees}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Star className="w-4 h-4 text-[#FFC107] fill-[#FFC107]" />
-                      <span className="text-[#263238]/80">{job.companyRating}</span>
-                    </div>
-                  </div>
+                  )}
 
                   <Link to="/profile/user">
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
-                      View company profile →
+                      View User profile →
                     </Button>
                   </Link>
                 </div>
