@@ -47,6 +47,7 @@ export interface UserProfileDTO {
     foundedYear?: number;
     industry?: string;
     description?: string;
+    googleMapsEmbedUrl?: string;
 
     // Collections
     skills: string[];

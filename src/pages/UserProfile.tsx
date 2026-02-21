@@ -78,6 +78,7 @@ export function UserProfile() {
     employees: "",
     founded: "",
     description: "",
+    googleMapsEmbedUrl: "",
   });
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
 
@@ -169,13 +170,6 @@ export function UserProfile() {
   const [editedJobPreferences, setEditedJobPreferences] =
     useState(jobPreferences);
 
-  // Contact Information (Optional)
-  const [contactInfo, setContactInfo] = useState({
-    mapEmbedUrl: "",
-    showMap: false,
-  });
-  const [editedContactInfo, setEditedContactInfo] =
-    useState(contactInfo);
 
   const handleEdit = () => {
     setEditedData(companyData);
@@ -184,7 +178,6 @@ export function UserProfile() {
     setEditedExperience(experience);
     setEditedWeeklyAvailability(weeklyAvailability);
     setEditedJobPreferences(jobPreferences);
-    setEditedContactInfo(contactInfo);
     setIsEditing(true);
   };
 
@@ -199,7 +192,6 @@ export function UserProfile() {
     setEditedExperience(experience);
     setEditedWeeklyAvailability(weeklyAvailability);
     setEditedJobPreferences(jobPreferences);
-    setEditedContactInfo(contactInfo);
     setIsEditing(false);
   };
 
@@ -304,7 +296,8 @@ export function UserProfile() {
               website: data.website || "",
               employees: data.companySize || "",
               founded: data.foundedYear?.toString() || "",
-              description: data.description || data.bio || data.about || ""
+              description: data.description || data.bio || data.about || "",
+              googleMapsEmbedUrl: data.googleMapsEmbedUrl || ""
             });
             setCredibilityRating(data.rating || 0);
 
@@ -388,6 +381,7 @@ export function UserProfile() {
         bio: editedData.description,
         description: editedData.description,
         skills: editedIndustryFocus,
+        googleMapsEmbedUrl: editedData.googleMapsEmbedUrl,
 
         experiences: editedExperience.map(e => ({
           id: safeId(e.id),
@@ -437,7 +431,7 @@ export function UserProfile() {
           setExperience(editedExperience);
           setWeeklyAvailability(editedWeeklyAvailability);
           setJobPreferences(editedJobPreferences);
-          setContactInfo(editedContactInfo);
+          setJobPreferences(editedJobPreferences);
           setIsEditing(false);
         } else {
           toast.error(result.message || "Failed to update profile");
@@ -619,6 +613,25 @@ export function UserProfile() {
                           className="h-10 border-[#263238]/20 rounded-xl mt-1"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <Label className="text-[#263238] text-sm">
+                        Google Maps Embed URL (Optional)
+                      </Label>
+                      <Input
+                        value={editedData.googleMapsEmbedUrl}
+                        onChange={(e) =>
+                          setEditedData({
+                            ...editedData,
+                            googleMapsEmbedUrl: e.target.value,
+                          })
+                        }
+                        className="h-10 border-[#263238]/20 rounded-xl mt-1"
+                        placeholder="Paste the 'src' value from Google Maps embed code"
+                      />
+                      <p className="text-[10px] text-[#263238]/50 mt-1">
+                        Go to Google Maps → Share → Embed a map → Copy the URL inside src="..."
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -1223,7 +1236,7 @@ export function UserProfile() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Contact Information - Optional */}
-              {(companyData.location || isEditing) && (
+              {(companyData.location || companyData.googleMapsEmbedUrl || isEditing) && (
                 <Card className="p-0 border-[#263238]/10 shadow-md overflow-hidden">
                   <div className="bg-[#FF9800] px-6 py-4">
                     <h3 className="text-white font-semibold">Contact Information</h3>
@@ -1253,36 +1266,19 @@ export function UserProfile() {
                             Google Maps Embed URL (Optional)
                           </Label>
                           <Input
-                            value={editedContactInfo.mapEmbedUrl}
+                            value={editedData.googleMapsEmbedUrl}
                             onChange={(e) =>
-                              setEditedContactInfo({
-                                ...editedContactInfo,
-                                mapEmbedUrl: e.target.value,
+                              setEditedData({
+                                ...editedData,
+                                googleMapsEmbedUrl: e.target.value,
                               })
                             }
                             className="h-10 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:ring-[#FF9800]"
                             placeholder="Paste Google Maps embed URL here"
                           />
-                          <p className="text-xs text-[#263238]/50 mt-1.5">
-                            To get embed URL: Search location on Google Maps → Share → Embed a map → Copy HTML
+                          <p className="text-[10px] text-[#263238]/50 mt-1.5">
+                            Search location on Google Maps → Share → Embed a map → Copy 'src' URL
                           </p>
-                        </div>
-                        <div className="flex items-center gap-2.5 pt-1">
-                          <input
-                            type="checkbox"
-                            id="showMap"
-                            checked={editedContactInfo.showMap}
-                            onChange={(e) =>
-                              setEditedContactInfo({
-                                ...editedContactInfo,
-                                showMap: e.target.checked,
-                              })
-                            }
-                            className="w-4 h-4 rounded border-[#263238]/30 text-[#FF9800] focus:ring-[#FF9800] cursor-pointer"
-                          />
-                          <Label htmlFor="showMap" className="text-[#263238] text-sm cursor-pointer select-none">
-                            Show map on profile
-                          </Label>
                         </div>
                       </div>
                     ) : (
@@ -1303,10 +1299,9 @@ export function UserProfile() {
                             </div>
                           </div>
                         )}
-
                         {/* View Map */}
-                        {contactInfo.showMap && contactInfo.mapEmbedUrl && (
-                          <div>
+                        {companyData.googleMapsEmbedUrl && (
+                          <div className="mt-4 pt-4 border-t border-[#263238]/10">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0">
                                 <svg className="w-4 h-4 text-[#FF9800]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1317,9 +1312,9 @@ export function UserProfile() {
                             </div>
                             <div className="rounded-xl overflow-hidden border border-[#263238]/10 shadow-sm">
                               <iframe
-                                src={contactInfo.mapEmbedUrl}
+                                src={companyData.googleMapsEmbedUrl}
                                 width="100%"
-                                height="300"
+                                height="250"
                                 style={{ border: 0 }}
                                 allowFullScreen
                                 loading="lazy"
