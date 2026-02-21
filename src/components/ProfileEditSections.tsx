@@ -154,62 +154,55 @@ export function ExperienceSection({
 }
 
 // Weekly Availability Section
-export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any) {
-  // Get the current week's dates
-  const getCurrentWeekDates = () => {
-    const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1)); // Get Monday of current week
-
-    const dates: { [key: string]: string } = {};
-    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-    dayNames.forEach((dayName, index) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-      dates[dayName] = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    });
-
-    return dates;
+export function WeeklyAvailabilitySection({ scheduleSlots, isEditing, isOwnProfile }: any) {
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const weekDates = getCurrentWeekDates();
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const hasSlots = scheduleSlots && scheduleSlots.length > 0;
+
+  // Always show for own profile; for others, only show if there are slots
+  if (!hasSlots && !isEditing && !isOwnProfile) return null;
 
   return (
-    (Object.values(weeklyAvailability).some((day: any) => day.available) || isEditing) && (
-      <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#4ADE80]" />
-            <h2 className="text-[#263238]">Weekly Availability</h2>
-          </div>
-          {isEditing && (
-            <Link to="/schedule">
-              <Button
-                size="sm"
-                className="bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-lg"
-              >
-                <Calendar className="w-4 h-4 mr-1" />
-                Edit Schedule
-              </Button>
-            </Link>
-          )}
+    <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-[#4ADE80]" />
+          <h2 className="text-[#263238]">Weekly Availability</h2>
         </div>
-        <div className="space-y-2">
-          {Object.entries(weeklyAvailability).map(([day, info]: [string, any]) =>
-            info.available && (
-              <div key={day} className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-lg border border-[#263238]/5">
-                <div className="flex flex-col">
-                  <span className="font-medium text-[#263238] capitalize">{day}</span>
-                  <span className="text-xs text-[#263238]/50 mt-0.5">{weekDates[day]}</span>
-                </div>
-                <span className="text-sm text-[#263238]/70 font-medium">{info.hours}</span>
+        {isOwnProfile && (
+          <Link to="/schedule">
+            <Button
+              size="sm"
+              className="bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-lg"
+            >
+              <Calendar className="w-4 h-4 mr-1" />
+              Edit Schedule
+            </Button>
+          </Link>
+        )}
+      </div>
+      <div className="space-y-2">
+        {hasSlots ? (
+          scheduleSlots.map((slot: any) => (
+            <div key={slot.id} className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-lg border border-[#263238]/5">
+              <div className="flex flex-col">
+                <span className="font-medium text-[#263238]">{slot.title}</span>
+                <span className="text-xs text-[#263238]/50 mt-0.5">{formatDate(slot.startTime)}</span>
               </div>
-            )
-          )}
-        </div>
-        {isEditing && !Object.values(weeklyAvailability).some((day: any) => day.available) && (
+              <span className="text-sm text-[#263238]/70 font-medium">
+                {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
+              </span>
+            </div>
+          ))
+        ) : (
           <div className="text-center py-8">
             <Calendar className="w-12 h-12 text-[#263238]/20 mx-auto mb-3" />
             <p className="text-[#263238]/50 text-sm mb-3">No availability set yet</p>
@@ -223,8 +216,8 @@ export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any
             </Link>
           </div>
         )}
-      </Card>
-    )
+      </div>
+    </Card>
   );
 }
 

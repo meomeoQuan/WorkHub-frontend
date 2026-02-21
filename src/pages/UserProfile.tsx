@@ -44,6 +44,7 @@ import {
   ResumeSection,
 } from "../components/ProfileEditSections";
 import { UserProfileDTO } from "../types/DTOs/ModelDTOs/UserProfileDTO";
+import { ScheduleViewDTO } from "../types/DTOs/ModelDTOs/ScheduleDTOs";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -144,19 +145,31 @@ export function UserProfile() {
   const [editedExperience, setEditedExperience] =
     useState<any[]>([]);
 
-  const [weeklyAvailability, setWeeklyAvailability] = useState({
-    monday: { available: false, hours: "" },
-    tuesday: { available: false, hours: "" },
-    wednesday: { available: false, hours: "" },
-    thursday: { available: false, hours: "" },
-    friday: { available: false, hours: "" },
-    saturday: { available: false, hours: "" },
-    sunday: { available: false, hours: "" },
-  });
-  const [
-    editedWeeklyAvailability,
-    setEditedWeeklyAvailability,
-  ] = useState(weeklyAvailability);
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleViewDTO[]>([]);
+
+  // Fetch schedule slots from API
+  const fetchSchedules = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/Schedule`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          setScheduleSlots(result.data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch schedules", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      fetchSchedules();
+    }
+  }, [isOwnProfile]);
 
   const [resume, setResume] = useState<any>(null);
 
@@ -176,7 +189,6 @@ export function UserProfile() {
     setEditedIndustryFocus(industryFocus);
     setEditedEducation(education);
     setEditedExperience(experience);
-    setEditedWeeklyAvailability(weeklyAvailability);
     setEditedJobPreferences(jobPreferences);
     setIsEditing(true);
   };
@@ -190,7 +202,6 @@ export function UserProfile() {
     setEditedIndustryFocus(industryFocus);
     setEditedEducation(education);
     setEditedExperience(experience);
-    setEditedWeeklyAvailability(weeklyAvailability);
     setEditedJobPreferences(jobPreferences);
     setIsEditing(false);
   };
@@ -429,7 +440,6 @@ export function UserProfile() {
           setIndustryFocus(editedIndustryFocus);
           setEducation(editedEducation);
           setExperience(editedExperience);
-          setWeeklyAvailability(editedWeeklyAvailability);
           setJobPreferences(editedJobPreferences);
           setJobPreferences(editedJobPreferences);
           setIsEditing(false);
@@ -700,25 +710,27 @@ export function UserProfile() {
                       </div>
 
                       {/* Follow Button */}
-                      <Button
-                        onClick={handleFollowToggle}
-                        className={`${isFollowing
-                          ? "bg-white border-2 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800]/5"
-                          : "bg-[#FF9800] hover:bg-[#F57C00] text-white border-2 border-[#FF9800]"
-                          } rounded-xl shadow-md hover:shadow-lg transition flex-shrink-0`}
-                      >
-                        {isFollowing ? (
-                          <>
-                            <UserCheck className="w-4 h-4 mr-2" />
-                            Following
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Follow
-                          </>
-                        )}
-                      </Button>
+                      {!isOwnProfile && (
+                        <Button
+                          onClick={handleFollowToggle}
+                          className={`${isFollowing
+                            ? "bg-white border-2 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800]/5"
+                            : "bg-[#FF9800] hover:bg-[#F57C00] text-white border-2 border-[#FF9800]"
+                            } rounded-xl shadow-md hover:shadow-lg transition flex-shrink-0`}
+                        >
+                          {isFollowing ? (
+                            <>
+                              <UserCheck className="w-4 h-4 mr-2" />
+                              Following
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Follow
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mt-4">
@@ -1215,13 +1227,12 @@ export function UserProfile() {
                 setEditedExperience={setEditedExperience}
               />
 
-              {/* Weekly Availability - Only show if any day is available */}
-              {(Object.values(weeklyAvailability).some(day => day.available) || isEditing) && (
-                <WeeklyAvailabilitySection
-                  weeklyAvailability={weeklyAvailability}
-                  isEditing={isEditing}
-                />
-              )}
+              {/* Weekly Availability - Show schedule slots from API */}
+              <WeeklyAvailabilitySection
+                scheduleSlots={scheduleSlots}
+                isEditing={isEditing}
+                isOwnProfile={isOwnProfile}
+              />
 
               {/* Resume - Only show if exists */}
               <ResumeSection
