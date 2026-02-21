@@ -30,6 +30,7 @@ import howItWorksImg from "figma:asset/35710fa8a2ad22f1bc7ef5e3899f7b6a4daf97c0.
 import type { RecruitmentOverviewInfoDTO } from "../types/DTOs/ModelDTOs/RecruitmentOverviewInfoDTO";
 import type { UserFeatureDTO } from "../types/DTOs/ModelDTOs/HomeDTOs/UserFeatureDTO";
 import type { ApiResponse } from "../types/ApiResponse";
+import { formatRelativeTime } from "../utils/dateUtils";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -550,7 +551,7 @@ export function Home() {
                       type={(job.jobType as "Part-time" | "Freelance" | "Seasonal") || "Part-time"}
                       description={job.description || "No description available"}
                       salary={job.salary}
-                      postedDate="Recently" // Placeholder
+                      postedDate={formatRelativeTime(job.createdAt)}
                     />
                   ))
                 )}

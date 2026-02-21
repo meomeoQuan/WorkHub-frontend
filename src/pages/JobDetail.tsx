@@ -7,14 +7,9 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { SkeletonJobDetail } from '../components/SkeletonJobDetail';
 import { SkeletonJobSidebar } from '../components/SkeletonJobSidebar';
-import { JobPostDTO } from '../types/DTOs/ModelDTOs/JobsDTOs/JobPostDTO';
+import { RecruitmentDetailInfoDTO } from '../types/DTOs/ModelDTOs/RecruitmentDetailInfoDTO';
 import type { ApiResponse } from '../types/ApiResponse';
-
-// Types for API response
-interface SinglePostResponse {
-  postId: number;
-  post: JobPostDTO;
-}
+import { formatRelativeTime } from '../utils/dateUtils';
 
 export function JobDetail() {
   const { id } = useParams();
@@ -28,31 +23,37 @@ export function JobDetail() {
 
       setLoading(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/single-post`, {
-          method: 'POST',
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Home/job-detail/${id}`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ postId: parseInt(id) }),
         });
 
-        const data: ApiResponse<SinglePostResponse> = await response.json();
+        const data: ApiResponse<RecruitmentDetailInfoDTO> = await response.json();
 
         if (data.success && data.data) {
-          const p = data.data.post;
-          const firstJob = p.jobs && p.jobs.length > 0 ? p.jobs[0] : null;
+          const p = data.data;
           // Map DTO to component expected structure
           setJob({
-            title: firstJob?.jobName || p.header || 'Job Title',
-            company: p.fullName,
-            location: firstJob?.location || 'Remote',
-            type: firstJob?.jobType || 'Full-time',
-            salary: firstJob?.salary || 'Negotiable',
-            postedDate: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recently',
-            description: p.content || 'No description provided.',
-            requirements: [], // API doesn't provide these yet
-            benefits: [], // API doesn't provide these yet
-            schedule: 'Flexible schedule',
+            title: p.jobName,
+            company: p.userName,
+            avatar: p.avatar,
+            location: p.location || 'Remote',
+            type: p.jobType || 'Full-time',
+            salary: p.salary || 'Negotiable',
+            postedDate: formatRelativeTime(p.createdAt),
+            description: p.description || 'No description provided.',
+            requirements: p.requirements ? p.requirements.split('\n').filter(r => r.trim()) : [],
+            benefits: ['Health Insurance', 'Flexible Hours', 'Career Growth', 'Competitive Pay'], // Placeholder
+            schedule: p.schedule || 'Flexible schedule',
+            experienceLevel: p.experienceLevel || 'Entry Level',
+            workSetting: p.workSetting || 'On-site',
+            category: p.category || 'General',
+            companyBio: p.companyBio || `${p.userName} is committed to providing excellent service and a great work environment for all employees.`,
+            companyEmployees: '50-200 employees', // Placeholder
+            companyRating: `${p.companyRating || 4.5} rating`,
+            companyIndustry: p.companyIndustry || 'Technology',
           });
         }
       } catch (error) {
@@ -66,11 +67,11 @@ export function JobDetail() {
   }, [id]);
 
   const typeColors: Record<string, string> = {
-    'Part-time': 'bg-[#4FC3F7]/20 text-[#1E293B] border border-[#4FC3F7]/30',
-    'Freelance': 'bg-[#FF9800]/20 text-[#1E293B] border border-[#FF9800]/30',
-    'Seasonal': 'bg-[#4ADE80]/20 text-[#1E293B] border border-[#4ADE80]/30',
-    'Full-time': 'bg-[#FF9800]/20 text-[#1E293B] border border-[#FF9800]/30',
-    'Contract': 'bg-[#4FC3F7]/20 text-[#1E293B] border border-[#4FC3F7]/30',
+    'Part-time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
+    'Freelance': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Seasonal': 'bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20',
+    'Full-time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Contract': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
   };
 
   const typeIcons: Record<string, string> = {
@@ -131,8 +132,12 @@ export function JobDetail() {
               <Card className="p-8 border-2 border-[#263238]/10 shadow-xl">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-[#263238] text-3xl">{job.company.charAt(0)}</span>
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 flex items-center justify-center flex-shrink-0 shadow-md border border-[#263238]/10">
+                    {job.avatar ? (
+                      <img src={job.avatar} alt={job.company} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[#263238] text-3xl">{job.company.charAt(0)}</span>
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-4 mb-2">
@@ -141,15 +146,12 @@ export function JobDetail() {
                         <p className="text-[#263238]/70 text-lg">{job.company}</p>
                       </div>
                     </div>
-                    <Badge className={`${typeColors[job.type as keyof typeof typeColors]} mt-2`}>
-                      <span className="mr-1">{typeIcons[job.type as keyof typeof typeIcons]}</span>
-                      {job.type}
-                    </Badge>
+
                   </div>
                 </div>
 
                 {/* Job Info Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-white rounded-xl border border-[#263238]/10">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 p-4 bg-white rounded-xl border border-[#263238]/10">
                   <div className="flex items-start gap-2">
                     <div className="w-8 h-8 bg-[#FF9800]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-4 h-4 text-[#FF9800]" />
@@ -186,6 +188,24 @@ export function JobDetail() {
                       <p className="text-sm text-[#263238]">{job.postedDate}</p>
                     </div>
                   </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-8 h-8 bg-[#FF9800]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Star className="w-4 h-4 text-[#FF9800]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#263238]/60">Experience</p>
+                      <p className="text-sm text-[#263238]">{job.experienceLevel}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-8 h-8 bg-[#4FC3F7]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-4 h-4 text-[#4FC3F7]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#263238]/60">Setting</p>
+                      <p className="text-sm text-[#263238]">{job.workSetting}</p>
+                    </div>
+                  </div>
                 </div>
 
                 <Separator className="my-8 bg-[#263238]/10" />
@@ -200,20 +220,22 @@ export function JobDetail() {
                 </div>
 
                 {/* Requirements */}
-                <div className="mb-8">
-                  <h2 className="text-[#263238] mb-4 flex items-center gap-2">
-                    <div className="w-6 h-1 bg-[#4FC3F7] rounded"></div>
-                    Requirements
-                  </h2>
-                  <ul className="space-y-3">
-                    {job.requirements.map((req: string, index: number) => (
-                      <li key={index} className="flex items-start gap-3 text-[#263238]/80">
-                        <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 flex-shrink-0"></div>
-                        <span>{req}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {job.requirements.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-[#263238] mb-4 flex items-center gap-2">
+                      <div className="w-6 h-1 bg-[#4FC3F7] rounded"></div>
+                      Requirements
+                    </h2>
+                    <ul className="space-y-3">
+                      {job.requirements.map((req: string, index: number) => (
+                        <li key={index} className="flex items-start gap-3 text-[#263238]/80">
+                          <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 flex-shrink-0"></div>
+                          <span>{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Benefits */}
                 <div className="mb-8">
@@ -272,7 +294,7 @@ export function JobDetail() {
                       <h3 className="text-[#263238]">About {job.company}</h3>
                     </div>
                     <p className="text-sm text-[#263238]/70 mb-4">
-                      {job.company} is committed to providing excellent service and a great work environment for all employees.
+                      {job.companyBio}
                     </p>
                   </div>
 

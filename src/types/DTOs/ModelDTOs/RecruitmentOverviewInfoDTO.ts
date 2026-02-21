@@ -8,4 +8,5 @@ export interface RecruitmentOverviewInfoDTO {
     description: string;
     userName: string;
     avatar?: string;
+    createdAt: string;
 }
