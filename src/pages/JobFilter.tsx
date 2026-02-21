@@ -35,13 +35,6 @@ import {
   AvatarImage,
 } from "../components/ui/avatar";
 import { useNavigate, useSearchParams, Link } from "react-router";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
 import { SkeletonFeedPostGrid } from "../components/SkeletonFeedPost";
 import { SkeletonCommentModal } from "../components/SkeletonCommentModal";
@@ -69,6 +62,26 @@ export default function JobFilter() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const typeColors: Record<string, string> = {
+    "Part-time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    "Part Time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    Freelance: "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    Seasonal: "bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20",
+    "Full-time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    "Full Time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    Contract: "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+  };
+
+  const typeIcons: Record<string, string> = {
+    "Part-time": "⏰",
+    "Part Time": "⏰",
+    Freelance: "💼",
+    Seasonal: "🌟",
+    "Full-time": "🏢",
+    "Full Time": "🏢",
+    Contract: "📑",
+  };
 
   // Initial loading state
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -133,7 +146,6 @@ export default function JobFilter() {
   });
   const [selectedWorkSetting, setSelectedWorkSetting] = useState<string | null>(null);
   const [selectedCompanySize, setSelectedCompanySize] = useState<string | null>(null);
-  const [selectedJob, setSelectedJob] = useState<any>(null);
   const [selectedPostForComment, setSelectedPostForComment] =
     useState<any | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -225,7 +237,7 @@ export default function JobFilter() {
             companyEmployees: "50-200 employees",
             companyRating: `${p.rating || 4.5} rating`,
             credibilityRating: p.rating || 4.5,
-            timestamp: formatRelativeTime(p.createdAt),
+            timestamp: p.createdAt ? formatRelativeTime(p.createdAt) : "Just now",
             content: p.content,
             jobTitle: firstJob?.jobName || p.header || "No Title",
             location: firstJob?.location || "Remote",
@@ -1477,17 +1489,9 @@ export default function JobFilter() {
                                 </div>
 
                                 <div className="flex items-center gap-2 mt-3">
-                                  <Badge className={`${post.type === "Part-time" ? "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20" :
-                                      post.type === "Freelance" ? "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20" :
-                                        post.type === "Seasonal" ? "bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20" :
-                                          post.type === "Full-time" ? "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20" :
-                                            "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20"
-                                    } border-0`}>
+                                  <Badge className={`${typeColors[post.type as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-3 py-1 flex items-center gap-1`}>
                                     <span className="mr-1">
-                                      {post.type === "Part-time" ? "⏰" :
-                                        post.type === "Freelance" ? "💼" :
-                                          post.type === "Seasonal" ? "🌟" :
-                                            post.type === "Full-time" ? "🏢" : "⏰"}
+                                      {typeIcons[post.type as keyof typeof typeIcons] || "💼"}
                                     </span>
                                     {post.type}
                                   </Badge>
@@ -1698,7 +1702,8 @@ export default function JobFilter() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 text-xs px-2 py-1">
+                      <Badge className={`${typeColors[selectedPostForComment.type as keyof typeof typeColors] || 'bg-[#FF9800]/20 text-[#FF9800]'} border-0 text-xs px-2 py-1`}>
+                        <span className="mr-1">{typeIcons[selectedPostForComment.type as keyof typeof typeIcons] || '💼'}</span>
                         {selectedPostForComment.type}
                       </Badge>
                       <span className="text-sm text-[#4FC3F7] hover:text-[#0288D1] font-medium transition">

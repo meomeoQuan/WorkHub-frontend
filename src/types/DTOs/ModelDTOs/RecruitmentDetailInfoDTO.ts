@@ -17,4 +17,5 @@ export interface RecruitmentDetailInfoDTO {
     companyBio?: string;
     companyRating: number;
     companyIndustry?: string;
+    benefits?: string;
 }

@@ -45,7 +45,7 @@ export function JobDetail() {
             postedDate: formatRelativeTime(p.createdAt),
             description: p.description || 'No description provided.',
             requirements: p.requirements ? p.requirements.split('\n').filter(r => r.trim()) : [],
-            benefits: ['Health Insurance', 'Flexible Hours', 'Career Growth', 'Competitive Pay'], // Placeholder
+            benefits: p.benefits ? p.benefits.split('\n').filter(b => b.trim()) : [],
             schedule: p.schedule || 'Flexible schedule',
             experienceLevel: p.experienceLevel || 'Entry Level',
             workSetting: p.workSetting || 'On-site',
@@ -68,17 +68,21 @@ export function JobDetail() {
 
   const typeColors: Record<string, string> = {
     'Part-time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
+    'Part Time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
     'Freelance': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
     'Seasonal': 'bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20',
     'Full-time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
+    'Full Time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
     'Contract': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
   };
 
   const typeIcons: Record<string, string> = {
     'Part-time': '⏰',
+    'Part Time': '⏰',
     'Freelance': '💼',
     'Seasonal': '🌟',
     'Full-time': '🏢',
+    'Full Time': '🏢',
     'Contract': '📑',
   };
 
@@ -146,7 +150,10 @@ export function JobDetail() {
                         <p className="text-[#263238]/70 text-lg">{job.company}</p>
                       </div>
                     </div>
-
+                    <Badge className={`${typeColors[job.type as keyof typeof typeColors] || 'bg-[#263238]/10 text-[#263238]'} mt-2 rounded-xl px-3 py-1`}>
+                      <span className="mr-1">{typeIcons[job.type as keyof typeof typeIcons] || '💼'}</span>
+                      {job.type}
+                    </Badge>
                   </div>
                 </div>
 
@@ -226,32 +233,24 @@ export function JobDetail() {
                       <div className="w-6 h-1 bg-[#4FC3F7] rounded"></div>
                       Requirements
                     </h2>
-                    <ul className="space-y-3">
-                      {job.requirements.map((req: string, index: number) => (
-                        <li key={index} className="flex items-start gap-3 text-[#263238]/80">
-                          <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 flex-shrink-0"></div>
-                          <span>{req}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-[#263238]/80 whitespace-pre-line leading-relaxed">
+                      {job.requirements.join('\n')}
+                    </p>
                   </div>
                 )}
 
                 {/* Benefits */}
-                <div className="mb-8">
-                  <h2 className="text-[#263238] mb-4 flex items-center gap-2">
-                    <div className="w-6 h-1 bg-[#4ADE80] rounded"></div>
-                    Benefits & Perks
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {job.benefits.map((benefit: string, index: number) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-[#4ADE80]/10 rounded-xl border border-[#4ADE80]/20">
-                        <div className="w-2 h-2 rounded-full bg-[#4ADE80] mt-2 flex-shrink-0"></div>
-                        <span className="text-sm text-[#263238]">{benefit}</span>
-                      </div>
-                    ))}
+                {job.benefits.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-[#263238] mb-4 flex items-center gap-2">
+                      <div className="w-6 h-1 bg-[#4ADE80] rounded"></div>
+                      Benefits & Perks
+                    </h2>
+                    <p className="text-[#263238]/80 whitespace-pre-line leading-relaxed">
+                      {job.benefits.join('\n')}
+                    </p>
                   </div>
-                </div>
+                )}
 
                 {/* Schedule */}
                 <div className="p-4 bg-[#FF9800]/10 rounded-xl border border-[#FF9800]/20">
@@ -337,6 +336,6 @@ export function JobDetail() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
