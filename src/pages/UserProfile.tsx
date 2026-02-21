@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Mail,
   Phone,
@@ -43,7 +43,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export function UserProfile() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const profileUserId = searchParams.get("userId"); // Get userId from URL params
 
@@ -64,6 +65,7 @@ export function UserProfile() {
     founded: "",
     description: "",
   });
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
 
   // Posted jobs state removed as unused
 
@@ -149,6 +151,55 @@ export function UserProfile() {
     }
   };
 
+  const handleAvatarClick = () => {
+    if (isOwnProfile) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Optional: Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/UserProfile/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data.avatarUrl) {
+          const newAvatarUrl = result.data.avatarUrl.startsWith('http')
+            ? result.data.avatarUrl
+            : `${API_URL}${result.data.avatarUrl}`;
+
+          setAvatarUrl(newAvatarUrl);
+          updateUser({ avatarUrl: newAvatarUrl });
+          toast.success("Avatar updated successfully!");
+        }
+      } else {
+        toast.error("Failed to upload avatar");
+      }
+    } catch (err) {
+      console.error("Avatar upload error", err);
+      toast.error("An error occurred during upload");
+    }
+  };
+
   const removeIndustryTag = (index: number) => {
     setEditedIndustryFocus(
       editedIndustryFocus.filter((_, i) => i !== index),
@@ -198,6 +249,13 @@ export function UserProfile() {
               description: data.description || data.bio || data.about || ""
             });
             setCredibilityRating(data.rating || 0);
+
+            if (data.avatarUrl) {
+              const fullAvatarUrl = data.avatarUrl.startsWith('http')
+                ? data.avatarUrl
+                : `${API_URL}${data.avatarUrl}`;
+              setAvatarUrl(fullAvatarUrl);
+            }
 
             setIndustryFocus(data.skills || []);
 
@@ -363,27 +421,32 @@ export function UserProfile() {
           <Card className="p-8 mb-6 border-[#263238]/10 shadow-lg">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Company Logo */}
-              <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] flex items-center justify-center flex-shrink-0 shadow-md">
-                {companyData.email ? ( // Use local state or check user.avatarUrl if exists
-                  // Actually the component uses user.profileImage which might be wrong.
-                  // Let's use companyData.name for initial if image missing, or a placeholder.
-                  // user from useAuth might have different shape.
-                  // data.avatarUrl is what we get from backend.
-                  // We stored nothing in companyData for image?
-                  // companyData doesn't have image field.
-                  // We should add avatarUrl to companyData or use a separate state.
-                  // For now, let's assumes user object has it or we use a placeholder.
-                  // user?.profileImage -> user?.avatarUrl?
-                  /* user.profileImage */
+              <div
+                onClick={handleAvatarClick}
+                className={`w-32 h-32 rounded-2xl bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] flex items-center justify-center flex-shrink-0 shadow-md relative overflow-hidden group ${isOwnProfile ? 'cursor-pointer' : ''}`}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+                {avatarUrl ? (
                   <img
-                    src={user?.avatarUrl || "https://github.com/shadcn.png"}
+                    src={avatarUrl}
                     alt={companyData.name}
-                    className="w-full h-full object-cover rounded-2xl"
+                    className="w-full h-full object-cover rounded-2xl transition group-hover:scale-105"
                   />
                 ) : (
                   <span className="text-white text-5xl font-bold">
                     {companyData.name.charAt(0)}
                   </span>
+                )}
+                {isOwnProfile && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                    <Edit className="w-8 h-8 text-white" />
+                  </div>
                 )}
               </div>
 
