@@ -10,11 +10,11 @@ import { Plus, Trash2, Upload, Briefcase, Calendar, FileText, Settings, X } from
 import { toast } from 'sonner';
 
 // Experience Section
-export function ExperienceSection({ 
-  experience, 
-  editedExperience, 
-  isEditing, 
-  setEditedExperience 
+export function ExperienceSection({
+  experience,
+  editedExperience,
+  isEditing,
+  setEditedExperience
 }: any) {
   return (
     (experience.length > 0 || isEditing) && (
@@ -142,7 +142,7 @@ export function ExperienceSection({
                 <p className="text-[#263238]/80">{exp.company}</p>
                 <p className="text-sm text-[#263238]/60">{exp.startDate} - {exp.endDate}</p>
                 {exp.description && (
-                  <p className="text-sm text-[#263238]/70 mt-2">{exp.description}</p>
+                  <p className="text-sm text-[#263238]/70 mt-2 break-all [overflow-wrap:anywhere]">{exp.description}</p>
                 )}
               </div>
             ))
@@ -161,16 +161,16 @@ export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any
     const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
     const monday = new Date(today);
     monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1)); // Get Monday of current week
-    
+
     const dates: { [key: string]: string } = {};
     const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    
+
     dayNames.forEach((dayName, index) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
       dates[dayName] = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     });
-    
+
     return dates;
   };
 
@@ -178,7 +178,7 @@ export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any
 
   return (
     (Object.values(weeklyAvailability).some((day: any) => day.available) || isEditing) && (
-      <Card className="p-6 border-[#263238]/10 shadow-md">
+      <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#4ADE80]" />
@@ -197,7 +197,7 @@ export function WeeklyAvailabilitySection({ weeklyAvailability, isEditing }: any
           )}
         </div>
         <div className="space-y-2">
-          {Object.entries(weeklyAvailability).map(([day, info]: [string, any]) => 
+          {Object.entries(weeklyAvailability).map(([day, info]: [string, any]) =>
             info.available && (
               <div key={day} className="flex items-center justify-between py-3 px-4 bg-[#FAFAFA] rounded-lg border border-[#263238]/5">
                 <div className="flex flex-col">
@@ -250,13 +250,13 @@ export function ResumeSection({ resume, isEditing, setResume }: any) {
   };
 
   return (
-    (resume.fileName || isEditing) && (
-      <Card className="p-6 border-[#263238]/10 shadow-md">
+    (resume?.fileName || isEditing) && (
+      <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-5 h-5 text-[#FF9800]" />
           <h2 className="text-[#263238]">Resume</h2>
         </div>
-        {resume.fileName ? (
+        {resume?.fileName ? (
           <div className="flex items-center justify-between p-4 bg-[#FAFAFA] rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FF9800]/20 rounded-lg flex items-center justify-center">
@@ -269,8 +269,8 @@ export function ResumeSection({ resume, isEditing, setResume }: any) {
             </div>
             <div className="flex items-center gap-2">
               {!isEditing && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800] hover:text-white rounded-xl"
                 >
@@ -324,7 +324,7 @@ export function ResumeSection({ resume, isEditing, setResume }: any) {
 // Job Preferences Section
 export function JobPreferencesSection({ jobPreferences, editedJobPreferences, isEditing, setEditedJobPreferences }: any) {
   const availableJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Seasonal', 'Temporary'];
-  
+
   const toggleJobType = (type: string) => {
     const updated = { ...editedJobPreferences };
     if (updated.jobTypes.includes(type)) {
@@ -367,11 +367,10 @@ export function JobPreferencesSection({ jobPreferences, editedJobPreferences, is
                   <Badge
                     key={type}
                     onClick={() => toggleJobType(type)}
-                    className={`cursor-pointer rounded-xl transition ${
-                      editedJobPreferences.jobTypes.includes(type)
-                        ? 'bg-[#4FC3F7] text-white border-[#4FC3F7] hover:bg-[#0288D1]'
-                        : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20 hover:bg-[#263238]/5'
-                    }`}
+                    className={`cursor-pointer rounded-xl transition ${editedJobPreferences.jobTypes.includes(type)
+                      ? 'bg-[#4FC3F7] text-white border-[#4FC3F7] hover:bg-[#0288D1]'
+                      : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20 hover:bg-[#263238]/5'
+                      }`}
                   >
                     {type}
                   </Badge>
@@ -420,21 +419,19 @@ export function JobPreferencesSection({ jobPreferences, editedJobPreferences, is
               <div className="flex gap-2">
                 <Badge
                   onClick={() => setEditedJobPreferences({ ...editedJobPreferences, willingToRelocate: true })}
-                  className={`cursor-pointer rounded-xl ${
-                    editedJobPreferences.willingToRelocate
-                      ? 'bg-[#4ADE80] text-white border-[#4ADE80]'
-                      : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20'
-                  }`}
+                  className={`cursor-pointer rounded-xl ${editedJobPreferences.willingToRelocate
+                    ? 'bg-[#4ADE80] text-white border-[#4ADE80]'
+                    : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20'
+                    }`}
                 >
                   Yes
                 </Badge>
                 <Badge
                   onClick={() => setEditedJobPreferences({ ...editedJobPreferences, willingToRelocate: false })}
-                  className={`cursor-pointer rounded-xl ${
-                    !editedJobPreferences.willingToRelocate
-                      ? 'bg-[#263238] text-white border-[#263238]'
-                      : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20'
-                  }`}
+                  className={`cursor-pointer rounded-xl ${!editedJobPreferences.willingToRelocate
+                    ? 'bg-[#263238] text-white border-[#263238]'
+                    : 'bg-[#FAFAFA] text-[#263238]/70 border-[#263238]/20'
+                    }`}
                 >
                   No
                 </Badge>

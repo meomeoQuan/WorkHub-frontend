@@ -54,69 +54,41 @@ export function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [companyData, setCompanyData] = useState({
-    name: user?.fullName || "TechCorp Inc.",
-    email: user?.email || "contact@techcorp.com",
-    phone: "+1 (555) 987-6543",
-    location: "San Francisco, CA",
-    industry: "Technology",
-    website: "www.techcorp.com",
-    employees: "50-200",
-    founded: "2015",
-    description: `TechCorp is a leading technology company specializing in innovative software solutions for businesses worldwide. We pride ourselves on creating a collaborative and inclusive work environment where creativity and innovation thrive.
-
-Our mission is to empower businesses through technology while maintaining a commitment to excellence and employee development. We offer competitive compensation, flexible work arrangements, and opportunities for growth.`,
+    name: user?.fullName || "",
+    email: user?.email || "",
+    phone: "",
+    location: "",
+    industry: "",
+    website: "",
+    employees: "",
+    founded: "",
+    description: "",
   });
 
   // Posted jobs state removed as unused
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(companyData);
-  const [industryFocus, setIndustryFocus] = useState([
-    "Software Development",
-    "Cloud Computing",
-    "Data Analytics",
-    "AI/ML",
-  ]);
+  const [industryFocus, setIndustryFocus] = useState<string[]>([]);
   const [editedIndustryFocus, setEditedIndustryFocus] =
-    useState(industryFocus);
-  const [credibilityRating] = useState(4.5); // Credibility rating out of 5
+    useState<string[]>([]);
+  const [credibilityRating, setCredibilityRating] = useState(0);
 
   // New profile sections
-  const [education, setEducation] = useState([
-    {
-      id: "1",
-      school: "Stanford University",
-      degree: "Bachelor of Science",
-      field: "Computer Science",
-      startYear: "2015",
-      endYear: "2019",
-      description:
-        "Focused on software engineering and artificial intelligence.",
-    },
-  ]);
+  const [education, setEducation] = useState<any[]>([]);
   const [editedEducation, setEditedEducation] =
-    useState(education);
+    useState<any[]>([]);
 
-  const [experience, setExperience] = useState([
-    {
-      id: "1",
-      company: "Tech Solutions Inc.",
-      position: "Software Developer",
-      startDate: "Jan 2020",
-      endDate: "Present",
-      description:
-        "Developing scalable web applications using React and Node.js. Led a team of 5 developers on multiple successful projects.",
-    },
-  ]);
+  const [experience, setExperience] = useState<any[]>([]);
   const [editedExperience, setEditedExperience] =
-    useState(experience);
+    useState<any[]>([]);
 
   const [weeklyAvailability, setWeeklyAvailability] = useState({
-    monday: { available: true, hours: "9:00 AM - 5:00 PM" },
-    tuesday: { available: true, hours: "9:00 AM - 5:00 PM" },
-    wednesday: { available: true, hours: "9:00 AM - 5:00 PM" },
-    thursday: { available: true, hours: "9:00 AM - 5:00 PM" },
-    friday: { available: true, hours: "9:00 AM - 5:00 PM" },
+    monday: { available: false, hours: "" },
+    tuesday: { available: false, hours: "" },
+    wednesday: { available: false, hours: "" },
+    thursday: { available: false, hours: "" },
+    friday: { available: false, hours: "" },
     saturday: { available: false, hours: "" },
     sunday: { available: false, hours: "" },
   });
@@ -125,28 +97,22 @@ Our mission is to empower businesses through technology while maintaining a comm
     setEditedWeeklyAvailability,
   ] = useState(weeklyAvailability);
 
-  const [resume, setResume] = useState({
-    fileName: "John_Doe_Resume.pdf",
-    fileUrl: "#",
-    uploadedDate: "Feb 1, 2025",
-  });
+  const [resume, setResume] = useState<any>(null);
 
   const [jobPreferences, setJobPreferences] = useState({
-    jobTypes: ["Part-time", "Freelance"],
-    expectedSalary: "$40-60/hr",
-    preferredLocations: ["San Francisco, CA", "Remote"],
+    jobTypes: [],
+    expectedSalary: "",
+    preferredLocations: [],
     willingToRelocate: false,
-    startDate: "Immediately",
+    startDate: "",
   });
   const [editedJobPreferences, setEditedJobPreferences] =
     useState(jobPreferences);
 
   // Contact Information (Optional)
   const [contactInfo, setContactInfo] = useState({
-    companyAddress: "",
-    addressDetails: "",
-    showMap: false,
     mapEmbedUrl: "",
+    showMap: false,
   });
   const [editedContactInfo, setEditedContactInfo] =
     useState(contactInfo);
@@ -229,8 +195,9 @@ Our mission is to empower businesses through technology while maintaining a comm
               website: data.website || "",
               employees: data.companySize || "",
               founded: data.foundedYear?.toString() || "",
-              description: data.bio || data.about || ""
+              description: data.description || data.bio || data.about || ""
             });
+            setCredibilityRating(data.rating || 0);
 
             setIndustryFocus(data.skills || []);
 
@@ -277,9 +244,25 @@ Our mission is to empower businesses through technology while maintaining a comm
     try {
       const token = localStorage.getItem("access_token");
 
+      // Utility to safely parse date to ISO string
+      const toISO = (dateStr: string) => {
+        if (!dateStr || dateStr === "Present") return undefined;
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? undefined : d.toISOString();
+      };
+
+      // Utility to safely parse ID to Int32
+      const safeId = (id: any) => {
+        const parsed = parseInt(id);
+        // If NaN or greater than Int32 MaxValue, treat as 0 (new item)
+        return isNaN(parsed) || parsed > 2147483647 ? 0 : parsed;
+      };
+
       // Map state to DTO
-      const profileDTO: Partial<UserProfileDTO> = {
+      const profileDTO: any = {
+        id: user?.id || 0,
         fullName: editedData.name,
+        email: editedData.email,
         phone: editedData.phone,
         location: editedData.location,
         website: editedData.website,
@@ -287,19 +270,20 @@ Our mission is to empower businesses through technology while maintaining a comm
         foundedYear: parseInt(editedData.founded) || undefined,
         industry: editedData.industry,
         bio: editedData.description,
+        description: editedData.description,
         skills: editedIndustryFocus,
 
         experiences: editedExperience.map(e => ({
-          id: parseInt(e.id) || 0,
+          id: safeId(e.id),
           title: e.position,
           company: e.company,
-          startDate: new Date(e.startDate).toISOString(), // Naive parsing, validation needed
-          endDate: e.endDate === "Present" ? undefined : new Date(e.endDate).toISOString(),
+          startDate: toISO(e.startDate) || new Date().toISOString(),
+          endDate: toISO(e.endDate),
           description: e.description
         })),
 
         educations: editedEducation.map(e => ({
-          id: parseInt(e.id) || 0,
+          id: safeId(e.id),
           school: e.school,
           degree: e.degree,
           fieldOfStudy: e.field,
@@ -308,7 +292,7 @@ Our mission is to empower businesses through technology while maintaining a comm
           description: e.description
         })),
 
-        schedules: [] // TODO: Map schedule back
+        schedules: []
       };
 
       const res = await fetch(`${API_URL}/api/UserProfile/edit-profile`, {
@@ -320,21 +304,36 @@ Our mission is to empower businesses through technology while maintaining a comm
         body: JSON.stringify(profileDTO)
       });
 
-      const result = await res.json();
-      if (res.ok && result.success) {
-        toast.success("Profile updated successfully!");
+      if (res.ok) {
+        let result;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          result = await res.json();
+        }
 
-        // Update local state with edited data firmly
-        setCompanyData(editedData);
-        setIndustryFocus(editedIndustryFocus);
-        setEducation(editedEducation);
-        setExperience(editedExperience);
-        setWeeklyAvailability(editedWeeklyAvailability);
-        setJobPreferences(editedJobPreferences);
-        setContactInfo(editedContactInfo);
-        setIsEditing(false);
+        if (!result || result.success) {
+          toast.success("Profile updated successfully!");
+
+          // Update local state with edited data firmly
+          setCompanyData(editedData);
+          setIndustryFocus(editedIndustryFocus);
+          setEducation(editedEducation);
+          setExperience(editedExperience);
+          setWeeklyAvailability(editedWeeklyAvailability);
+          setJobPreferences(editedJobPreferences);
+          setContactInfo(editedContactInfo);
+          setIsEditing(false);
+        } else {
+          toast.error(result.message || "Failed to update profile");
+        }
       } else {
-        toast.error(result.message || "Failed to update profile");
+        const errorText = await res.text();
+        console.error("Save failed", res.status, errorText);
+        if (res.status === 401) {
+          toast.error("Session expired. Please log in again.");
+        } else {
+          toast.error("Failed to update profile. Server error.");
+        }
       }
 
     } catch (err) {
@@ -455,21 +454,6 @@ Our mission is to empower businesses through technology while maintaining a comm
                       </div>
                       <div>
                         <Label className="text-[#263238] text-sm">
-                          Location
-                        </Label>
-                        <Input
-                          value={editedData.location}
-                          onChange={(e) =>
-                            setEditedData({
-                              ...editedData,
-                              location: e.target.value,
-                            })
-                          }
-                          className="h-10 border-[#263238]/20 rounded-xl mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[#263238] text-sm">
                           Website
                         </Label>
                         <Input
@@ -523,56 +507,62 @@ Our mission is to empower businesses through technology while maintaining a comm
                         <h1 className="text-[#263238] mb-2">
                           {companyData.name}
                         </h1>
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl">
-                            {companyData.industry}
-                          </Badge>
-                          {/* Credibility Rating */}
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-xl">
-                            <div className="flex items-center gap-0.5">
-                              {[...Array(5)].map((_, index) => {
-                                const starValue = index + 1;
-                                const isFilled =
-                                  starValue <=
-                                  Math.floor(credibilityRating);
-                                const isHalf =
-                                  !isFilled &&
-                                  starValue ===
-                                  Math.ceil(
-                                    credibilityRating,
-                                  ) &&
-                                  credibilityRating % 1 !== 0;
+                        {(companyData.industry || credibilityRating > 0) && (
+                          <div className="flex items-center gap-3 mb-2">
+                            {companyData.industry && (
+                              <Badge className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl">
+                                {companyData.industry}
+                              </Badge>
+                            )}
+                            {/* Credibility Rating */}
+                            {credibilityRating > 0 && (
+                              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-xl">
+                                <div className="flex items-center gap-0.5">
+                                  {[...Array(5)].map((_, index) => {
+                                    const starValue = index + 1;
+                                    const isFilled =
+                                      starValue <=
+                                      Math.floor(credibilityRating);
+                                    const isHalf =
+                                      !isFilled &&
+                                      starValue ===
+                                      Math.ceil(
+                                        credibilityRating,
+                                      ) &&
+                                      credibilityRating % 1 !== 0;
 
-                                return (
-                                  <div
-                                    key={index}
-                                    className="relative"
-                                  >
-                                    {isHalf ? (
-                                      <>
-                                        <Star className="w-4 h-4 text-[#FF9800]" />
-                                        <Star
-                                          className="w-4 h-4 text-[#FF9800] fill-[#FF9800] absolute top-0 left-0"
-                                          style={{
-                                            clipPath:
-                                              "inset(0 50% 0 0)",
-                                          }}
-                                        />
-                                      </>
-                                    ) : (
-                                      <Star
-                                        className={`w-4 h-4 text-[#FF9800] ${isFilled ? "fill-[#FF9800]" : ""}`}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <span className="text-sm font-semibold text-[#FF9800] ml-1">
-                              {credibilityRating.toFixed(1)}
-                            </span>
+                                    return (
+                                      <div
+                                        key={index}
+                                        className="relative"
+                                      >
+                                        {isHalf ? (
+                                          <>
+                                            <Star className="w-4 h-4 text-[#FF9800]" />
+                                            <Star
+                                              className="w-4 h-4 text-[#FF9800] fill-[#FF9800] absolute top-0 left-0"
+                                              style={{
+                                                clipPath:
+                                                  "inset(0 50% 0 0)",
+                                              }}
+                                            />
+                                          </>
+                                        ) : (
+                                          <Star
+                                            className={`w-4 h-4 text-[#FF9800] ${isFilled ? "fill-[#FF9800]" : ""}`}
+                                          />
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <span className="text-sm font-semibold text-[#FF9800] ml-1">
+                                  {credibilityRating.toFixed(1)}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Follow Button */}
@@ -598,18 +588,24 @@ Our mission is to empower businesses through technology while maintaining a comm
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mt-4">
-                      <div className="flex items-center gap-2 text-[#263238]/70">
-                        <Mail className="w-4 h-4 text-[#FF9800]" />
-                        <span>{companyData.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[#263238]/70">
-                        <Phone className="w-4 h-4 text-[#FF9800]" />
-                        <span>{companyData.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[#263238]/70">
-                        <MapPin className="w-4 h-4 text-[#FF9800]" />
-                        <span>{companyData.location}</span>
-                      </div>
+                      {companyData.email && (
+                        <div className="flex items-center gap-2 text-[#263238]/70">
+                          <Mail className="w-4 h-4 text-[#FF9800]" />
+                          <span>{companyData.email}</span>
+                        </div>
+                      )}
+                      {companyData.phone && (
+                        <div className="flex items-center gap-2 text-[#263238]/70">
+                          <Phone className="w-4 h-4 text-[#FF9800]" />
+                          <span>{companyData.phone}</span>
+                        </div>
+                      )}
+                      {companyData.location && (
+                        <div className="flex items-center gap-2 text-[#263238]/70">
+                          <MapPin className="w-4 h-4 text-[#FF9800]" />
+                          <span>{companyData.location}</span>
+                        </div>
+                      )}
                       {companyData.website && (
                         <div className="flex items-center gap-2 text-[#263238]/70">
                           <Globe className="w-4 h-4 text-[#FF9800]" />
@@ -693,39 +689,41 @@ Our mission is to empower businesses through technology while maintaining a comm
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
               {/* Description */}
-              <Card className="p-6 border-[#263238]/10 shadow-md">
-                <h2 className="text-[#263238] mb-4">
-                  Description
-                </h2>
-                {isEditing ? (
-                  <div>
-                    <Label className="text-[#263238] text-sm mb-2 block">
-                      Profile Description
-                    </Label>
-                    <Textarea
-                      value={editedData.description}
-                      onChange={(e) =>
-                        setEditedData({
-                          ...editedData,
-                          description: e.target.value,
-                        })
-                      }
-                      className="border-[#263238]/20 rounded-xl min-h-[200px]"
-                      placeholder="Tell others about yourself, your experience, and what you're looking for..."
-                    />
-                  </div>
-                ) : (
-                  <p className="text-[#263238]/70 whitespace-pre-line">
-                    {companyData.description}
-                  </p>
-                )}
-              </Card>
+              {(companyData.description || isEditing) && (
+                <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
+                  <h2 className="text-[#263238] mb-4">
+                    Description
+                  </h2>
+                  {isEditing ? (
+                    <div>
+                      <Label className="text-[#263238] text-sm mb-2 block">
+                        Profile Description
+                      </Label>
+                      <Textarea
+                        value={editedData.description}
+                        onChange={(e) =>
+                          setEditedData({
+                            ...editedData,
+                            description: e.target.value,
+                          })
+                        }
+                        className="border-[#263238]/20 rounded-xl min-h-[200px]"
+                        placeholder="Tell others about yourself, your experience, and what you're looking for..."
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-[#263238]/70 whitespace-pre-line break-all [overflow-wrap:anywhere]">
+                      {companyData.description}
+                    </p>
+                  )}
+                </Card>
+              )}
 
               {/* Education - Only show if exists */}
               {(education.length > 0 || isEditing) && (
-                <Card className="p-6 border-[#263238]/10 shadow-md">
+                <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <GraduationCap className="w-5 h-5 text-[#FF9800]" />
@@ -925,7 +923,7 @@ Our mission is to empower businesses through technology while maintaining a comm
                             {edu.startYear} - {edu.endYear}
                           </p>
                           {edu.description && (
-                            <p className="text-sm text-[#263238]/70 mt-2">
+                            <p className="text-sm text-[#263238]/70 mt-2 break-all">
                               {edu.description}
                             </p>
                           )}
@@ -965,7 +963,7 @@ Our mission is to empower businesses through technology while maintaining a comm
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Contact Information - Optional */}
-              {(contactInfo.companyAddress || contactInfo.addressDetails || isEditing) && (
+              {(companyData.location || isEditing) && (
                 <Card className="p-0 border-[#263238]/10 shadow-md overflow-hidden">
                   <div className="bg-[#FF9800] px-6 py-4">
                     <h3 className="text-white font-semibold">Contact Information</h3>
@@ -975,36 +973,19 @@ Our mission is to empower businesses through technology while maintaining a comm
                     {isEditing ? (
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-[#263238] font-medium text-sm mb-2 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#FF9800]" />
-                            Company Address (Optional)
-                          </Label>
-                          <Input
-                            value={editedContactInfo.companyAddress}
-                            onChange={(e) =>
-                              setEditedContactInfo({
-                                ...editedContactInfo,
-                                companyAddress: e.target.value,
-                              })
-                            }
-                            className="h-10 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:ring-[#FF9800]"
-                            placeholder="e.g., 9th Floor, Technosoft Building"
-                          />
-                        </div>
-                        <div>
                           <Label className="text-[#263238] font-medium text-sm mb-2 block">
-                            Full Address Details (Optional)
+                            Address Details (Optional)
                           </Label>
                           <Textarea
-                            value={editedContactInfo.addressDetails}
+                            value={editedData.location}
                             onChange={(e) =>
-                              setEditedContactInfo({
-                                ...editedContactInfo,
-                                addressDetails: e.target.value,
+                              setEditedData({
+                                ...editedData,
+                                location: e.target.value,
                               })
                             }
                             className="border-[#263238]/20 rounded-xl min-h-[80px] focus:border-[#FF9800] focus:ring-[#FF9800]"
-                            placeholder="e.g., Alley 15 Duy Tan, Dich Vong Hau Ward, Cau Giay District, Hanoi"
+                            placeholder="e.g., 9th Floor, Technosoft Building, Alley 15 Duy Tan, Hanoi"
                           />
                         </div>
                         <div>
@@ -1046,23 +1027,18 @@ Our mission is to empower businesses through technology while maintaining a comm
                       </div>
                     ) : (
                       <>
-                        {/* Company Address */}
-                        {contactInfo.companyAddress && (
+                        {/* Address Details */}
+                        {companyData.location && (
                           <div className="mb-4 pb-4 border-b border-[#263238]/10">
                             <div className="flex items-start gap-3">
                               <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <MapPin className="w-4 h-4 text-[#FF9800]" />
                               </div>
                               <div className="flex-1">
-                                <h4 className="text-[#263238] font-semibold mb-1.5">Company Address</h4>
-                                <p className="text-[#263238]/70 text-sm leading-relaxed">
-                                  {contactInfo.companyAddress}
+                                <h4 className="text-[#263238] font-semibold mb-1.5">Address Details</h4>
+                                <p className="text-[#263238]/70 text-sm leading-relaxed break-all">
+                                  {companyData.location}
                                 </p>
-                                {contactInfo.addressDetails && (
-                                  <p className="text-[#263238]/70 text-sm mt-1 leading-relaxed">
-                                    {contactInfo.addressDetails}
-                                  </p>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1100,54 +1076,56 @@ Our mission is to empower businesses through technology while maintaining a comm
               )}
 
               {/* Industry Focus */}
-              <Card className="p-6 border-[#263238]/10 shadow-md">
-                <h3 className="text-[#263238] mb-4">
-                  Industry Focus
-                </h3>
-                {isEditing ? (
-                  <>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {editedIndustryFocus.map((tag, index) => (
+              {(industryFocus.length > 0 || isEditing) && (
+                <Card className="p-6 border-[#263238]/10 shadow-md">
+                  <h3 className="text-[#263238] mb-4">
+                    Industry Focus
+                  </h3>
+                  {isEditing ? (
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {editedIndustryFocus.map((tag, index) => (
+                          <Badge
+                            key={index}
+                            className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition"
+                            onClick={() =>
+                              removeIndustryTag(index)
+                            }
+                          >
+                            {tag} ×
+                          </Badge>
+                        ))}
+                      </div>
+                      <Input
+                        placeholder="Type an industry tag and press Enter"
+                        className="h-10 border-[#263238]/20 rounded-xl"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const input = e.currentTarget;
+                            addIndustryTag(input.value);
+                            input.value = "";
+                          }
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {industryFocus.map((tag, index) => (
                         <Badge
                           key={index}
-                          className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition"
-                          onClick={() =>
-                            removeIndustryTag(index)
-                          }
+                          className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl"
                         >
-                          {tag} ×
+                          {tag}
                         </Badge>
                       ))}
                     </div>
-                    <Input
-                      placeholder="Type an industry tag and press Enter"
-                      className="h-10 border-[#263238]/20 rounded-xl"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const input = e.currentTarget;
-                          addIndustryTag(input.value);
-                          input.value = "";
-                        }
-                      }}
-                    />
-                  </>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {industryFocus.map((tag, index) => (
-                      <Badge
-                        key={index}
-                        className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </Card>
+                  )}
+                </Card>
+              )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 }
