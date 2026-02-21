@@ -28,12 +28,11 @@ export function JobCard({
   logo,
 }: JobCardProps) {
   const typeColors = {
-    "Part-time":
-      "bg-[#4FC3F7]/20 text-[#1E293B] border border-[#4FC3F7]/30",
-    Freelance:
-      "bg-[#FF9800]/20 text-[#1E293B] border border-[#FF9800]/30",
-    Seasonal:
-      "bg-[#4ADE80]/20 text-[#1E293B] border border-[#4ADE80]/30",
+    "Part-time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    Freelance: "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    Seasonal: "bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20",
+    "Full-time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
+    Contract: "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
   };
 
   const typeIcons = {

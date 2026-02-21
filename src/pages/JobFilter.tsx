@@ -49,6 +49,7 @@ import { SkeletonNewPostModal } from "../components/SkeletonNewPostModal";
 
 import { JobPostDTO } from "../types/DTOs/ModelDTOs/JobsDTOs/JobPostDTO";
 import type { ApiResponse } from "../types/ApiResponse";
+import { formatRelativeTime } from "../utils/dateUtils";
 
 // Mock job posts data - removed
 const jobPosts: any[] = [];
@@ -224,7 +225,7 @@ export default function JobFilter() {
             companyEmployees: "50-200 employees",
             companyRating: `${p.rating || 4.5} rating`,
             credibilityRating: p.rating || 4.5,
-            timestamp: "Recently",
+            timestamp: formatRelativeTime(p.createdAt),
             content: p.content,
             jobTitle: firstJob?.jobName || p.header || "No Title",
             location: firstJob?.location || "Remote",
@@ -370,12 +371,12 @@ export default function JobFilter() {
             id: c.id,
             author: c.userName,
             text: c.content,
-            timestamp: new Date(c.createdAt).toLocaleDateString(),
+            timestamp: formatRelativeTime(c.createdAt),
             avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${c.userName}&backgroundColor=FF9800`,
             replies: c.replies?.map((r: any) => ({
               author: r.userName,
               text: r.content,
-              timestamp: new Date(r.createdAt).toLocaleDateString(),
+              timestamp: formatRelativeTime(r.createdAt),
               avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${r.userName}&backgroundColor=4FC3F7`,
             })) || []
           }));
@@ -1476,7 +1477,18 @@ export default function JobFilter() {
                                 </div>
 
                                 <div className="flex items-center gap-2 mt-3">
-                                  <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 hover:bg-[#FF9800]/30">
+                                  <Badge className={`${post.type === "Part-time" ? "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20" :
+                                      post.type === "Freelance" ? "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20" :
+                                        post.type === "Seasonal" ? "bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20" :
+                                          post.type === "Full-time" ? "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20" :
+                                            "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20"
+                                    } border-0`}>
+                                    <span className="mr-1">
+                                      {post.type === "Part-time" ? "⏰" :
+                                        post.type === "Freelance" ? "💼" :
+                                          post.type === "Seasonal" ? "🌟" :
+                                            post.type === "Full-time" ? "🏢" : "⏰"}
+                                    </span>
                                     {post.type}
                                   </Badge>
                                   <button
