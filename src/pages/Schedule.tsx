@@ -79,8 +79,11 @@ export function Schedule() {
         if (result.success && result.data) {
           const mapped: CalendarEvent[] = (result.data as ScheduleViewDTO[]).map(
             (s) => {
-              const start = new Date(s.startTime);
-              let end = new Date(s.endTime);
+              // Strip 'Z' suffix so JS treats the datetime as local time, not UTC
+              const rawStart = s.startTime.replace('Z', '').replace('z', '');
+              const rawEnd = s.endTime.replace('Z', '').replace('z', '');
+              const start = new Date(rawStart);
+              let end = new Date(rawEnd);
               // Ensure minimum 30-minute visual duration
               if (end.getTime() - start.getTime() < 30 * 60 * 1000) {
                 end = new Date(start.getTime() + 30 * 60 * 1000);
@@ -158,8 +161,8 @@ export function Schedule() {
         const updateDTO: UpdateScheduleDTO = {
           id: parseInt(editingEventId),
           title: eventTitle,
-          startTime: startDate.toISOString(),
-          endTime: endDate.toISOString(),
+          startTime: startTime,
+          endTime: endTime,
         };
 
         const res = await fetch(`${API_URL}/api/Schedule`, {
@@ -191,8 +194,8 @@ export function Schedule() {
         // --- CREATE ---
         const createDTO: CreateScheduleDTO = {
           title: eventTitle,
-          startTime: startDate.toISOString(),
-          endTime: endDate.toISOString(),
+          startTime: startTime,
+          endTime: endTime,
         };
 
         const res = await fetch(`${API_URL}/api/Schedule`, {
