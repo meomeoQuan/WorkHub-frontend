@@ -75,25 +75,15 @@ const statusConfig: Record<string, any> = {
     color: 'bg-[#4FC3F7]/20 text-[#0277BD] border-[#4FC3F7]/30',
     icon: FileText,
   },
-  'Shortlisted': {
-    label: 'Shortlisted',
-    color: 'bg-[#4ADE80]/20 text-[#15803D] border-[#4ADE80]/30',
+  'Accepted': {
+    label: 'Accepted',
+    color: 'bg-green-100 text-green-700 border-green-200',
     icon: CheckCircle,
-  },
-  'Interviewed': {
-    label: 'Interviewed',
-    color: 'bg-purple-100 text-purple-700 border-purple-200',
-    icon: Calendar,
   },
   'Rejected': {
     label: 'Rejected',
     color: 'bg-red-100 text-red-700 border-red-200',
     icon: XCircle,
-  },
-  'Accepted': {
-    label: 'Accepted',
-    color: 'bg-green-100 text-green-700 border-green-200',
-    icon: CheckCircle,
   },
 };
 
@@ -521,10 +511,7 @@ export function ApplicationDetail() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
                   <SelectItem value="Reviewing">Reviewing</SelectItem>
-                  <SelectItem value="Shortlisted">Shortlisted</SelectItem>
-                  <SelectItem value="Interviewed">Interviewed</SelectItem>
                   <SelectItem value="Accepted">Accepted</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
