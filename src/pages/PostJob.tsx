@@ -353,57 +353,6 @@ export function PostJob() {
                 </p>
               </div>
 
-              {/* Job Images */}
-              <div>
-                <Label className="text-[#263238] flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-[#4FC3F7]" />
-                  Job Images (Optional)
-                </Label>
-                <p className="text-sm text-[#263238]/60 mt-1 mb-3">
-                  Add images to showcase your workplace or job environment
-                </p>
-
-                <div className="space-y-4">
-                  <input
-                    type="file"
-                    id="job-images"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="job-images"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-lg shadow-[#FF9800]/30 cursor-pointer transition-all"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload Images
-                  </label>
-
-                  {jobImages.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {jobImages.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={image}
-                            alt={`Job Image ${index + 1}`}
-                            className="w-full h-40 object-cover rounded-xl border-2 border-[#263238]/10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleImageRemove(index)}
-                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                </div>
-              </div>
-
               {/* Form Actions */}
               <div className="flex gap-4 pt-4">
                 <Button
