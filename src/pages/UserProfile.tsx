@@ -778,425 +778,460 @@ export function UserProfile() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
-
-              {/* Description */}
-              {(companyData.description || isEditing) && (
-                <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
-                  <h2 className="text-[#263238] mb-4">
-                    Description
-                  </h2>
-                  {isEditing ? (
-                    <div>
-                      <Label className="text-[#263238] text-sm mb-2 block">
-                        Profile Description
-                      </Label>
-                      <Textarea
-                        value={editedData.description}
-                        onChange={(e) =>
-                          setEditedData({
-                            ...editedData,
-                            description: e.target.value,
-                          })
-                        }
-                        className="border-[#263238]/20 rounded-xl min-h-[200px]"
-                        placeholder="Tell others about yourself, your experience, and what you're looking for..."
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-[#263238]/70 whitespace-pre-line break-all [overflow-wrap:anywhere]">
-                      {companyData.description}
-                    </p>
-                  )}
-                </Card>
-              )}
-
-              {/* Education - Only show if exists */}
-              {(education.length > 0 || isEditing) && (
-                <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5 text-[#FF9800]" />
-                      <h2 className="text-[#263238]">
-                        Education
-                      </h2>
-                    </div>
-                    {isEditing && (
-                      <Button
-                        onClick={() => {
-                          const newEdu = {
-                            id: Date.now().toString(),
-                            school: "",
-                            degree: "",
-                            field: "",
-                            startYear: "",
-                            endYear: "",
-                            description: "",
-                          };
-                          setEditedEducation([
-                            ...editedEducation,
-                            newEdu,
-                          ]);
-                        }}
-                        size="sm"
-                        className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-lg"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Education
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      editedEducation.length > 0 ? (
-                        editedEducation.map((edu, index) => (
-                          <div
-                            key={edu.id}
-                            className="p-4 border border-[#263238]/10 rounded-lg space-y-3"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <Label className="text-[#263238] font-semibold">
-                                Education #{index + 1}
-                              </Label>
-                              <Button
-                                onClick={() => {
-                                  setEditedEducation(
-                                    editedEducation.filter(
-                                      (_, i) => i !== index,
-                                    ),
-                                  );
-                                }}
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div>
-                                <Label className="text-[#263238] text-sm">
-                                  School/University
-                                </Label>
-                                <Input
-                                  value={edu.school}
-                                  onChange={(e) => {
-                                    const updated = [
-                                      ...editedEducation,
-                                    ];
-                                    updated[index].school =
-                                      e.target.value;
-                                    setEditedEducation(updated);
-                                  }}
-                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
-                                  placeholder="e.g., Stanford University"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-[#263238] text-sm">
-                                  Degree
-                                </Label>
-                                <Input
-                                  value={edu.degree}
-                                  onChange={(e) => {
-                                    const updated = [
-                                      ...editedEducation,
-                                    ];
-                                    updated[index].degree =
-                                      e.target.value;
-                                    setEditedEducation(updated);
-                                  }}
-                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
-                                  placeholder="e.g., Bachelor of Science"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-[#263238] text-sm">
-                                  Field of Study
-                                </Label>
-                                <Input
-                                  value={edu.field}
-                                  onChange={(e) => {
-                                    const updated = [
-                                      ...editedEducation,
-                                    ];
-                                    updated[index].field =
-                                      e.target.value;
-                                    setEditedEducation(updated);
-                                  }}
-                                  className="h-9 border-[#263238]/20 rounded-lg mt-1"
-                                  placeholder="e.g., Computer Science"
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <Label className="text-[#263238] text-sm">
-                                    Start Year
-                                  </Label>
-                                  <Input
-                                    value={edu.startYear}
-                                    onChange={(e) => {
-                                      const updated = [
-                                        ...editedEducation,
-                                      ];
-                                      updated[index].startYear =
-                                        e.target.value;
-                                      setEditedEducation(
-                                        updated,
-                                      );
-                                    }}
-                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
-                                    placeholder="2015"
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-[#263238] text-sm">
-                                    End Year
-                                  </Label>
-                                  <Input
-                                    value={edu.endYear}
-                                    onChange={(e) => {
-                                      const updated = [
-                                        ...editedEducation,
-                                      ];
-                                      updated[index].endYear =
-                                        e.target.value;
-                                      setEditedEducation(
-                                        updated,
-                                      );
-                                    }}
-                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
-                                    placeholder="2019"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <Label className="text-[#263238] text-sm">
-                                Description (Optional)
-                              </Label>
-                              <Textarea
-                                value={edu.description}
-                                onChange={(e) => {
-                                  const updated = [
-                                    ...editedEducation,
-                                  ];
-                                  updated[index].description =
-                                    e.target.value;
-                                  setEditedEducation(updated);
-                                }}
-                                className="border-[#263238]/20 rounded-lg mt-1 min-h-[80px]"
-                                placeholder="Describe your focus areas, achievements, etc."
-                              />
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-[#263238]/50 text-sm text-center py-4">
-                          No education added yet. Click "Add
-                          Education" to add one.
-                        </p>
-                      )
-                    ) : (
-                      education.map((edu) => (
-                        <div
-                          key={edu.id}
-                          className="pb-4 border-b border-[#263238]/10 last:border-0 last:pb-0"
-                        >
-                          <h3 className="font-semibold text-[#263238]">
-                            {edu.school}
-                          </h3>
-                          <p className="text-[#263238]/80">
-                            {edu.degree} in {edu.field}
-                          </p>
-                          <p className="text-sm text-[#263238]/60">
-                            {edu.startYear} - {edu.endYear}
-                          </p>
-                          {edu.description && (
-                            <p className="text-sm text-[#263238]/70 mt-2 break-all">
-                              {edu.description}
-                            </p>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </Card>
-              )}
-
-              {/* Experience - Only show if exists */}
-              <ExperienceSection
-                experience={experience}
-                editedExperience={editedExperience}
-                isEditing={isEditing}
-                setEditedExperience={setEditedExperience}
-              />
-
-              {/* Weekly Availability - Show schedule slots from API */}
-              <WeeklyAvailabilitySection
-                scheduleSlots={scheduleSlots}
-                isEditing={isEditing}
-                isOwnProfile={isOwnProfile}
-              />
-
-              {/* Resume - Only show if exists */}
-              <ResumeSection
-                resume={resume}
-                isEditing={isEditing}
-                setResume={setResume}
-              />
-
-              {/* Posted Jobs section removed */}
+          {(!isEditing &&
+            !companyData.description &&
+            education.length === 0 &&
+            experience.length === 0 &&
+            scheduleSlots.length === 0 &&
+            (!resume || !resume.fileName) &&
+            !companyData.location &&
+            !companyData.googleMapsEmbedUrl &&
+            industryFocus.length === 0) ? (
+            /* Empty Profile Information Message - Truly Centered */
+            <div className="py-32 text-center w-full max-w-2xl mx-auto">
+              <div className="flex flex-col items-center justify-center space-y-6">
+                <div className="w-24 h-24 bg-[#263238]/5 rounded-full flex items-center justify-center mb-4">
+                  <Briefcase className="w-12 h-12 text-[#263238]/10" />
+                </div>
+                <div className="px-4">
+                  <h3 className="text-[#263238] font-bold text-3xl mb-4">
+                    No professional information available
+                  </h3>
+                  <p className="text-[#263238]/40 text-lg leading-relaxed font-medium">
+                    Detailed professional information, including professional experience,
+                    academic history, and availability, has not been provided for this profile at this time.
+                  </p>
+                </div>
+                {isOwnProfile && (
+                  <Button
+                    onClick={handleEdit}
+                    className="mt-8 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-lg shadow-[#FF9800]/20 transition-all active:scale-95 px-12 h-14 font-bold text-xl"
+                  >
+                    Complete Your Profile
+                  </Button>
+                )}
+              </div>
             </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Contact Information - Optional */}
-              {(companyData.location || companyData.googleMapsEmbedUrl || isEditing) && (
-                <Card className="p-0 border-[#263238]/10 shadow-md overflow-hidden">
-                  <div className="bg-[#FF9800] px-6 py-4">
-                    <h3 className="text-white font-semibold">Contact Information</h3>
-                  </div>
-
-                  <div className="p-6">
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
+                {/* Description */}
+                {(companyData.description || isEditing) && (
+                  <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
+                    <h2 className="text-[#263238] mb-4">
+                      Description
+                    </h2>
                     {isEditing ? (
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-[#263238] font-medium text-sm mb-2 block">
-                            Address Details (Optional)
-                          </Label>
-                          <Textarea
-                            value={editedData.location}
-                            onChange={(e) =>
-                              setEditedData({
-                                ...editedData,
-                                location: e.target.value,
-                              })
-                            }
-                            className="border-[#263238]/20 rounded-xl min-h-[80px] focus:border-[#FF9800] focus:ring-[#FF9800]"
-                            placeholder="e.g., 9th Floor, Technosoft Building, Alley 15 Duy Tan, Hanoi"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-[#263238] font-medium text-sm mb-2 block">
-                            Google Maps Embed URL (Optional)
-                          </Label>
-                          <Input
-                            value={editedData.googleMapsEmbedUrl}
-                            onChange={(e) =>
-                              setEditedData({
-                                ...editedData,
-                                googleMapsEmbedUrl: e.target.value,
-                              })
-                            }
-                            className="h-10 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:ring-[#FF9800]"
-                            placeholder="Paste Google Maps embed URL here"
-                          />
-                          <p className="text-[10px] text-[#263238]/50 mt-1.5">
-                            Search location on Google Maps → Share → Embed a map → Copy 'src' URL
-                          </p>
-                        </div>
+                      <div>
+                        <Label className="text-[#263238] text-sm mb-2 block">
+                          Profile Description
+                        </Label>
+                        <Textarea
+                          value={editedData.description}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              description: e.target.value,
+                            })
+                          }
+                          className="border-[#263238]/20 rounded-xl min-h-[200px]"
+                          placeholder="Tell others about yourself, your experience, and what you're looking for..."
+                        />
                       </div>
                     ) : (
-                      <>
-                        {/* Address Details */}
-                        {companyData.location && (
-                          <div className="mb-4 pb-4 border-b border-[#263238]/10">
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <MapPin className="w-4 h-4 text-[#FF9800]" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="text-[#263238] font-semibold mb-1.5">Address Details</h4>
-                                <p className="text-[#263238]/70 text-sm leading-relaxed break-all">
-                                  {companyData.location}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {/* View Map */}
-                        {companyData.googleMapsEmbedUrl && (
-                          <div className="mt-4 pt-4 border-t border-[#263238]/10">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0">
-                                <svg className="w-4 h-4 text-[#FF9800]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                                </svg>
-                              </div>
-                              <h4 className="text-[#263238] font-semibold">View Map</h4>
-                            </div>
-                            <div className="rounded-xl overflow-hidden border border-[#263238]/10 shadow-sm">
-                              <iframe
-                                src={companyData.googleMapsEmbedUrl}
-                                width="100%"
-                                height="250"
-                                style={{ border: 0 }}
-                                allowFullScreen
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                className="w-full"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <p className="text-[#263238]/70 whitespace-pre-line break-all [overflow-wrap:anywhere]">
+                        {companyData.description}
+                      </p>
                     )}
-                  </div>
-                </Card>
-              )}
+                  </Card>
+                )}
 
-              {/* Industry Focus */}
-              {(industryFocus.length > 0 || isEditing) && (
-                <Card className="p-6 border-[#263238]/10 shadow-md">
-                  <h3 className="text-[#263238] mb-4">
-                    Industry Focus
-                  </h3>
-                  {isEditing ? (
-                    <>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {editedIndustryFocus.map((tag, index) => (
+                {/* Education - Only show if exists */}
+                {(education.length > 0 || isEditing) && (
+                  <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5 text-[#FF9800]" />
+                        <h2 className="text-[#263238]">
+                          Education
+                        </h2>
+                      </div>
+                      {isEditing && (
+                        <Button
+                          onClick={() => {
+                            const newEdu = {
+                              id: Date.now().toString(),
+                              school: "",
+                              degree: "",
+                              field: "",
+                              startYear: "",
+                              endYear: "",
+                              description: "",
+                            };
+                            setEditedEducation([
+                              ...editedEducation,
+                              newEdu,
+                            ]);
+                          }}
+                          size="sm"
+                          className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-lg"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Education
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      {isEditing ? (
+                        editedEducation.length > 0 ? (
+                          editedEducation.map((edu, index) => (
+                            <div
+                              key={edu.id}
+                              className="p-4 border border-[#263238]/10 rounded-lg space-y-3"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <Label className="text-[#263238] font-semibold">
+                                  Education #{index + 1}
+                                </Label>
+                                <Button
+                                  onClick={() => {
+                                    setEditedEducation(
+                                      editedEducation.filter(
+                                        (_, i) => i !== index,
+                                      ),
+                                    );
+                                  }}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-[#263238] text-sm">
+                                    School/University
+                                  </Label>
+                                  <Input
+                                    value={edu.school}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...editedEducation,
+                                      ];
+                                      updated[index].school =
+                                        e.target.value;
+                                      setEditedEducation(updated);
+                                    }}
+                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                    placeholder="e.g., Stanford University"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[#263238] text-sm">
+                                    Degree
+                                  </Label>
+                                  <Input
+                                    value={edu.degree}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...editedEducation,
+                                      ];
+                                      updated[index].degree =
+                                        e.target.value;
+                                      setEditedEducation(updated);
+                                    }}
+                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                    placeholder="e.g., Bachelor of Science"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[#263238] text-sm">
+                                    Field of Study
+                                  </Label>
+                                  <Input
+                                    value={edu.field}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...editedEducation,
+                                      ];
+                                      updated[index].field =
+                                        e.target.value;
+                                      setEditedEducation(updated);
+                                    }}
+                                    className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                    placeholder="e.g., Computer Science"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-[#263238] text-sm">
+                                      Start Year
+                                    </Label>
+                                    <Input
+                                      value={edu.startYear}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...editedEducation,
+                                        ];
+                                        updated[index].startYear =
+                                          e.target.value;
+                                        setEditedEducation(
+                                          updated,
+                                        );
+                                      }}
+                                      className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                      placeholder="2015"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[#263238] text-sm">
+                                      End Year
+                                    </Label>
+                                    <Input
+                                      value={edu.endYear}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...editedEducation,
+                                        ];
+                                        updated[index].endYear =
+                                          e.target.value;
+                                        setEditedEducation(
+                                          updated,
+                                        );
+                                      }}
+                                      className="h-9 border-[#263238]/20 rounded-lg mt-1"
+                                      placeholder="2019"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-[#263238] text-sm">
+                                  Description (Optional)
+                                </Label>
+                                <Textarea
+                                  value={edu.description}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...editedEducation,
+                                    ];
+                                    updated[index].description =
+                                      e.target.value;
+                                    setEditedEducation(updated);
+                                  }}
+                                  className="border-[#263238]/20 rounded-lg mt-1 min-h-[80px]"
+                                  placeholder="Describe your focus areas, achievements, etc."
+                                />
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[#263238]/50 text-sm text-center py-4">
+                            No education added yet. Click "Add
+                            Education" to add one.
+                          </p>
+                        )
+                      ) : (
+                        education.map((edu) => (
+                          <div
+                            key={edu.id}
+                            className="pb-4 border-b border-[#263238]/10 last:border-0 last:pb-0"
+                          >
+                            <h3 className="font-semibold text-[#263238]">
+                              {edu.school}
+                            </h3>
+                            <p className="text-[#263238]/80">
+                              {edu.degree} in {edu.field}
+                            </p>
+                            <p className="text-sm text-[#263238]/60">
+                              {edu.startYear} - {edu.endYear}
+                            </p>
+                            {edu.description && (
+                              <p className="text-sm text-[#263238]/70 mt-2 break-all">
+                                {edu.description}
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Experience - Only show if exists */}
+                <ExperienceSection
+                  experience={experience}
+                  editedExperience={editedExperience}
+                  isEditing={isEditing}
+                  setEditedExperience={setEditedExperience}
+                />
+
+                {/* Weekly Availability - Show schedule slots from API */}
+                <WeeklyAvailabilitySection
+                  scheduleSlots={scheduleSlots}
+                  isEditing={isEditing}
+                  isOwnProfile={isOwnProfile}
+                />
+
+                {/* Resume - Only show if exists */}
+                <ResumeSection
+                  resume={resume}
+                  isEditing={isEditing}
+                  setResume={setResume}
+                />
+
+                {/* Posted Jobs section removed */}
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Contact Information - Optional */}
+                {(companyData.location || companyData.googleMapsEmbedUrl || isEditing) && (
+                  <Card className="p-0 border-[#263238]/10 shadow-md overflow-hidden">
+                    <div className="bg-[#FF9800] px-6 py-4">
+                      <h3 className="text-white font-semibold">Contact Information</h3>
+                    </div>
+
+                    <div className="p-6">
+                      {isEditing ? (
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-[#263238] font-medium text-sm mb-2 block">
+                              Address Details (Optional)
+                            </Label>
+                            <Textarea
+                              value={editedData.location}
+                              onChange={(e) =>
+                                setEditedData({
+                                  ...editedData,
+                                  location: e.target.value,
+                                })
+                              }
+                              className="border-[#263238]/20 rounded-xl min-h-[80px] focus:border-[#FF9800] focus:ring-[#FF9800]"
+                              placeholder="e.g., 9th Floor, Technosoft Building, Alley 15 Duy Tan, Hanoi"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[#263238] font-medium text-sm mb-2 block">
+                              Google Maps Embed URL (Optional)
+                            </Label>
+                            <Input
+                              value={editedData.googleMapsEmbedUrl}
+                              onChange={(e) =>
+                                setEditedData({
+                                  ...editedData,
+                                  googleMapsEmbedUrl: e.target.value,
+                                })
+                              }
+                              className="h-10 border-[#263238]/20 rounded-xl focus:border-[#FF9800] focus:ring-[#FF9800]"
+                              placeholder="Paste Google Maps embed URL here"
+                            />
+                            <p className="text-[10px] text-[#263238]/50 mt-1.5">
+                              Search location on Google Maps → Share → Embed a map → Copy 'src' URL
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Address Details */}
+                          {companyData.location && (
+                            <div className="mb-4 pb-4 border-b border-[#263238]/10">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <MapPin className="w-4 h-4 text-[#FF9800]" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-[#263238] font-semibold mb-1.5">Address Details</h4>
+                                  <p className="text-[#263238]/70 text-sm leading-relaxed break-all">
+                                    {companyData.location}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {/* View Map */}
+                          {companyData.googleMapsEmbedUrl && (
+                            <div className="mt-4 pt-4 border-t border-[#263238]/10">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-[#FF9800]/10 flex items-center justify-center flex-shrink-0">
+                                  <svg className="w-4 h-4 text-[#FF9800]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                  </svg>
+                                </div>
+                                <h4 className="text-[#263238] font-semibold">View Map</h4>
+                              </div>
+                              <div className="rounded-xl overflow-hidden border border-[#263238]/10 shadow-sm">
+                                <iframe
+                                  src={companyData.googleMapsEmbedUrl}
+                                  width="100%"
+                                  height="250"
+                                  style={{ border: 0 }}
+                                  allowFullScreen
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                  className="w-full"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Industry Focus */}
+                {(industryFocus.length > 0 || isEditing) && (
+                  <Card className="p-6 border-[#263238]/10 shadow-md">
+                    <h3 className="text-[#263238] mb-4">
+                      Industry Focus
+                    </h3>
+                    {isEditing ? (
+                      <>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {editedIndustryFocus.map((tag, index) => (
+                            <Badge
+                              key={index}
+                              className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition"
+                              onClick={() =>
+                                removeIndustryTag(index)
+                              }
+                            >
+                              {tag} ×
+                            </Badge>
+                          ))}
+                        </div>
+                        <Input
+                          placeholder="Type an industry tag and press Enter"
+                          className="h-10 border-[#263238]/20 rounded-xl"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const input = e.currentTarget;
+                              addIndustryTag(input.value);
+                              input.value = "";
+                            }
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {industryFocus.map((tag, index) => (
                           <Badge
                             key={index}
-                            className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition"
-                            onClick={() =>
-                              removeIndustryTag(index)
-                            }
+                            className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl"
                           >
-                            {tag} ×
+                            {tag}
                           </Badge>
                         ))}
                       </div>
-                      <Input
-                        placeholder="Type an industry tag and press Enter"
-                        className="h-10 border-[#263238]/20 rounded-xl"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const input = e.currentTarget;
-                            addIndustryTag(input.value);
-                            input.value = "";
-                          }
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {industryFocus.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              )}
+                    )}
+                  </Card>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div >
       </div >
     </div >

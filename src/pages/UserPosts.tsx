@@ -16,7 +16,8 @@ import {
   Repeat2,
   Send,
   MoreHorizontal,
-  UserPlus
+  UserPlus,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ interface JobPost {
   postedDate: string;
   requirements?: string;
   workTime?: string;
+  attachedJobs?: any[];
 }
 
 export function UserPosts() {
@@ -100,6 +102,7 @@ export function UserPosts() {
               shares: 0,
               image: p.postImage,
               postedDate: p.createdAt,
+              attachedJobs: p.jobs || []
             }));
             setUserPosts(mappedPosts);
           }
@@ -316,8 +319,52 @@ export function UserPosts() {
                             </div>
                           )}
 
-                          {/* Job Info Card - Only show if there's job information */}
-                          {post.jobTitle && post.location && post.salary && (
+                          {/* Job Info Cards - Show all attached jobs */}
+                          {post.attachedJobs && post.attachedJobs.length > 0 && (
+                            <div className="space-y-4">
+                              {/* Separator Line */}
+                              <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
+
+                              {post.attachedJobs.map((job: any) => (
+                                <Card key={job.id} className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition group/job">
+                                  {/* Job Details */}
+                                  <div className="p-4 space-y-2">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <h3 className="font-semibold text-[#263238] group-hover/job:text-[#FF9800] transition-colors leading-tight">
+                                        {job.jobName}
+                                      </h3>
+                                      <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 hover:bg-[#FF9800]/30 text-[10px] whitespace-nowrap px-2 py-0.5">
+                                        {job.jobType}
+                                      </Badge>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#263238]/70">
+                                      <div className="flex items-center gap-1.5">
+                                        <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                                        <span>{job.location}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                                        <span>{job.salary}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end mt-2">
+                                      <Link
+                                        to={`/job/${job.id}`}
+                                        className="text-xs text-[#4FC3F7] hover:underline font-medium flex items-center gap-1"
+                                      >
+                                        View Details <ArrowRight className="w-3 h-3" />
+                                      </Link>
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Legacy Job Info Card Support */}
+                          {!post.attachedJobs?.length && post.jobTitle && post.location && post.salary && (
                             <>
                               {/* Separator Line */}
                               <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
@@ -349,7 +396,7 @@ export function UserPosts() {
                                       {post.type}
                                     </Badge>
                                     <Link
-                                      to={`/jobs/${post.id}`}
+                                      to={`/job/${post.id}`}
                                       className="text-xs text-[#4FC3F7] hover:underline font-medium"
                                     >
                                       View Details →

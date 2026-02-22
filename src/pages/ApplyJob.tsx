@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -7,17 +7,29 @@ import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { Separator } from '../components/ui/separator';
-import { ArrowLeft, Upload, CheckCircle, Briefcase, MapPin } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle, Briefcase, MapPin, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface JobDetails {
+  id: number;
+  jobName: string;
+  companyName: string;
+  location: string;
+  salary: string;
+  jobType: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  statusCode: number;
+}
 
 export function ApplyJob() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // Scroll to top on mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -28,7 +40,35 @@ export function ApplyJob() {
     agreeToTerms: false,
   });
 
+  const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
+  const [isLoadingJob, setIsLoadingJob] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Fetch job details
+  const fetchJobDetails = useCallback(async () => {
+    if (!id) return;
+    try {
+      setIsLoadingJob(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Home/job-detail/${id}`);
+      const data: ApiResponse<JobDetails> = await response.json();
+      if (data.success) {
+        setJobDetails(data.data);
+      } else {
+        toast.error(data.message || "Failed to load job details");
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+      toast.error("Failed to load job details");
+    } finally {
+      setIsLoadingJob(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    fetchJobDetails();
+  }, [fetchJobDetails]);
 
   // Scroll to top when submission is successful
   useEffect(() => {
@@ -48,13 +88,49 @@ export function ApplyJob() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission
-    setSubmitted(true);
-    setTimeout(() => {
-      navigate('/my-applications');
-    }, 2000);
+    if (!formData.agreeToTerms) return;
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem('access_token');
+
+      const submitData = new FormData();
+      submitData.append('RecruitmentId', id || "");
+      submitData.append('FullName', formData.fullName);
+      submitData.append('Email', formData.email);
+      submitData.append('Phone', formData.phone);
+      submitData.append('CoverLetter', formData.coverLetter);
+      if (formData.resume) {
+        submitData.append('CvFile', formData.resume);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/MyApplication/apply`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: submitData
+      });
+
+      const data: ApiResponse<any> = await response.json();
+
+      if (data.success) {
+        setSubmitted(true);
+        toast.success("Application submitted successfully!");
+        setTimeout(() => {
+          navigate('/my-applications');
+        }, 3000);
+      } else {
+        toast.error(data.message || "Failed to submit application");
+      }
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -64,7 +140,7 @@ export function ApplyJob() {
           <div className="w-20 h-20 bg-[#4ADE80]/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-[#4ADE80]" />
           </div>
-          <h2 className="text-[#263238] mb-2 text-2xl">Application Submitted!</h2>
+          <h2 className="text-[#263238] mb-2 text-2xl font-bold">Application Submitted!</h2>
           <p className="text-[#263238]/70 mb-6">
             Thank you for applying! We'll review your application and get back to you soon.
           </p>
@@ -94,25 +170,31 @@ export function ApplyJob() {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-[#263238] mb-3 text-3xl">Apply for Job</h1>
+            <h1 className="text-[#263238] mb-3 text-3xl font-bold">Apply for Job</h1>
             <p className="text-[#263238]/70">Complete the form below to submit your application</p>
           </div>
 
           {/* Job Preview Card */}
           <Card className="p-6 mb-8 border-2 border-[#FF9800]/20 bg-gradient-to-br from-[#FF9800]/5 to-[#4FC3F7]/5">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FF9800] to-[#FFC107] rounded-xl flex items-center justify-center flex-shrink-0">
-                <Briefcase className="w-6 h-6 text-white" />
+            {isLoadingJob ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-8 h-8 animate-spin text-[#FF9800]" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-[#263238] mb-1 text-lg">Part-time Barista</h3>
-                <p className="text-[#263238]/70 text-sm mb-2">Coffee & Co.</p>
-                <div className="flex items-center gap-2 text-sm text-[#263238]/60">
-                  <MapPin className="w-4 h-4" />
-                  <span>New York, NY</span>
+            ) : (
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FF9800] to-[#FFC107] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Briefcase className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-[#263238] mb-1 text-lg font-bold">{jobDetails?.jobName}</h3>
+                  <p className="text-[#263238]/70 text-sm mb-2 font-medium">{jobDetails?.companyName}</p>
+                  <div className="flex items-center gap-2 text-sm text-[#263238]/60">
+                    <MapPin className="w-4 h-4 text-[#FF9800]" />
+                    <span>{jobDetails?.location}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </Card>
 
           {/* Application Form */}
@@ -120,7 +202,7 @@ export function ApplyJob() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Personal Information */}
               <div>
-                <h2 className="text-[#263238] mb-4 flex items-center gap-2">
+                <h2 className="text-[#263238] mb-4 flex items-center gap-2 font-bold">
                   <div className="w-6 h-1 bg-[#FF9800] rounded"></div>
                   Personal Information
                 </h2>
@@ -181,7 +263,7 @@ export function ApplyJob() {
 
               {/* Resume Upload */}
               <div>
-                <h2 className="text-[#263238] mb-4 flex items-center gap-2">
+                <h2 className="text-[#263238] mb-4 flex items-center gap-2 font-bold">
                   <div className="w-6 h-1 bg-[#4FC3F7] rounded"></div>
                   Resume/CV
                 </h2>
@@ -189,7 +271,7 @@ export function ApplyJob() {
                   <Upload className="w-12 h-12 text-[#263238]/40 mx-auto mb-4" />
                   <div className="text-center">
                     <label htmlFor="resume" className="cursor-pointer block">
-                      <span className="text-[#FF9800] hover:text-[#F57C00]">Click to upload</span>
+                      <span className="text-[#FF9800] hover:text-[#F57C00] font-medium">Click to upload</span>
                       <span className="text-[#263238]/60"> or drag and drop</span>
                     </label>
                   </div>
@@ -203,7 +285,7 @@ export function ApplyJob() {
                   />
                   <p className="text-sm text-[#263238]/60 mt-2">PDF, DOC, or DOCX (max 10MB)</p>
                   {formData.resume && (
-                    <p className="text-sm text-[#4ADE80] mt-2">✓ {formData.resume.name}</p>
+                    <p className="text-sm text-[#4ADE80] mt-2 font-medium">✓ {formData.resume.name}</p>
                   )}
                 </div>
               </div>
@@ -212,7 +294,7 @@ export function ApplyJob() {
 
               {/* Cover Letter */}
               <div>
-                <h2 className="text-[#263238] mb-4 flex items-center gap-2">
+                <h2 className="text-[#263238] mb-4 flex items-center gap-2 font-bold">
                   <div className="w-6 h-1 bg-[#4ADE80] rounded"></div>
                   Cover Letter
                 </h2>
@@ -222,7 +304,7 @@ export function ApplyJob() {
                   value={formData.coverLetter}
                   onChange={handleInputChange}
                   rows={6}
-                  className="border-2 border-[#263238]/20 focus:border-[#FF9800] rounded-xl"
+                  className="border-2 border-[#263238]/20 focus:border-[#FF9800] rounded-xl resize-none"
                   placeholder="Tell us why you're a great fit for this position..."
                 />
               </div>
@@ -235,7 +317,7 @@ export function ApplyJob() {
                   <Checkbox
                     id="terms"
                     checked={formData.agreeToTerms}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked: boolean) =>
                       setFormData(prev => ({ ...prev, agreeToTerms: checked as boolean }))
                     }
                     className="mt-1"
@@ -250,16 +332,23 @@ export function ApplyJob() {
                     type="button"
                     variant="outline"
                     onClick={() => navigate(-1)}
-                    className="flex-1 h-12 border-2 border-[#263238]/20 hover:border-[#263238] rounded-xl"
+                    className="flex-1 h-12 border-2 border-[#263238]/20 hover:border-[#263238] rounded-xl transition font-semibold text-[#263238]"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={!formData.agreeToTerms}
-                    className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30 disabled:opacity-50"
+                    disabled={!formData.agreeToTerms || isSubmitting}
+                    className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30 disabled:opacity-50 transition font-bold"
                   >
-                    Submit Application
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Submitting...
+                      </span>
+                    ) : (
+                      "Submit Application"
+                    )}
                   </Button>
                 </div>
               </div>
