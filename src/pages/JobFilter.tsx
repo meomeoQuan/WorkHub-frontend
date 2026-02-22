@@ -1,30 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Send,
-  MoreHorizontal,
-  Briefcase,
-  MapPin,
-  DollarSign,
-  Clock,
-  Image as ImageIcon,
-  Search,
-  SlidersHorizontal,
-  X,
   ArrowUp,
-  MapPinIcon,
+  Briefcase,
   Building2,
   Calendar,
-  TrendingUp,
-  Filter,
-  UserPlus,
-  UserCheck,
-  Star,
-  Loader2,
-  Trash2,
+  Clock,
+  DollarSign,
   Edit,
+  Filter,
+  Heart,
+  Image as ImageIcon,
+  Loader2,
+  MapPin,
+  MessageCircle,
+  MoreHorizontal,
+  MoreVertical,
+  Plus,
+  Repeat2,
+  Search,
+  Send,
+  Share2,
+  SlidersHorizontal,
+  Star,
+  Trash2,
+  UserCheck,
+  UserPlus,
+  X
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -139,13 +140,10 @@ export default function JobFilter() {
   });
   const [selectedSalaryRange, setSelectedSalaryRange] = useState<string | null>(null);
   const [selectedPostedDate, setSelectedPostedDate] = useState<string | null>(null);
-  const [selectedExperience, setSelectedExperience] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
     const categoryParam = searchParams.get("category");
     return categoryParam ? mapCategoryName(categoryParam) : null;
   });
-  const [selectedWorkSetting, setSelectedWorkSetting] = useState<string | null>(null);
-  const [selectedCompanySize, setSelectedCompanySize] = useState<string | null>(null);
   const [selectedPostForComment, setSelectedPostForComment] =
     useState<any | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -212,10 +210,7 @@ export default function JobFilter() {
       if (filters.location && filters.location !== 'all-cities') params.set("location", filters.location);
       if (filters.salaryRange && filters.salaryRange !== 'all') params.set("salaryRange", filters.salaryRange);
       if (filters.postedDate && filters.postedDate !== 'anytime') params.set("postedDate", filters.postedDate);
-      if (filters.experienceLevel && filters.experienceLevel !== 'all') params.set("experienceLevel", filters.experienceLevel);
       if (filters.category && filters.category !== 'all') params.set("category", filters.category);
-      if (filters.workSetting && filters.workSetting !== 'all') params.set("workSetting", filters.workSetting);
-      if (filters.companySize && filters.companySize !== 'all') params.set("companySize", filters.companySize);
 
       const isSearching = query || Object.values(filters).some(v => v && v !== 'all' && v !== 'all-cities' && v !== 'anytime');
 
@@ -250,9 +245,6 @@ export default function JobFilter() {
             shares: 0,
             image: p.postImage || null,
             category: firstJob?.category || "Other",
-            experienceLevel: firstJob?.experienceLevel || "Mid-level",
-            workSetting: firstJob?.workSetting || "Remote",
-            companySize: firstJob?.companySize || "Medium",
             postedDate: new Date(p.createdAt || Date.now()).toISOString(),
             attachedJobs: p.jobs || []
           };
@@ -497,10 +489,7 @@ export default function JobFilter() {
       location: selectedLocation,
       salaryRange: selectedSalaryRange,
       postedDate: selectedPostedDate,
-      experienceLevel: selectedExperience,
       category: selectedCategory,
-      workSetting: selectedWorkSetting,
-      companySize: selectedCompanySize
     };
 
     const timer = setTimeout(() => {
@@ -515,10 +504,7 @@ export default function JobFilter() {
     selectedLocation,
     selectedSalaryRange,
     selectedPostedDate,
-    selectedExperience,
     selectedCategory,
-    selectedWorkSetting,
-    selectedCompanySize,
     fetchPosts
   ]);
 
@@ -692,17 +678,8 @@ export default function JobFilter() {
       }
     }
 
-    // Experience level filter
-    if (selectedExperience && post.experienceLevel !== selectedExperience) return false;
-
     // Category filter
     if (selectedCategory && post.category !== selectedCategory) return false;
-
-    // Work setting filter
-    if (selectedWorkSetting && post.workSetting !== selectedWorkSetting) return false;
-
-    // Company size filter
-    if (selectedCompanySize && post.companySize !== selectedCompanySize) return false;
 
     return true;
   });
@@ -713,10 +690,7 @@ export default function JobFilter() {
     selectedLocation,
     selectedSalaryRange,
     selectedPostedDate,
-    selectedExperience,
     selectedCategory,
-    selectedWorkSetting,
-    selectedCompanySize,
   ].filter(Boolean).length;
 
   // Clear all filters
@@ -725,10 +699,7 @@ export default function JobFilter() {
     setSelectedLocation(null);
     setSelectedSalaryRange(null);
     setSelectedPostedDate(null);
-    setSelectedExperience(null);
     setSelectedCategory(null);
-    setSelectedWorkSetting(null);
-    setSelectedCompanySize(null);
     setSearchQuery("");
   };
 
@@ -935,15 +906,6 @@ export default function JobFilter() {
               >
                 Seasonal
               </button>
-              <button
-                onClick={() => setSelectedJobType("Remote")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedWorkSetting === "Remote"
-                  ? "bg-[#4FC3F7] text-white"
-                  : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#4FC3F7]/5"
-                  }`}
-              >
-                🌐 Remote
-              </button>
             </div>
 
             {/* Active Filters Display */}
@@ -978,18 +940,6 @@ export default function JobFilter() {
                     </button>
                   </div>
                 )}
-                {selectedExperience && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-[#FF9800]/10 border border-[#FF9800]/30 text-[#FF9800] rounded-full text-xs">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{selectedExperience}</span>
-                    <button
-                      onClick={() => setSelectedExperience(null)}
-                      className="ml-1 hover:bg-[#FF9800]/20 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
                 {selectedCategory && (
                   <div className="flex items-center gap-1 px-2.5 py-1 bg-[#263238]/10 border border-[#263238]/30 text-[#263238] rounded-full text-xs">
                     <Briefcase className="w-3 h-3" />
@@ -997,18 +947,6 @@ export default function JobFilter() {
                     <button
                       onClick={() => setSelectedCategory(null)}
                       className="ml-1 hover:bg-[#263238]/20 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                {selectedCompanySize && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 bg-[#4ADE80]/10 border border-[#4ADE80]/30 text-[#4ADE80] rounded-full text-xs">
-                    <Building2 className="w-3 h-3" />
-                    <span>{selectedCompanySize}</span>
-                    <button
-                      onClick={() => setSelectedCompanySize(null)}
-                      className="ml-1 hover:bg-[#4ADE80]/20 rounded-full p-0.5"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -1119,31 +1057,6 @@ export default function JobFilter() {
                   </div>
                   <div>
                     <label className="text-xs text-[#263238]/60 mb-1.5 block flex items-center gap-1.5">
-                      <TrendingUp className="w-3 h-3" />
-                      Experience
-                    </label>
-                    <select
-                      value={selectedExperience || ""}
-                      onChange={(e) =>
-                        setSelectedExperience(
-                          e.target.value || null,
-                        )
-                      }
-                      className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
-                    >
-                      <option value="">All Levels</option>
-                      <option value="Entry Level">Entry Level</option>
-                      <option value="Mid Level">Mid Level</option>
-                      <option value="Senior Level">Senior Level</option>
-                      <option value="Executive">Executive</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 3: Category & Work Setting */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-[#263238]/60 mb-1.5 block flex items-center gap-1.5">
                       <Briefcase className="w-3 h-3" />
                       Category
                     </label>
@@ -1166,51 +1079,6 @@ export default function JobFilter() {
                       <option value="Food & Beverage">Food & Beverage</option>
                       <option value="Transportation">Transportation</option>
                       <option value="Construction">Construction</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#263238]/60 mb-1.5 block flex items-center gap-1.5">
-                      <MapPinIcon className="w-3 h-3" />
-                      Work Setting
-                    </label>
-                    <select
-                      value={selectedWorkSetting || ""}
-                      onChange={(e) =>
-                        setSelectedWorkSetting(
-                          e.target.value || null,
-                        )
-                      }
-                      className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
-                    >
-                      <option value="">All Settings</option>
-                      <option value="Remote">Remote</option>
-                      <option value="On-site">On-site</option>
-                      <option value="Hybrid">Hybrid</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 4: Company Size */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-[#263238]/60 mb-1.5 block flex items-center gap-1.5">
-                      <Building2 className="w-3 h-3" />
-                      Company Size
-                    </label>
-                    <select
-                      value={selectedCompanySize || ""}
-                      onChange={(e) =>
-                        setSelectedCompanySize(
-                          e.target.value || null,
-                        )
-                      }
-                      className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
-                    >
-                      <option value="">All Sizes</option>
-                      <option value="Startup">Startup (1-50)</option>
-                      <option value="Small">Small (51-200)</option>
-                      <option value="Medium">Medium (201-1000)</option>
-                      <option value="Large">Large (1000+)</option>
                     </select>
                   </div>
                 </div>

@@ -12,14 +12,11 @@ export interface RecruitmentDetailInfoDTO {
     userName: string;
     avatar?: string;
     requirements?: string;
-    experienceLevel?: string;
-    workSetting?: string;
-    category?: string;
-    companyBio?: string;
-    companyRating: number;
     companyIndustry?: string;
     benefits?: string;
     companyLocation?: string;
     companyDescription?: string;
-    companySize?: string;
+    companyBio?: string;
+    category?: string;
+    companyRating?: number;
 }

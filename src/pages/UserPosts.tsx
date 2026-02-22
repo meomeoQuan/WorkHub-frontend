@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router';
 import { Card } from '../components/ui/card';
-import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import {
   ArrowLeft,
-  Plus,
   MapPin,
   DollarSign,
   Clock,
   Briefcase,
-  Edit,
-  Trash2,
-  Calendar,
-  Users,
-  TrendingUp,
-  Sparkles,
   FileText,
   Star,
   Heart,
@@ -27,7 +19,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,28 +42,20 @@ interface JobPost {
   jobTitle: string;
   location: string;
   salary: string;
-  salaryMin: number;
-  salaryMax: number;
   type: string;
-  jobImage: string;
   likes: number;
   comments: number;
   reposts: number;
   shares: number;
   image: string | null;
-  category: string;
-  experienceLevel: string;
-  workSetting: string;
-  companySize: string;
   postedDate: string;
-  requirements: string;
-  workTime: string;
-  allImages: string[];
+  requirements?: string;
+  workTime?: string;
 }
 
 export function UserPosts() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { } = useAuth();
   const [searchParams] = useSearchParams();
   const profileUserId = searchParams.get("userId");
   const [userPosts, setUserPosts] = useState<JobPost[]>([]);
@@ -101,6 +85,7 @@ export function UserPosts() {
               id: p.postId.toString(),
               company: p.fullName,
               avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+              username: p.userName,
               userId: p.userId,
               credibilityRating: p.rating,
               timestamp: p.createdAt,
@@ -109,8 +94,10 @@ export function UserPosts() {
               location: p.jobs?.[0]?.location || "Remote",
               salary: p.jobs?.[0]?.salary || "Competitive",
               type: p.jobs?.[0]?.jobType || "Other",
-              likes: p.likeCount,
-              comments: p.commentCount,
+              likes: p.likeCount || 0,
+              comments: p.commentCount || 0,
+              reposts: 0,
+              shares: 0,
               image: p.postImage,
               postedDate: p.createdAt,
             }));
@@ -149,18 +136,7 @@ export function UserPosts() {
     setPostToDelete(null);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'part-time':
-        return 'bg-[#FF9800]/20 text-[#FF9800] border-[#FF9800]/30';
-      case 'freelance':
-        return 'bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30';
-      case 'seasonal':
-        return 'bg-[#4ADE80]/20 text-[#4ADE80] border-[#4ADE80]/30';
-      default:
-        return 'bg-[#263238]/20 text-[#263238] border-[#263238]/30';
-    }
-  };
+
 
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);

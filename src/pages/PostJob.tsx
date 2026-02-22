@@ -45,6 +45,7 @@ export function PostJob() {
     salary: '',
     description: '',
     requirements: '',
+    benefits: '',
   });
 
   const [jobImages, setJobImages] = useState<string[]>([]);
@@ -90,6 +91,7 @@ export function PostJob() {
       formDataToSend.append("SalaryRange", formData.salary);
       formDataToSend.append("JobDescription", formData.description);
       formDataToSend.append("Requirements", formData.requirements);
+      formDataToSend.append("Benefits", formData.benefits);
 
       jobFiles.forEach((file) => {
         formDataToSend.append("JobImages", file);
@@ -108,7 +110,7 @@ export function PostJob() {
         if (result.success) {
           setShowSuccessMessage(true);
           setTimeout(() => {
-            navigate('/post-job');
+            navigate('/user-jobs');
           }, 1500);
         } else {
           toast.error(result.message || "Failed to post job");
@@ -334,55 +336,21 @@ export function PostJob() {
                 </p>
               </div>
 
-              {/* Job Images */}
+              {/* Benefits */}
               <div>
-                <Label className="text-[#263238] flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-[#4FC3F7]" />
-                  Job Images (Optional)
-                </Label>
-                <p className="text-sm text-[#263238]/60 mt-1 mb-3">
-                  Add images to showcase your workplace or job environment
+                <Label htmlFor="benefits" className="text-[#263238]">Benefits *</Label>
+                <Textarea
+                  id="benefits"
+                  placeholder="List the perks and benefits (one per line)"
+                  rows={5}
+                  value={formData.benefits}
+                  onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
+                  className="mt-2 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800] resize-none"
+                  required
+                />
+                <p className="text-sm text-[#263238]/60 mt-2">
+                  Enter each benefit on a new line
                 </p>
-
-                <div className="space-y-4">
-                  <input
-                    type="file"
-                    id="job-images"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="job-images"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-lg shadow-[#FF9800]/30 cursor-pointer transition-all"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload Images
-                  </label>
-
-                  {jobImages.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {jobImages.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={image}
-                            alt={`Job Image ${index + 1}`}
-                            className="w-full h-40 object-cover rounded-xl border-2 border-[#263238]/10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleImageRemove(index)}
-                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                </div>
               </div>
 
               {/* Form Actions */}

@@ -48,12 +48,9 @@ export function JobDetail() {
             requirements: p.requirements ? p.requirements.split('\n').filter(r => r.trim()) : [],
             benefits: p.benefits ? p.benefits.split('\n').filter(b => b.trim()) : [],
             schedule: p.schedule || 'Flexible schedule',
-            experienceLevel: p.experienceLevel || 'Entry Level',
-            workSetting: p.workSetting || 'On-site',
             category: p.category || 'General',
             companyBio: p.companyDescription || p.companyBio || `${p.userName} is committed to providing excellent service and a great work environment for all employees.`,
             companyLocation: p.companyLocation,
-            companyEmployees: p.companySize,
             companyRating: p.companyRating,
             companyIndustry: p.companyIndustry || 'Technology',
           });
@@ -137,31 +134,22 @@ export function JobDetail() {
             ) : (
               <Card className="p-8 border-2 border-[#263238]/10 shadow-xl">
                 {/* Header */}
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 flex items-center justify-center flex-shrink-0 shadow-md border border-[#263238]/10">
-                    {job.avatar ? (
-                      <img src={job.avatar} alt={job.company} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[#263238] text-3xl">{job.company.charAt(0)}</span>
-                    )}
-                  </div>
+                <div className="flex items-start gap-4 mb-3">
+
                   <div className="flex-1">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex items-start justify-between items-center gap-4 mb-2">
                       <div>
                         <h1 className="text-[#263238] mb-2 text-2xl md:text-3xl">{job.title}</h1>
-                        <p className="text-[#263238]/70 text-lg">{job.company}</p>
                       </div>
+
                     </div>
-                    <Badge className={`${typeColors[job.type as keyof typeof typeColors] || 'bg-[#263238]/10 text-[#263238]'} mt-2 rounded-xl px-3 py-1`}>
-                      <span className="mr-1">{typeIcons[job.type as keyof typeof typeIcons] || '💼'}</span>
-                      {job.type}
-                    </Badge>
+
                   </div>
                 </div>
 
                 {/* Job Info Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 p-4 bg-white rounded-xl border border-[#263238]/10">
-                  <div className="flex items-start gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-white rounded-xl border border-[#263238]/10">
+                  <div className="flex items-start gap-1">
                     <div className="w-8 h-8 bg-[#FF9800]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-4 h-4 text-[#FF9800]" />
                     </div>
@@ -170,7 +158,7 @@ export function JobDetail() {
                       <p className="text-sm text-[#263238]">{job.location}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-1">
                     <div className="w-8 h-8 bg-[#4ADE80]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <DollarSign className="w-4 h-4 text-[#4ADE80]" />
                     </div>
@@ -179,7 +167,7 @@ export function JobDetail() {
                       <p className="text-sm text-[#263238]">{job.salary}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-1">
                     <div className="w-8 h-8 bg-[#4FC3F7]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Briefcase className="w-4 h-4 text-[#4FC3F7]" />
                     </div>
@@ -188,7 +176,7 @@ export function JobDetail() {
                       <p className="text-sm text-[#263238]">{job.type}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-1">
                     <div className="w-8 h-8 bg-[#FFD54F]/20 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-4 h-4 text-[#F57C00]" />
                     </div>
@@ -197,24 +185,7 @@ export function JobDetail() {
                       <p className="text-sm text-[#263238]">{job.postedDate}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-8 h-8 bg-[#FF9800]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Star className="w-4 h-4 text-[#FF9800]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#263238]/60">Experience</p>
-                      <p className="text-sm text-[#263238]">{job.experienceLevel}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-8 h-8 bg-[#4FC3F7]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-4 h-4 text-[#4FC3F7]" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#263238]/60">Setting</p>
-                      <p className="text-sm text-[#263238]">{job.workSetting}</p>
-                    </div>
-                  </div>
+
                 </div>
 
                 <Separator className="my-8 bg-[#263238]/10" />
