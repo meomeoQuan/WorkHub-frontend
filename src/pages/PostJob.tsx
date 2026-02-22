@@ -45,6 +45,7 @@ export function PostJob() {
     salary: '',
     description: '',
     requirements: '',
+    benefits: '',
   });
 
   const [jobImages, setJobImages] = useState<string[]>([]);
@@ -90,6 +91,7 @@ export function PostJob() {
       formDataToSend.append("SalaryRange", formData.salary);
       formDataToSend.append("JobDescription", formData.description);
       formDataToSend.append("Requirements", formData.requirements);
+      formDataToSend.append("Benefits", formData.benefits);
 
       jobFiles.forEach((file) => {
         formDataToSend.append("JobImages", file);
@@ -108,7 +110,7 @@ export function PostJob() {
         if (result.success) {
           setShowSuccessMessage(true);
           setTimeout(() => {
-            navigate('/post-job');
+            navigate('/user-jobs');
           }, 1500);
         } else {
           toast.error(result.message || "Failed to post job");
@@ -331,6 +333,23 @@ export function PostJob() {
                 />
                 <p className="text-sm text-[#263238]/60 mt-2">
                   Enter each requirement on a new line
+                </p>
+              </div>
+
+              {/* Benefits */}
+              <div>
+                <Label htmlFor="benefits" className="text-[#263238]">Benefits *</Label>
+                <Textarea
+                  id="benefits"
+                  placeholder="List the perks and benefits (one per line)"
+                  rows={5}
+                  value={formData.benefits}
+                  onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
+                  className="mt-2 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800] resize-none"
+                  required
+                />
+                <p className="text-sm text-[#263238]/60 mt-2">
+                  Enter each benefit on a new line
                 </p>
               </div>
 
