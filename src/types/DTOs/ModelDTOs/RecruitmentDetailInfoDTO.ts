@@ -1,5 +1,6 @@
 export interface RecruitmentDetailInfoDTO {
     id: number;
+    userId: number;
     jobName: string;
     jobType: string;
     location?: string;

@@ -231,6 +231,7 @@ export default function JobFilter() {
           const firstJob = p.jobs && p.jobs.length > 0 ? p.jobs[0] : null;
           return {
             id: p.postId.toString(),
+            userId: p.userId,
             company: p.fullName,
             avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
             username: p.fullName.toLowerCase().replace(/\s/g, "_"),
@@ -1314,7 +1315,7 @@ export default function JobFilter() {
                 <div className="px-4 py-6">
                   {/* Post Header */}
                   <div className="flex gap-3">
-                    <Link to="/profile/user">
+                    <Link to={`/profile/user?userId=${post.userId}`}>
                       <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
@@ -1328,7 +1329,7 @@ export default function JobFilter() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Link to="/profile/user">
+                            <Link to={`/profile/user?userId=${post.userId}`}>
                               <span className="font-semibold text-[#263238] hover:underline cursor-pointer">
                                 {post.company}
                               </span>

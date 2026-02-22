@@ -17,7 +17,6 @@ import {
   Trash2,
   UserPlus,
   UserCheck,
-  DollarSign,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -33,11 +32,7 @@ import {
 import { SkeletonCompanyProfile } from "../components/SkeletonCompanyProfile";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../components/ui/avatar";
+
 import {
   ExperienceSection,
   WeeklyAvailabilitySection,
@@ -48,13 +43,7 @@ import { ScheduleViewDTO } from "../types/DTOs/ModelDTOs/ScheduleDTOs";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-import { JobPostDTO } from "../types/DTOs/ModelDTOs/JobsDTOs/JobPostDTO";
-import { JobDTO } from "../types/DTOs/ModelDTOs/JobsDTOs/JobDTO";
-import { formatRelativeTime } from "../utils/dateUtils";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { MessageCircle, Heart } from "lucide-react";
-import { SkeletonCardGrid } from "../components/SkeletonCard";
-import { JobCard } from "../components/JobCard";
+
 
 export function UserProfile() {
   const navigate = useNavigate();
@@ -83,51 +72,6 @@ export function UserProfile() {
   });
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
 
-  // Gallery state
-  const [galleryTab, setGalleryTab] = useState<'posts' | 'jobs' | 'none'>(isOwnProfile ? 'none' : 'posts');
-  const [userJobs, setUserJobs] = useState<JobDTO[]>([]);
-  const [userPosts, setUserPosts] = useState<JobPostDTO[]>([]);
-  const [loadingGallery, setLoadingGallery] = useState(false);
-
-  const fetchGalleryData = async (tab: 'posts' | 'jobs', targetUserId?: string) => {
-    try {
-      setLoadingGallery(true);
-      const token = localStorage.getItem("access_token");
-
-      let endpoint;
-      if (isOwnProfile) {
-        endpoint = tab === 'posts' ? 'all-user-posts' : 'all-user-jobs';
-      } else {
-        endpoint = tab === 'posts' ? `public-user-posts/${targetUserId}` : `public-user-jobs/${targetUserId}`;
-      }
-
-      const res = await fetch(`${API_URL}/api/UserProfile/${endpoint}`, {
-        headers: {
-          'Authorization': isOwnProfile ? `Bearer ${token}` : ''
-        }
-      });
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success && result.data) {
-          if (tab === 'posts') setUserPosts(result.data);
-          else setUserJobs(result.data);
-        }
-      }
-    } catch (err) {
-      console.error(`Failed to fetch ${tab}`, err);
-      toast.error(`Failed to load ${tab}`);
-    } finally {
-      setLoadingGallery(false);
-    }
-  };
-
-  useEffect(() => {
-    if (galleryTab !== 'none') {
-      fetchGalleryData(galleryTab as 'posts' | 'jobs', profileUserId || undefined);
-    }
-  }, [galleryTab, isOwnProfile, profileUserId]);
-
-  // Posted jobs state removed as unused
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(companyData);
@@ -282,13 +226,12 @@ export function UserProfile() {
         setLoading(true);
         const token = localStorage.getItem("access_token");
 
-        const endpoint = isOwnProfile
-          ? 'show-profile'
-          : `public-profile/${profileUserId}`;
+        const targetUserId = isOwnProfile ? user?.id : profileUserId;
+        const endpoint = `show-profile/${targetUserId}`;
 
         const res = await fetch(`${API_URL}/api/UserProfile/${endpoint}`, {
           headers: {
-            'Authorization': isOwnProfile ? `Bearer ${token}` : ''
+            'Authorization': token ? `Bearer ${token}` : ''
           }
         });
 
@@ -811,44 +754,23 @@ export function UserProfile() {
                           </Button>
                         </>
                       )}
-                      {/* Show User Posts and User Jobs for everyone (including anonymous users) */}
-                      {user && isOwnProfile ? (
-                        <>
-                          <Link to="/post-job" className="contents">
-                            <Button
-                              className={`${galleryTab === 'posts' ? 'bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-white' : 'bg-white border-2 border-[#263238]/20 hover:border-[#4ADE80] hover:text-[#4ADE80] text-[#263238]/70'} rounded-xl shadow-md hover:shadow-lg transition`}
-                            >
-                              User Posts
-                            </Button>
-                          </Link>
-                          <Link to="/user-jobs" className="contents">
-                            <Button
-                              variant="outline"
-                              className={`${galleryTab === 'jobs' ? 'bg-[#4FC3F7] border-2 border-[#4FC3F7] text-white hover:bg-[#4FC3F7]/90' : 'border-2 border-[#263238]/20 hover:border-[#4FC3F7] hover:text-[#4FC3F7] text-[#263238]/70'} rounded-xl transition`}
-                            >
-                              <Briefcase className="w-4 h-4 mr-2" />
-                              User Jobs
-                            </Button>
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            onClick={() => setGalleryTab('posts')}
-                            className={`${galleryTab === 'posts' ? 'bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-white' : 'bg-white border-2 border-[#263238]/20 hover:border-[#4ADE80] hover:text-[#4ADE80] text-[#263238]/70'} rounded-xl shadow-md hover:shadow-lg transition`}
-                          >
-                            User Posts
-                          </Button>
-                          <Button
-                            onClick={() => setGalleryTab('jobs')}
-                            variant="outline"
-                            className={`${galleryTab === 'jobs' ? 'bg-[#4FC3F7] border-2 border-[#4FC3F7] text-white hover:bg-[#4FC3F7]/90' : 'border-2 border-[#263238]/20 hover:border-[#4FC3F7] hover:text-[#4FC3F7] text-[#263238]/70'} rounded-xl transition`}
-                          >
-                            <Briefcase className="w-4 h-4 mr-2" />
-                            User Jobs
-                          </Button>
-                        </>
-                      )}
+                      {/* Show User Posts and User Jobs navigation for all profiles */}
+                      <Link to={isOwnProfile ? '/post-job' : `/post-job?userId=${profileUserId}`} className="contents">
+                        <Button
+                          className="bg-white border-2 border-[#263238]/20 hover:border-[#4ADE80] hover:text-[#4ADE80] text-[#263238]/70 rounded-xl shadow-md hover:shadow-lg transition"
+                        >
+                          User Posts
+                        </Button>
+                      </Link>
+                      <Link to={isOwnProfile ? '/user-jobs' : `/user-jobs?userId=${profileUserId}`} className="contents">
+                        <Button
+                          variant="outline"
+                          className="border-2 border-[#263238]/20 hover:border-[#4FC3F7] hover:text-[#4FC3F7] text-[#263238]/70 rounded-xl transition"
+                        >
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          User Jobs
+                        </Button>
+                      </Link>
                     </>
                   )}
                 </div>
@@ -859,121 +781,6 @@ export function UserProfile() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
-              {/* Gallery View */}
-              {galleryTab !== 'none' && (
-                <div className="space-y-4">
-                  {loadingGallery ? (
-                    <SkeletonCardGrid />
-                  ) : galleryTab === 'posts' ? (
-                    userPosts.length > 0 ? (
-                      userPosts.map((post) => (
-                        <Card key={post.postId} className="p-4 border-[#263238]/10 shadow-md">
-                          <div className="flex items-center gap-3 mb-4">
-                            <Avatar className="w-10 h-10 border-2 border-[#FF9800]/20">
-                              <AvatarImage src={post.avatarUrl} />
-                              <AvatarFallback className="bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] text-white">
-                                {post.fullName.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="text-sm font-semibold text-[#263238]">{post.fullName}</h4>
-                              <p className="text-xs text-[#263238]/50">
-                                {post.createdAt ? formatRelativeTime(post.createdAt) : "Recently"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {post.content && (
-                            <p className="text-[#263238]/80 text-sm mb-4 whitespace-pre-line leading-relaxed">
-                              {post.content}
-                            </p>
-                          )}
-
-                          {post.postImage && (
-                            <div className="rounded-xl overflow-hidden mb-4 border border-[#263238]/5 shadow-sm">
-                              <ImageWithFallback
-                                src={post.postImage.startsWith('http') ? post.postImage : `${API_URL}${post.postImage}`}
-                                alt="Post content"
-                                className="w-full object-cover max-h-[400px]"
-                              />
-                            </div>
-                          )}
-
-                          {post.jobs && post.jobs.length > 0 && (
-                            <div className="mb-4 space-y-2">
-                              {post.jobs.map(job => (
-                                <div key={job.id} className="p-3 bg-gradient-to-r from-[#FF9800]/5 to-transparent border-l-4 border-[#FF9800] rounded-r-xl">
-                                  <h5 className="text-sm font-semibold text-[#263238]">{job.jobName}</h5>
-                                  <div className="flex flex-wrap items-center gap-3 mt-1">
-                                    <div className="flex items-center gap-1 text-[11px] text-[#263238]/60">
-                                      <MapPin className="w-3 h-3" />
-                                      {job.location}
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[11px] text-[#263238]/60">
-                                      <DollarSign className="w-3 h-3" />
-                                      {job.salary}
-                                    </div>
-                                    {job.jobType && (
-                                      <Badge variant="secondary" className="px-1.5 py-0 text-[10px] bg-[#4FC3F7]/10 text-[#4FC3F7] border-0">
-                                        {job.jobType}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-6 pt-2 border-t border-[#263238]/5">
-                            <button className="flex items-center gap-1.5 text-[#263238]/50 hover:text-[#FF9800] transition">
-                              <Heart className="w-4 h-4" />
-                              <span className="text-xs font-medium">{post.likeCount}</span>
-                            </button>
-                            <button className="flex items-center gap-1.5 text-[#263238]/50 hover:text-[#4FC3F7] transition">
-                              <MessageCircle className="w-4 h-4" />
-                              <span className="text-xs font-medium">{post.commentCount}</span>
-                            </button>
-                          </div>
-                        </Card>
-                      ))
-                    ) : (
-                      <Card className="p-12 text-center border-dashed border-2 border-[#263238]/10">
-                        <div className="w-16 h-16 bg-[#FAFAFA] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <MessageCircle className="w-8 h-8 text-[#263238]/20" />
-                        </div>
-                        <h4 className="text-[#263238] font-medium">No posts found</h4>
-                        <p className="text-[#263238]/50 text-sm mt-1">You haven't shared any posts yet.</p>
-                      </Card>
-                    )
-                  ) : (
-                    userJobs.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {userJobs.map((job) => (
-                          <JobCard
-                            key={job.id}
-                            id={job.id.toString()}
-                            title={job.jobName}
-                            company={companyData.name}
-                            location={job.location}
-                            type={job.jobType as any}
-                            description="" // JobDTO doesn't have description in this context
-                            salary={job.salary}
-                            postedDate="Active"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <Card className="p-12 text-center border-dashed border-2 border-[#263238]/10">
-                        <div className="w-16 h-16 bg-[#FAFAFA] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Briefcase className="w-8 h-8 text-[#263238]/20" />
-                        </div>
-                        <h4 className="text-[#263238] font-medium">No jobs found</h4>
-                        <p className="text-[#263238]/50 text-sm mt-1">You haven't posted any jobs yet.</p>
-                      </Card>
-                    )
-                  )}
-                </div>
-              )}
 
               {/* Description */}
               {(companyData.description || isEditing) && (

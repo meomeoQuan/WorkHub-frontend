@@ -36,6 +36,7 @@ export function JobDetail() {
           const p = data.data;
           // Map DTO to component expected structure
           setJob({
+            userId: p.userId,
             title: p.jobName,
             company: p.userName,
             avatar: p.avatar,
@@ -321,7 +322,7 @@ export function JobDetail() {
                     </div>
                   )}
 
-                  <Link to="/profile/user">
+                  <Link to={`/profile/user?userId=${job.userId}`}>
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
                       View User profile →
                     </Button>
