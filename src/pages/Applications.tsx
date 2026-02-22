@@ -33,8 +33,8 @@ interface ApplicationSummary {
   totalApplications: number;
   new: number;
   reviewing: number;
-  shortlisted: number;
-  interviewed: number;
+  accepted: number;
+  rejected: number;
 }
 
 interface JobName {
@@ -45,8 +45,6 @@ interface JobName {
 const statusColors: Record<string, string> = {
   New: 'bg-[#4FC3F7]/20 text-[#4FC3F7] border border-[#4FC3F7]/30',
   Reviewing: 'bg-[#FF9800]/20 text-[#FF9800] border border-[#FF9800]/30',
-  Shortlisted: 'bg-[#4ADE80]/20 text-[#4ADE80] border border-[#4ADE80]/30',
-  Interviewed: 'bg-[#263238]/20 text-[#263238] border border-[#263238]/30',
   Rejected: 'bg-red-100/50 text-red-700 border border-red-200',
   Accepted: 'bg-green-100/50 text-green-700 border border-green-200',
 };
@@ -117,7 +115,8 @@ export function Applications() {
       const effectiveStatus = tabValue === 'all' ? statusFilter :
         tabValue === 'new' ? 'New' :
           tabValue === 'reviewing' ? 'Reviewing' :
-            tabValue === 'shortlisted' ? 'Shortlisted' : statusFilter;
+            tabValue === 'accepted' ? 'Accepted' :
+              tabValue === 'rejected' ? 'Rejected' : statusFilter;
 
       const queryParams = new URLSearchParams();
       if (effectiveStatus !== 'All Status') queryParams.append('Status', effectiveStatus);
@@ -176,14 +175,12 @@ export function Applications() {
               <p className="text-sm text-[#263238]/60">Reviewing</p>
             </Card>
             <Card className="p-6 border-2 border-[#4ADE80]/30 bg-[#4ADE80]/5 hover:shadow-lg transition">
-              <p className="text-3xl text-[#4ADE80] mb-1">{summary?.shortlisted || 0}</p>
-              <p className="text-sm text-[#263238]/60">Shortlisted</p>
+              <p className="text-3xl text-[#4ADE80] mb-1">{summary?.accepted || 0}</p>
+              <p className="text-sm text-[#263238]/60">Accepted</p>
             </Card>
-            <Card className="p-6 border-2 border-[#263238]/20 bg-[#263238]/5 hover:shadow-lg transition">
-              <p className="text-3xl text-[#263238] mb-1">
-                {summary?.interviewed || 0}
-              </p>
-              <p className="text-sm text-[#263238]/60">Interviewed</p>
+            <Card className="p-6 border-2 border-[#E53935]/30 bg-[#E53935]/5 hover:shadow-lg transition">
+              <p className="text-3xl text-[#E53935] mb-1">{summary?.rejected || 0}</p>
+              <p className="text-sm text-[#263238]/60">Rejected</p>
             </Card>
           </div>
 
@@ -224,8 +221,7 @@ export function Applications() {
                   <SelectItem value="All Status">All Status</SelectItem>
                   <SelectItem value="New">New</SelectItem>
                   <SelectItem value="Reviewing">Reviewing</SelectItem>
-                  <SelectItem value="Shortlisted">Shortlisted</SelectItem>
-                  <SelectItem value="Interviewed">Interviewed</SelectItem>
+                  <SelectItem value="Accepted">Accepted</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
@@ -234,7 +230,7 @@ export function Applications() {
 
           {/* Applications List */}
           <Tabs value={tabValue} onValueChange={setTabValue} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsList className="grid w-full grid-cols-5 mb-6">
               <TabsTrigger value="all">
                 All ({summary?.totalApplications || 0})
               </TabsTrigger>
@@ -244,8 +240,11 @@ export function Applications() {
               <TabsTrigger value="reviewing">
                 Reviewing ({summary?.reviewing || 0})
               </TabsTrigger>
-              <TabsTrigger value="shortlisted">
-                Shortlisted ({summary?.shortlisted || 0})
+              <TabsTrigger value="accepted">
+                Accepted ({summary?.accepted || 0})
+              </TabsTrigger>
+              <TabsTrigger value="rejected">
+                Rejected ({summary?.rejected || 0})
               </TabsTrigger>
             </TabsList>
 

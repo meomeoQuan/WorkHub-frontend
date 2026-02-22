@@ -94,9 +94,6 @@ export default function JobFilter() {
   const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
   const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
 
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(
-    new Set(),
-  );
   const [repostedPosts, setRepostedPosts] = useState<
     Set<string>
   >(new Set());
@@ -106,20 +103,10 @@ export default function JobFilter() {
 
   // Feed tab state
   const [activeTab, setActiveTab] = useState<"foryou" | "following">("foryou");
+  const [followingCount, setFollowingCount] = useState<number>(0);
 
-  // Following state - Load from localStorage with seed data
-  const [followedCompanies, setFollowedCompanies] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem("followedCompanies");
-      if (saved) {
-        return new Set(JSON.parse(saved));
-      } else {
-        return new Set();
-      }
-    } catch {
-      return new Set();
-    }
-  });
+  // Following state - Load from backend (Set of User IDs)
+  const [followedUserIds, setFollowedUserIds] = useState<Set<number>>(new Set());
 
   // Filter states - Initialize from URL params
   const [selectedJobType, setSelectedJobType] = useState<string | null>(null);
@@ -241,6 +228,7 @@ export default function JobFilter() {
             salary: firstJob?.salary || "Competitive",
             type: firstJob?.jobType || "Full-time",
             likes: p.likeCount,
+            isLiked: p.isLiked,
             comments: p.commentCount,
             reposts: 0,
             shares: 0,
@@ -268,6 +256,40 @@ export default function JobFilter() {
       setIsLoadingMore(false);
     }
   }, [pageSize]);
+
+  const fetchFollowingCount = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/following-count`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<number> = await response.json();
+      if (data.success && typeof data.data === 'number') {
+        setFollowingCount(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching following count:", error);
+    }
+  }, []);
+
+  const fetchFollowedUsers = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-post-following`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<any[]> = await response.json();
+      if (data.success && data.data) {
+        // Extract unique user IDs from followings posts
+        const userIds = new Set(data.data.map(p => p.userId));
+        setFollowedUserIds(userIds);
+      }
+    } catch (error) {
+      console.error("Error fetching followed users:", error);
+    }
+  }, []);
 
   const fetchUserJobs = useCallback(async () => {
     try {
@@ -346,12 +368,14 @@ export default function JobFilter() {
 
   // Simulate initial loading
   useEffect(() => {
+    fetchFollowingCount();
+    fetchFollowedUsers();
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fetchFollowingCount, fetchFollowedUsers]);
 
   // Track scroll position for scroll-to-top button
   useEffect(() => {
@@ -455,14 +479,7 @@ export default function JobFilter() {
     };
   }, [openMenuPostId]);
 
-  // Save followed companies to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem("followedCompanies", JSON.stringify(Array.from(followedCompanies)));
-    } catch (error) {
-      console.error("Failed to save followed companies:", error);
-    }
-  }, [followedCompanies]);
+  // Close dropdown when clicking outside
 
   // Auto-open filters when category is selected from URL
   useEffect(() => {
@@ -536,16 +553,42 @@ export default function JobFilter() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleLike = (postId: string) => {
-    setLikedPosts((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
+  const handleLike = async (postId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/toggle-like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({ PostId: parseInt(postId) })
+      });
+      const data: ApiResponse<number> = await response.json();
+
+      if (data.success) {
+        // Update both apiPosts and userPostedJobs if needed
+        const updatePosts = (posts: any[]) =>
+          posts.map(p =>
+            p.id === postId
+              ? { ...p, isLiked: !p.isLiked, likes: data.data }
+              : p
+          );
+
+        setApiPosts(prev => updatePosts(prev));
+        setUserPostedJobs(prev => updatePosts(prev));
+
+        if (data.message === "Liked") {
+          toast.success("Liked post");
+        } else {
+          toast.success("Unliked post");
+        }
       } else {
-        newSet.add(postId);
+        toast.error(data.message || "Failed to update like status");
       }
-      return newSet;
-    });
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      toast.error("An error occurred");
+    }
   };
 
   const handleRepost = (postId: string) => {
@@ -586,16 +629,39 @@ export default function JobFilter() {
     }, 100);
   };
 
-  const handleFollowToggle = (companyName: string) => {
-    setFollowedCompanies((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(companyName)) {
-        newSet.delete(companyName);
+  const handleFollowToggle = async (targetUserId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/toggle-follow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({ FollowingId: targetUserId })
+      });
+      const data: ApiResponse<any> = await response.json();
+
+      if (data.success) {
+        setFollowedUserIds(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(targetUserId)) {
+            newSet.delete(targetUserId);
+            toast.success("Unfollowed user");
+          } else {
+            newSet.add(targetUserId);
+            toast.success("Followed user");
+          }
+          return newSet;
+        });
+        // Update the count immediately
+        fetchFollowingCount();
       } else {
-        newSet.add(companyName);
+        toast.error(data.message || "Failed to update follow status");
       }
-      return newSet;
-    });
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+      toast.error("An error occurred");
+    }
   };
 
   const handleDeletePost = (postId: string) => {
@@ -645,7 +711,7 @@ export default function JobFilter() {
   const filteredJobs = allJobPosts.filter((post) => {
     // Tab filter - Following tab only shows jobs from followed companies
     if (activeTab === "following") {
-      if (!followedCompanies.has(post.company)) return false;
+      if (!followedUserIds.has(post.userId)) return false;
     }
 
     // Search query filter
@@ -805,14 +871,12 @@ export default function JobFilter() {
                     }`}
                 >
                   Following
-                  {followedCompanies.size > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${activeTab === "following"
-                      ? "bg-[#FF9800] text-white"
-                      : "bg-[#263238]/10 text-[#263238]/60"
-                      }`}>
-                      {followedCompanies.size}
-                    </span>
-                  )}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] min-w-[1.25rem] h-5 flex items-center justify-center font-semibold ${activeTab === "following"
+                    ? "bg-[#FF9800] text-white"
+                    : "bg-[#263238]/10 text-[#263238]/60"
+                    }`}>
+                    {followingCount}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1188,11 +1252,7 @@ export default function JobFilter() {
           ) : null}
 
           {filteredJobs.map((post) => {
-            const isLiked = likedPosts.has(post.id);
             const isReposted = repostedPosts.has(post.id);
-            const likeCount = isLiked
-              ? post.likes + 1
-              : post.likes;
             const repostCount = isReposted
               ? post.reposts + 1
               : post.reposts;
@@ -1243,25 +1303,27 @@ export default function JobFilter() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleFollowToggle(post.company)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition ${followedCompanies.has(post.company)
-                              ? "bg-[#263238] text-white hover:bg-[#263238]/90"
-                              : "bg-[#FF9800] text-white hover:bg-[#F57C00]"
-                              }`}
-                          >
-                            {followedCompanies.has(post.company) ? (
-                              <>
-                                <UserCheck className="w-4 h-4" />
-                                Following
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="w-4 h-4" />
-                                Follow
-                              </>
-                            )}
-                          </button>
+                          {post.userId !== Number(user?.id) && (
+                            <button
+                              onClick={() => handleFollowToggle(post.userId)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition ${followedUserIds.has(post.userId)
+                                ? "bg-[#263238] text-white hover:bg-[#263238]/90"
+                                : "bg-[#FF9800] text-white hover:bg-[#F57C00]"
+                                }`}
+                            >
+                              {followedUserIds.has(post.userId) ? (
+                                <>
+                                  <UserCheck className="w-4 h-4" />
+                                  Following
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="w-4 h-4" />
+                                  Follow
+                                </>
+                              )}
+                            </button>
+                          )}
                           <div className="relative post-menu-dropdown">
                             <button
                               onClick={(e) => {
@@ -1451,17 +1513,17 @@ export default function JobFilter() {
                       <div className="flex items-center justify-between text-[#263238]/60 pt-1">
                         <button
                           onClick={() => handleLike(post.id)}
-                          className={`flex items-center gap-2 px-3 py-2 hover:bg-red-50 rounded-full transition group ${isLiked ? "text-red-500" : ""
+                          className={`flex items-center gap-2 px-3 py-2 hover:bg-red-50 rounded-full transition group ${post.isLiked ? "text-red-500" : ""
                             }`}
                         >
                           <Heart
-                            className={`w-5 h-5 group-hover:text-red-500 transition ${isLiked ? "fill-red-500" : ""
+                            className={`w-5 h-5 group-hover:text-red-500 transition ${post.isLiked ? "fill-red-500" : ""
                               }`}
                           />
                           <span
-                            className={`text-sm ${isLiked ? "text-red-500 font-medium" : "group-hover:text-red-500"}`}
+                            className={`text-sm ${post.isLiked ? "text-red-500 font-medium" : "group-hover:text-red-500"}`}
                           >
-                            {likeCount}
+                            {post.likes}
                           </span>
                         </button>
 

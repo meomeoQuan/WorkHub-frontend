@@ -130,12 +130,12 @@ export function AdminUserProfile() {
   const navigate = useNavigate();
   const query = useQuery();
   const userId = query.get('userId') || '1';
-  
+
   const initialData = mockUserData[userId] || mockUserData['1'];
   const [userData, setUserData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(userData);
-  const [resumeFile] = useState<{name: string, uploadDate: string}>({
+  const [resumeFile] = useState<{ name: string, uploadDate: string }>({
     name: 'resume.pdf',
     uploadDate: 'Last updated 1 week ago'
   });
@@ -198,10 +198,10 @@ export function AdminUserProfile() {
     }
 
     setIsSendingEmail(true);
-    
+
     // Simulate sending email
     setTimeout(() => {
-      const attachmentInfo = emailAttachments.length > 0 
+      const attachmentInfo = emailAttachments.length > 0
         ? ` with ${emailAttachments.length} attachment${emailAttachments.length > 1 ? 's' : ''}`
         : '';
       toast.success(`Email sent to ${userData.name} (${userData.email})${attachmentInfo}`);
@@ -232,8 +232,7 @@ export function AdminUserProfile() {
   };
 
   const getPlanBadge = (plan: PaymentPlan) => {
-    const styles = {
-      diamond: 'bg-cyan-500/20 text-cyan-400 border-cyan-500',
+    const styles: Record<string, string> = {
       gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500',
       silver: 'bg-gray-400/20 text-gray-300 border-gray-400',
       free: 'bg-slate-500/20 text-slate-300 border-slate-500',
@@ -242,7 +241,7 @@ export function AdminUserProfile() {
   };
 
   const getPlanIcon = (plan: PaymentPlan) => {
-    if (plan === 'diamond' || plan === 'gold') {
+    if (plan === 'gold') {
       return <Crown className="w-4 h-4" />;
     }
     return null;
@@ -421,13 +420,12 @@ export function AdminUserProfile() {
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Profile
                       </Button>
-                      <Button 
+                      <Button
                         onClick={handleSuspendUser}
-                        className={`rounded-xl shadow-md hover:shadow-lg transition ${
-                          userData.status === 'suspended'
+                        className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
                             ? 'bg-green-500/80 hover:bg-green-500 text-white border border-green-500/50'
                             : 'bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50'
-                        }`}
+                          }`}
                       >
                         {userData.status === 'suspended' ? (
                           <>
@@ -455,7 +453,7 @@ export function AdminUserProfile() {
               <h2 className="text-orange-300 text-xl">Send Email Notification</h2>
             </div>
             <p className="text-purple-400/70 text-sm mb-4">Send important announcements, policy updates, or notifications to this user.</p>
-            
+
             <div className="space-y-4">
               <div>
                 <Label className="text-purple-300 text-sm mb-2 block">Email Subject</Label>
@@ -466,7 +464,7 @@ export function AdminUserProfile() {
                   className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
                 />
               </div>
-              
+
               <div>
                 <Label className="text-purple-300 text-sm mb-2 block">Message</Label>
                 <Textarea
@@ -478,7 +476,7 @@ export function AdminUserProfile() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button 
+                <Button
                   onClick={handleSendEmail}
                   disabled={isSendingEmail || !emailSubject.trim() || !emailMessage.trim()}
                   className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl shadow-md hover:shadow-lg transition border border-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -486,9 +484,9 @@ export function AdminUserProfile() {
                   <Send className="w-4 h-4 mr-2" />
                   {isSendingEmail ? 'Sending...' : 'Send Email'}
                 </Button>
-                
+
                 {(emailSubject || emailMessage) && (
-                  <Button 
+                  <Button
                     onClick={() => {
                       setEmailSubject('');
                       setEmailMessage('');
@@ -500,7 +498,7 @@ export function AdminUserProfile() {
                   </Button>
                 )}
               </div>
-              
+
               <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                 <Mail className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-300">
@@ -677,9 +675,9 @@ export function AdminUserProfile() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl"
                       onClick={handleViewResume}
                     >
@@ -703,12 +701,11 @@ export function AdminUserProfile() {
                 {/* Trust Level Badge */}
                 <div className="mb-4">
                   <span className="text-sm text-purple-400/60 block mb-2">Trust Level</span>
-                  <Badge className={`text-sm px-3 py-1 ${
-                    userData.credibility.trustLevel === 'Verified' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                    userData.credibility.trustLevel === 'High' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' :
-                    userData.credibility.trustLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
-                    'bg-orange-500/20 text-orange-400 border-orange-500/50'
-                  }`}>
+                  <Badge className={`text-sm px-3 py-1 ${userData.credibility.trustLevel === 'Verified' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
+                      userData.credibility.trustLevel === 'High' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' :
+                        userData.credibility.trustLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
+                          'bg-orange-500/20 text-orange-400 border-orange-500/50'
+                    }`}>
                     <Star className="w-3 h-3 mr-1 inline" />
                     {userData.credibility.trustLevel}
                   </Badge>
@@ -782,7 +779,7 @@ export function AdminUserProfile() {
                         <span className="text-purple-300 font-semibold">{userData.credibility.performance.responseRate}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
                           style={{ width: `${userData.credibility.performance.responseRate}%` }}
                         ></div>
@@ -794,7 +791,7 @@ export function AdminUserProfile() {
                         <span className="text-purple-300 font-semibold">{userData.credibility.performance.completionRate}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-green-500 to-cyan-500 rounded-full"
                           style={{ width: `${userData.credibility.performance.completionRate}%` }}
                         ></div>
@@ -806,7 +803,7 @@ export function AdminUserProfile() {
                         <span className="text-purple-300 font-semibold">{userData.credibility.performance.reliabilityScore}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full"
                           style={{ width: `${userData.credibility.performance.reliabilityScore}%` }}
                         ></div>
@@ -866,8 +863,8 @@ export function AdminUserProfile() {
                     <Label className="text-purple-300 text-sm mb-2 block">Admin Notes</Label>
                     <Textarea
                       value={editedData.credibility?.adminNotes || ''}
-                      onChange={(e) => setEditedData({ 
-                        ...editedData, 
+                      onChange={(e) => setEditedData({
+                        ...editedData,
                         credibility: { ...editedData.credibility, adminNotes: e.target.value }
                       })}
                       placeholder="Add internal notes about this user..."
@@ -894,8 +891,8 @@ export function AdminUserProfile() {
                   <>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {editedData.skills.map((skill: string, index: number) => (
-                        <Badge 
-                          key={index} 
+                        <Badge
+                          key={index}
                           className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 rounded-xl cursor-pointer hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition"
                           onClick={() => removeSkill(index)}
                         >
@@ -973,9 +970,9 @@ export function AdminUserProfile() {
                       <Input
                         placeholder="e.g., Part-time, Freelance (comma separated)"
                         value={editedData.jobTypes.join(', ')}
-                        onChange={(e) => setEditedData({ 
-                          ...editedData, 
-                          jobTypes: e.target.value.split(',').map((t: string) => t.trim()).filter((t: string) => t) 
+                        onChange={(e) => setEditedData({
+                          ...editedData,
+                          jobTypes: e.target.value.split(',').map((t: string) => t.trim()).filter((t: string) => t)
                         })}
                         className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
                       />

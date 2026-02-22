@@ -20,4 +20,5 @@ export interface JobPostDTO {
     // Engagement
     likeCount: number;
     commentCount: number;
+    isLiked: boolean;
 }

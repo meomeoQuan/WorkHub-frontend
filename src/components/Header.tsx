@@ -30,7 +30,7 @@ interface HeaderProps {
 
 export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderProps) {
   const navigate = useNavigate();
-  const { logout, upgradePlan } = useAuth();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -47,8 +47,6 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
         return 'text-gray-500';
       case 'gold':
         return 'text-yellow-500';
-      case 'diamond':
-        return 'text-cyan-400';
       default:
         return 'text-[#263238]';
     }
@@ -58,7 +56,6 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
     switch (plan) {
       case 'silver':
       case 'gold':
-      case 'diamond':
         return <Crown className="w-4 h-4" />;
       default:
         return <Zap className="w-4 h-4" />;
@@ -84,27 +81,25 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
           {isLoggedIn && (
             <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
               <Link to="/jobs">
-                <Button 
-                  variant="ghost" 
-                  className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${
-                    currentPath === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
-                  }`}
+                <Button
+                  variant="ghost"
+                  className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${currentPath === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
+                    }`}
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
                   Browse Jobs
                 </Button>
               </Link>
-              
+
               {/* My Applications with Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${
-                      currentPath === '/my-applications' || currentPath === '/applications'
-                        ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]' 
+                  <Button
+                    variant="ghost"
+                    className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${currentPath === '/my-applications' || currentPath === '/applications'
+                        ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
                         : 'text-[#263238]/70'
-                    }`}
+                      }`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     My Applications
@@ -122,13 +117,12 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
+
               <Link to="/schedule">
-                <Button 
-                  variant="ghost" 
-                  className={`rounded-xl hover:bg-[#4ADE80]/10 hover:text-[#4ADE80] ${
-                    currentPath === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
-                  }`}
+                <Button
+                  variant="ghost"
+                  className={`rounded-xl hover:bg-[#4ADE80]/10 hover:text-[#4ADE80] ${currentPath === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
+                    }`}
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   Schedule
@@ -188,7 +182,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    
+
                     {/* Payment Plan Section */}
                     <div className="px-2 py-3">
                       <div className="flex items-center justify-between mb-2">
@@ -201,7 +195,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                           </span>
                         </div>
                       </div>
-                      <Button 
+                      <Button
                         onClick={() => navigate('/pricing')}
                         size="sm"
                         className="w-full bg-gradient-to-r from-[#FF9800] to-[#4FC3F7] hover:from-[#F57C00] hover:to-[#4FC3F7] text-white"
@@ -210,7 +204,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                         Upgrade Plan
                       </Button>
                     </div>
-                    
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleProfileClick}>
                       <Settings className="mr-2 h-4 w-4" />

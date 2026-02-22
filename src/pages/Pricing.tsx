@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, Crown, Zap, Star, Sparkles, ArrowRight } from 'lucide-react';
+import { Check, Crown, Zap, Star, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import type { PaymentPlan } from '../contexts/AuthContext';
+import type { ApiResponse } from '../types/ApiResponse';
+import { toast } from 'sonner';
 
 const plans = [
   {
@@ -34,6 +36,7 @@ const plans = [
     id: 'silver' as PaymentPlan,
     name: 'Silver',
     price: '$9.99',
+    priceVND: 1000,
     period: 'per month',
     description: 'For active job seekers',
     icon: Crown,
@@ -54,6 +57,7 @@ const plans = [
     id: 'gold' as PaymentPlan,
     name: 'Gold',
     price: '$19.99',
+    priceVND: 2000,
     period: 'per month',
     description: 'For serious professionals',
     icon: Star,
@@ -70,53 +74,60 @@ const plans = [
       'Direct employer messaging',
       'Interview preparation tips'
     ]
-  },
-  {
-    id: 'diamond' as PaymentPlan,
-    name: 'Diamond',
-    price: '$49.99',
-    period: 'per month',
-    description: 'Ultimate career acceleration',
-    icon: Sparkles,
-    color: 'from-cyan-400 to-blue-600',
-    borderColor: 'border-cyan-400',
-    badge: 'Premium',
-    features: [
-      'Everything in Gold',
-      'Dedicated account manager',
-      'Personal career coach',
-      'Resume review & optimization',
-      '5x profile visibility',
-      'Top of search results',
-      'Exclusive job opportunities',
-      'Salary negotiation support',
-      'LinkedIn profile optimization',
-      'Interview coaching sessions'
-    ]
   }
 ];
 
 export function Pricing() {
   const navigate = useNavigate();
-  const { user, upgradePlan } = useAuth();
+  const { user } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
 
-  const handleUpgrade = (planId: PaymentPlan) => {
+  const handleUpgrade = async (planId: PaymentPlan) => {
     if (!user) {
       navigate('/login');
       return;
     }
 
-    // Simulate payment processing
+    if (planId === 'free') return;
+
+    const plan = plans.find(p => p.id === planId);
+    if (!plan || !('priceVND' in plan)) return;
+
     setSelectedPlan(planId);
-    
-    setTimeout(() => {
-      upgradePlan(planId);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/PayOs/create-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          totalAmount: (plan as any).priceVND,
+          items: [
+            {
+              name: `${plan.name} Plan Subscription`,
+              quantity: 1,
+              price: (plan as any).priceVND
+            }
+          ]
+        })
+      });
+
+      const data: ApiResponse<any> = await response.json();
+
+      if (data.success && data.data?.checkoutUrl) {
+        // Redirect to PayOS checkout page
+        window.location.href = data.data.checkoutUrl;
+      } else {
+        toast.error(data.message || 'Failed to create payment');
+        setSelectedPlan(null);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('An error occurred while creating payment');
       setSelectedPlan(null);
-      // Show success message (you can add a toast notification here)
-      alert(`Successfully upgraded to ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan!`);
-      navigate('/profile/user');
-    }, 1500);
+    }
   };
 
   const currentPlan = user?.paymentPlan || 'free';
@@ -133,11 +144,11 @@ export function Pricing() {
               <Crown className="w-4 h-4 text-white" />
               <span className="text-sm text-white">Choose Your Plan</span>
             </div>
-            
+
             <h1 className="text-white mb-4 text-4xl md:text-5xl leading-tight">
               Accelerate Your Career
             </h1>
-            
+
             <p className="text-xl text-white/95 mb-8">
               Unlock premium features and land your dream job faster
             </p>
@@ -156,7 +167,7 @@ export function Pricing() {
       {/* Pricing Cards */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {plans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = currentPlan === plan.id;
@@ -166,9 +177,8 @@ export function Pricing() {
               return (
                 <Card
                   key={plan.id}
-                  className={`relative p-6 border-2 ${plan.borderColor} hover:shadow-xl transition ${
-                    isCurrentPlan ? 'ring-2 ring-[#4ADE80]' : ''
-                  }`}
+                  className={`relative p-6 border-2 ${plan.borderColor} hover:shadow-xl transition ${isCurrentPlan ? 'ring-2 ring-[#4ADE80]' : ''
+                    }`}
                 >
                   {/* Badge */}
                   {plan.badge && (
@@ -190,7 +200,7 @@ export function Pricing() {
 
                   {/* Plan Name */}
                   <h3 className="text-[#263238] mb-2">{plan.name}</h3>
-                  
+
                   {/* Price */}
                   <div className="mb-4">
                     <span className="text-3xl font-bold text-[#263238]">{plan.price}</span>
@@ -204,13 +214,12 @@ export function Pricing() {
                   <Button
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={isCurrentPlan || isProcessing}
-                    className={`w-full mb-6 rounded-xl ${
-                      isCurrentPlan
-                        ? 'bg-[#4ADE80] hover:bg-[#4ADE80] cursor-not-allowed'
-                        : isUpgrade
+                    className={`w-full mb-6 rounded-xl ${isCurrentPlan
+                      ? 'bg-[#4ADE80] hover:bg-[#4ADE80] cursor-not-allowed'
+                      : isUpgrade
                         ? 'bg-gradient-to-r from-[#FF9800] to-[#4FC3F7] hover:from-[#F57C00] hover:to-[#4FC3F7] text-white'
                         : 'bg-[#263238]/10 hover:bg-[#263238]/20 text-[#263238]'
-                    }`}
+                      }`}
                   >
                     {isProcessing ? (
                       <>
