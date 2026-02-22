@@ -48,12 +48,9 @@ export function JobDetail() {
             requirements: p.requirements ? p.requirements.split('\n').filter(r => r.trim()) : [],
             benefits: p.benefits ? p.benefits.split('\n').filter(b => b.trim()) : [],
             schedule: p.schedule || 'Flexible schedule',
-            experienceLevel: p.experienceLevel || 'Entry Level',
-            workSetting: p.workSetting || 'On-site',
             category: p.category || 'General',
             companyBio: p.companyDescription || p.companyBio || `${p.userName} is committed to providing excellent service and a great work environment for all employees.`,
             companyLocation: p.companyLocation,
-            companyEmployees: p.companySize,
             companyRating: p.companyRating,
             companyIndustry: p.companyIndustry || 'Technology',
           });
