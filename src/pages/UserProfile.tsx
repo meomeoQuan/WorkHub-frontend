@@ -28,6 +28,7 @@ import {
   Link,
   useNavigate,
   useSearchParams,
+  useParams,
 } from "react-router";
 import { SkeletonCompanyProfile } from "../components/SkeletonCompanyProfile";
 import { useAuth } from "../contexts/AuthContext";
@@ -49,8 +50,11 @@ export function UserProfile() {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userId: routeUserId } = useParams(); // Get userId from route params
   const [searchParams] = useSearchParams();
-  const profileUserId = searchParams.get("userId"); // Get userId from URL params
+  const queryUserId = searchParams.get("userId"); // Get userId from query params
+
+  const profileUserId = routeUserId || queryUserId;
 
   // Determine if this is the logged-in user's own profile
   const isOwnProfile =
@@ -794,18 +798,18 @@ export function UserProfile() {
                   <Briefcase className="w-12 h-12 text-[#263238]/10" />
                 </div>
                 <div className="px-4">
-                  <h3 className="text-[#263238] font-bold text-3xl mb-4">
+                  <h3 className="text-[#263238]/60 text-xl font-semibold mb-3">
                     No professional information available
                   </h3>
-                  <p className="text-[#263238]/40 text-lg leading-relaxed font-medium">
-                    Detailed professional information, including professional experience,
-                    academic history, and availability, has not been provided for this profile at this time.
+                  <p className="text-[#263238]/40 text-base leading-relaxed">
+                    Detailed professional information has not been provided at this time.
                   </p>
                 </div>
                 {isOwnProfile && (
                   <Button
                     onClick={handleEdit}
-                    className="mt-8 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-lg shadow-[#FF9800]/20 transition-all active:scale-95 px-12 h-14 font-bold text-xl"
+                    variant="outline"
+                    className="mt-6 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800] hover:text-white rounded-xl transition-all active:scale-95 px-8 h-10 font-medium"
                   >
                     Complete Your Profile
                   </Button>

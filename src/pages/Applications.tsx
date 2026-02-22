@@ -15,126 +15,130 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Search, User, MapPin, GraduationCap, Calendar, Eye, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-// Mock applications data
-const applications = [
-  {
-    id: '1',
-    candidateName: 'Sarah Johnson',
-    jobTitle: 'Part-time Data Entry Specialist',
-    jobId: '4',
-    email: 'sarah.j@email.com',
-    phone: '+1 (555) 234-5678',
-    location: 'San Francisco, CA',
-    school: 'San Francisco State University',
-    appliedDate: '2 days ago',
-    status: 'new',
-    skills: ['Data Entry', 'Microsoft Excel', 'Attention to Detail'],
-    experience: '1 year',
-    coverLetter: 'I am very interested in this position and believe my skills align well...',
-  },
-  {
-    id: '2',
-    candidateName: 'Michael Chen',
-    jobTitle: 'Freelance Web Developer',
-    jobId: '8',
-    email: 'michael.chen@email.com',
-    phone: '+1 (555) 345-6789',
-    location: 'Remote',
-    school: 'UC Berkeley',
-    appliedDate: '1 day ago',
-    status: 'reviewing',
-    skills: ['React', 'JavaScript', 'Node.js', 'CSS'],
-    experience: '3 years',
-    coverLetter: 'I have extensive experience building responsive web applications...',
-  },
-  {
-    id: '3',
-    candidateName: 'Emily Rodriguez',
-    jobTitle: 'Part-time Data Entry Specialist',
-    jobId: '4',
-    email: 'emily.r@email.com',
-    phone: '+1 (555) 456-7890',
-    location: 'Oakland, CA',
-    school: 'Stanford University',
-    appliedDate: '3 days ago',
-    status: 'shortlisted',
-    skills: ['Data Analysis', 'SQL', 'Excel'],
-    experience: '2 years',
-    coverLetter: 'As a detail-oriented professional with strong analytical skills...',
-  },
-  {
-    id: '4',
-    candidateName: 'James Wilson',
-    jobTitle: 'Freelance Web Developer',
-    jobId: '8',
-    email: 'james.w@email.com',
-    phone: '+1 (555) 567-8901',
-    location: 'Remote',
-    school: 'MIT',
-    appliedDate: '5 days ago',
-    status: 'rejected',
-    skills: ['Python', 'Django', 'React'],
-    experience: '2 years',
-    coverLetter: 'I am excited to apply for this freelance opportunity...',
-  },
-  {
-    id: '5',
-    candidateName: 'Lisa Anderson',
-    jobTitle: 'Part-time Data Entry Specialist',
-    jobId: '4',
-    email: 'lisa.a@email.com',
-    phone: '+1 (555) 678-9012',
-    location: 'San Jose, CA',
-    school: 'San Jose State University',
-    appliedDate: '1 week ago',
-    status: 'interviewed',
-    skills: ['Data Entry', 'Database Management', 'Excel'],
-    experience: '1 year',
-    coverLetter: 'I would love to contribute to your team with my data entry expertise...',
-  },
-];
+// API Response Interfaces
+interface Application {
+  id: string;
+  applicantId: number;
+  applicantName: string;
+  applicantEmail: string;
+  applicantAvatar: string | null;
+  jobTitle: string;
+  status: string;
+  applicantLocation: string | null;
+  applicantSchool: string | null;
+  appliedDate: string;
+}
 
-const statusColors = {
-  new: 'bg-[#4FC3F7]/20 text-[#4FC3F7] border border-[#4FC3F7]/30',
-  reviewing: 'bg-[#FF9800]/20 text-[#FF9800] border border-[#FF9800]/30',
-  shortlisted: 'bg-[#4ADE80]/20 text-[#4ADE80] border border-[#4ADE80]/30',
-  interviewed: 'bg-[#263238]/20 text-[#263238] border border-[#263238]/30',
-  rejected: 'bg-red-100/50 text-red-700 border border-red-200',
-};
+interface ApplicationSummary {
+  totalApplications: number;
+  new: number;
+  reviewing: number;
+  shortlisted: number;
+  interviewed: number;
+}
 
-const statusLabels = {
-  new: 'New',
-  reviewing: 'Reviewing',
-  shortlisted: 'Shortlisted',
-  interviewed: 'Interviewed',
-  rejected: 'Rejected',
+interface JobName {
+  id: number;
+  jobName: string;
+}
+
+const statusColors: Record<string, string> = {
+  New: 'bg-[#4FC3F7]/20 text-[#4FC3F7] border border-[#4FC3F7]/30',
+  Reviewing: 'bg-[#FF9800]/20 text-[#FF9800] border border-[#FF9800]/30',
+  Shortlisted: 'bg-[#4ADE80]/20 text-[#4ADE80] border border-[#4ADE80]/30',
+  Interviewed: 'bg-[#263238]/20 text-[#263238] border border-[#263238]/30',
+  Rejected: 'bg-red-100/50 text-red-700 border border-red-200',
+  Accepted: 'bg-green-100/50 text-green-700 border border-green-200',
 };
 
 export function Applications() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
-
-  // Removed role-based protection - all logged-in users can access
+  const { isLoggedIn } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [jobFilter, setJobFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [jobFilter, setJobFilter] = useState('0'); // 0 means 'all'
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [tabValue, setTabValue] = useState('all');
 
-  // Filter applications
-  const filteredApplications = applications.filter((app) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      app.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesJob = jobFilter === 'all' || app.jobId === jobFilter;
-    const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    return matchesSearch && matchesJob && matchesStatus;
-  });
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [summary, setSummary] = useState<ApplicationSummary | null>(null);
+  const [jobs, setJobs] = useState<JobName[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Group by status for tabs
-  const newApplications = applications.filter((app) => app.status === 'new');
-  const reviewingApplications = applications.filter((app) => app.status === 'reviewing');
-  const shortlistedApplications = applications.filter((app) => app.status === 'shortlisted');
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchSummary();
+      fetchJobs();
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchApplications();
+    }
+  }, [isLoggedIn, jobFilter, statusFilter, searchQuery, tabValue]);
+
+  const fetchSummary = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Application/summary`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSummary(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Application/get-jobs`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setJobs(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  };
+
+  const fetchApplications = async () => {
+    setIsLoading(true);
+    try {
+      // Map tabValue to status filter if tab is not 'all'
+      const effectiveStatus = tabValue === 'all' ? statusFilter :
+        tabValue === 'new' ? 'New' :
+          tabValue === 'reviewing' ? 'Reviewing' :
+            tabValue === 'shortlisted' ? 'Shortlisted' : statusFilter;
+
+      const queryParams = new URLSearchParams();
+      if (effectiveStatus !== 'All Status') queryParams.append('Status', effectiveStatus);
+      if (jobFilter !== '0') queryParams.append('JobId', jobFilter);
+      if (searchQuery) queryParams.append('SearchTerm', searchQuery);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Application?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setApplications(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white min-h-screen">
@@ -160,24 +164,24 @@ export function Applications() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <Card className="p-6 border-2 border-[#263238]/10 hover:shadow-lg transition">
-              <p className="text-3xl text-[#263238] mb-1">{applications.length}</p>
+              <p className="text-3xl text-[#263238] mb-1">{summary?.totalApplications || 0}</p>
               <p className="text-sm text-[#263238]/60">Total Applications</p>
             </Card>
             <Card className="p-6 border-2 border-[#4FC3F7]/30 bg-[#4FC3F7]/5 hover:shadow-lg transition">
-              <p className="text-3xl text-[#4FC3F7] mb-1">{newApplications.length}</p>
+              <p className="text-3xl text-[#4FC3F7] mb-1">{summary?.new || 0}</p>
               <p className="text-sm text-[#263238]/60">New</p>
             </Card>
             <Card className="p-6 border-2 border-[#FF9800]/30 bg-[#FF9800]/5 hover:shadow-lg transition">
-              <p className="text-3xl text-[#FF9800] mb-1">{reviewingApplications.length}</p>
+              <p className="text-3xl text-[#FF9800] mb-1">{summary?.reviewing || 0}</p>
               <p className="text-sm text-[#263238]/60">Reviewing</p>
             </Card>
             <Card className="p-6 border-2 border-[#4ADE80]/30 bg-[#4ADE80]/5 hover:shadow-lg transition">
-              <p className="text-3xl text-[#4ADE80] mb-1">{shortlistedApplications.length}</p>
+              <p className="text-3xl text-[#4ADE80] mb-1">{summary?.shortlisted || 0}</p>
               <p className="text-sm text-[#263238]/60">Shortlisted</p>
             </Card>
             <Card className="p-6 border-2 border-[#263238]/20 bg-[#263238]/5 hover:shadow-lg transition">
               <p className="text-3xl text-[#263238] mb-1">
-                {applications.filter((app) => app.status === 'interviewed').length}
+                {summary?.interviewed || 0}
               </p>
               <p className="text-sm text-[#263238]/60">Interviewed</p>
             </Card>
@@ -206,9 +210,10 @@ export function Applications() {
                   <SelectValue placeholder="All Jobs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Jobs</SelectItem>
-                  <SelectItem value="4">Part-time Data Entry Specialist</SelectItem>
-                  <SelectItem value="8">Freelance Web Developer</SelectItem>
+                  <SelectItem value="0">All Jobs</SelectItem>
+                  {jobs.map(job => (
+                    <SelectItem key={job.id} value={job.id.toString()}>{job.jobName}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -216,37 +221,42 @@ export function Applications() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="reviewing">Reviewing</SelectItem>
-                  <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                  <SelectItem value="interviewed">Interviewed</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="All Status">All Status</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Reviewing">Reviewing</SelectItem>
+                  <SelectItem value="Shortlisted">Shortlisted</SelectItem>
+                  <SelectItem value="Interviewed">Interviewed</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </Card>
 
           {/* Applications List */}
-          <Tabs defaultValue="all" className="w-full">
+          <Tabs value={tabValue} onValueChange={setTabValue} className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="all">
-                All ({filteredApplications.length})
+                All ({summary?.totalApplications || 0})
               </TabsTrigger>
               <TabsTrigger value="new">
-                New ({newApplications.length})
+                New ({summary?.new || 0})
               </TabsTrigger>
               <TabsTrigger value="reviewing">
-                Reviewing ({reviewingApplications.length})
+                Reviewing ({summary?.reviewing || 0})
               </TabsTrigger>
               <TabsTrigger value="shortlisted">
-                Shortlisted ({shortlistedApplications.length})
+                Shortlisted ({summary?.shortlisted || 0})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all" className="space-y-4">
-              {filteredApplications.length > 0 ? (
-                filteredApplications.map((app) => (
+            <TabsContent value={tabValue} className="space-y-4">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                  <div className="w-12 h-12 border-4 border-[#FF9800] border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-[#263238]/60 font-medium italic">Loading applications...</p>
+                </div>
+              ) : applications.length > 0 ? (
+                applications.map((app) => (
                   <ApplicationCard key={app.id} application={app} />
                 ))
               ) : (
@@ -263,24 +273,6 @@ export function Applications() {
                 </Card>
               )}
             </TabsContent>
-
-            <TabsContent value="new" className="space-y-4">
-              {newApplications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
-              ))}
-            </TabsContent>
-
-            <TabsContent value="reviewing" className="space-y-4">
-              {reviewingApplications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
-              ))}
-            </TabsContent>
-
-            <TabsContent value="shortlisted" className="space-y-4">
-              {shortlistedApplications.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
-              ))}
-            </TabsContent>
           </Tabs>
         </div>
       </div>
@@ -288,13 +280,19 @@ export function Applications() {
   );
 }
 
-function ApplicationCard({ application }: { application: typeof applications[0] }) {
+function ApplicationCard({ application }: { application: Application }) {
   return (
     <Card className="p-6 hover:shadow-lg transition border-2 border-[#263238]/10 rounded-2xl">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Candidate Avatar */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF9800] to-[#FFC107] flex items-center justify-center flex-shrink-0">
-          <span className="text-white text-xl">{application.candidateName.charAt(0)}</span>
+        <div className="w-16 h-16 rounded-2xl bg-[#FF9800]/10 overflow-hidden flex-shrink-0">
+          {application.applicantAvatar ? (
+            <img src={application.applicantAvatar} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#FF9800] to-[#FFC107] flex items-center justify-center">
+              <span className="text-white text-xl">{application.applicantName.charAt(0)}</span>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -302,18 +300,18 @@ function ApplicationCard({ application }: { application: typeof applications[0] 
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-[#263238]">{application.candidateName}</h3>
-                <Badge className={statusColors[application.status as keyof typeof statusColors]}>
-                  {statusLabels[application.status as keyof typeof statusLabels]}
+                <h3 className="text-[#263238] font-semibold">{application.applicantName}</h3>
+                <Badge className={`${statusColors[application.status]} px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
+                  {application.status}
                 </Badge>
               </div>
-              <p className="text-sm text-[#263238]/70 mb-2">
-                Applied for: {application.jobTitle}
+              <p className="text-sm text-[#263238]/70 mb-2 font-medium">
+                Applied for: <span className="text-[#FF9800]">{application.jobTitle}</span>
               </p>
             </div>
             <div className="flex gap-2">
               <Link to={`/application/${application.id}`}>
-                <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl" size="sm">
+                <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md border-0" size="sm">
                   <Eye className="w-4 h-4 mr-2" />
                   View Details
                 </Button>
@@ -321,34 +319,27 @@ function ApplicationCard({ application }: { application: typeof applications[0] 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-3">
-            <div className="flex items-center gap-2 text-[#263238]/70">
-              <User className="w-4 h-4" />
-              <span>{application.email}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-3">
+            <div className="flex items-center gap-2 text-[#263238]/60">
+              <User className="w-3.5 h-3.5" />
+              <span>{application.applicantEmail}</span>
             </div>
-            <div className="flex items-center gap-2 text-[#263238]/70">
-              <MapPin className="w-4 h-4" />
-              <span>{application.location}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#263238]/70">
-              <GraduationCap className="w-4 h-4" />
-              <span>{application.school}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#263238]/70">
-              <Calendar className="w-4 h-4" />
-              <span>Applied {application.appliedDate}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {application.skills.slice(0, 4).map((skill, index) => (
-              <Badge key={index} className="bg-[#263238]/10 text-[#263238] border-0">
-                {skill}
-              </Badge>
-            ))}
-            {application.skills.length > 4 && (
-              <Badge className="bg-[#263238]/10 text-[#263238] border-0">+{application.skills.length - 4} more</Badge>
+            {application.applicantLocation && (
+              <div className="flex items-center gap-2 text-[#263238]/60">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{application.applicantLocation}</span>
+              </div>
             )}
+            {application.applicantSchool && (
+              <div className="flex items-center gap-2 text-[#263238]/60">
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>{application.applicantSchool}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-[#263238]/60">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Applied {new Date(application.appliedDate).toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
       </div>
