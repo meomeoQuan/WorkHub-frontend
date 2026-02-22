@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link, useSearchParams } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -72,6 +72,8 @@ interface JobPost {
 export function UserPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const profileUserId = searchParams.get("userId");
   const [userPosts, setUserPosts] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,7 +84,10 @@ export function UserPosts() {
       setLoading(true);
       try {
         const token = localStorage.getItem("access_token");
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/all-user-posts`, {
+        const endpoint = profileUserId
+          ? `public-user-posts/${profileUserId}`
+          : 'all-user-posts';
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/${endpoint}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -96,8 +101,8 @@ export function UserPosts() {
               id: p.postId.toString(),
               company: p.fullName,
               avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
-              username: p.fullName.toLowerCase().replace(/\s/g, "_"),
-              credibilityRating: p.rating || 4.5,
+              userId: p.userId,
+              credibilityRating: p.rating,
               timestamp: p.createdAt,
               content: p.content,
               jobTitle: p.jobs?.[0]?.jobName || p.header || "Social Post",
@@ -261,7 +266,7 @@ export function UserPosts() {
                   <div className="px-4 py-6">
                     {/* Post Header */}
                     <div className="flex gap-3">
-                      <Link to="/profile/user">
+                      <Link to={profileUserId ? `/profile/user?userId=${profileUserId}` : "/profile/user"}>
                         <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                           <AvatarImage src={post.avatar} />
                           <AvatarFallback className="bg-[#FF9800] text-white">
@@ -275,7 +280,7 @@ export function UserPosts() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <div className="flex items-center gap-2">
-                              <Link to="/profile/user">
+                              <Link to={profileUserId ? `/profile/user?userId=${profileUserId}` : "/profile/user"}>
                                 <span className="font-semibold text-[#263238] hover:underline cursor-pointer">
                                   {post.company}
                                 </span>

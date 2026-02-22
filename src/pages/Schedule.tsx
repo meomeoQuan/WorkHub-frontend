@@ -11,8 +11,8 @@ import {
   X,
   Edit2,
   Trash2,
+  Loader2,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Calendar,
   momentLocalizer,
@@ -21,7 +21,14 @@ import {
 } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import { toast } from "sonner";
+import {
+  ScheduleViewDTO,
+  CreateScheduleDTO,
+  UpdateScheduleDTO,
+} from "../types/DTOs/ModelDTOs/ScheduleDTOs";
 
+const API_URL = import.meta.env.VITE_API_URL;
 const localizer = momentLocalizer(moment);
 
 // Event interface
@@ -33,73 +40,12 @@ interface CalendarEvent {
   resource?: any;
 }
 
-// Initial events data - using current week dates
-const getInitialEvents = (): CalendarEvent[] => {
-  const now = new Date();
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
-
-  return [
-    {
-      id: "1",
-      title: "Available: Morning Shift",
-      start: new Date(today.getTime() + 8 * 60 * 60 * 1000), // 8 AM today
-      end: new Date(today.getTime() + 12 * 60 * 60 * 1000), // 12 PM today
-    },
-    {
-      id: "2",
-      title: "Available: Afternoon",
-      start: new Date(today.getTime() + 13 * 60 * 60 * 1000), // 1 PM today
-      end: new Date(today.getTime() + 17 * 60 * 60 * 1000), // 5 PM today
-    },
-    {
-      id: "3",
-      title: "Available: Evening",
-      start: new Date(
-        today.getTime() +
-        24 * 60 * 60 * 1000 +
-        18 * 60 * 60 * 1000,
-      ), // 6 PM tomorrow
-      end: new Date(
-        today.getTime() +
-        24 * 60 * 60 * 1000 +
-        22 * 60 * 60 * 1000,
-      ), // 10 PM tomorrow
-    },
-    {
-      id: "4",
-      title: "Available: Full Day",
-      start: new Date(
-        today.getTime() +
-        2 * 24 * 60 * 60 * 1000 +
-        8 * 60 * 60 * 1000,
-      ), // 8 AM in 2 days
-      end: new Date(
-        today.getTime() +
-        2 * 24 * 60 * 60 * 1000 +
-        20 * 60 * 60 * 1000,
-      ), // 8 PM in 2 days
-    },
-  ];
-};
-
 export function Schedule() {
-  const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  // Removed role-based protection - all logged-in users can access
-
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    {
-      id: "1",
-      title: "Available: Morning Shift",
-      start: new Date(),
-      end: new Date(),
-    },
-  ]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -110,7 +56,6 @@ export function Schedule() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [view, setView] = useState<View>("week");
-  const [saved, setSaved] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [showEventActions, setShowEventActions] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -120,28 +65,82 @@ export function Schedule() {
     window.scrollTo(0, 0);
   }, []);
 
+  // ------ API: Fetch schedules ------
+  const fetchSchedules = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/Schedule`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const mapped: CalendarEvent[] = (result.data as ScheduleViewDTO[]).map(
+            (s) => {
+              // Strip 'Z' suffix so JS treats the datetime as local time, not UTC
+              const rawStart = s.startTime.replace('Z', '').replace('z', '');
+              const rawEnd = s.endTime.replace('Z', '').replace('z', '');
+              const start = new Date(rawStart);
+              let end = new Date(rawEnd);
+              // Ensure minimum 30-minute visual duration
+              if (end.getTime() - start.getTime() < 30 * 60 * 1000) {
+                end = new Date(start.getTime() + 30 * 60 * 1000);
+              }
+              return {
+                id: s.id.toString(),
+                title: s.title,
+                start,
+                end,
+              };
+            }
+          );
+          setEvents(mapped);
+        }
+      } else {
+        toast.error("Failed to load schedules");
+      }
+    } catch (err) {
+      console.error("Failed to fetch schedules", err);
+      toast.error("An error occurred while loading schedules");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
+
+  // ------ Calendar handlers ------
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
     const start = slotInfo.start as Date;
-    const end = slotInfo.end as Date;
+    let end = slotInfo.end as Date;
+
+    // Ensure minimum 30-minute duration
+    const diffMs = end.getTime() - start.getTime();
+    if (diffMs < 30 * 60 * 1000) {
+      end = new Date(start.getTime() + 30 * 60 * 1000);
+    }
 
     setSelectedSlot({ start, end });
     setStartTime(moment(start).format("YYYY-MM-DDTHH:mm"));
     setEndTime(moment(end).format("YYYY-MM-DDTHH:mm"));
     setShowEventForm(true);
     setEventTitle("Available: ");
+    setEditingEventId(null);
   }, []);
 
-  const handleSelectEvent = useCallback(
-    (event: CalendarEvent) => {
-      setSelectedEvent(event);
-      setShowEventActions(true);
-    },
-    [],
-  );
+  const handleSelectEvent = useCallback((event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEventActions(true);
+  }, []);
 
-  const handleAddEvent = () => {
+  // ------ API: Create or Update ------
+  const handleAddEvent = async () => {
     if (!eventTitle.trim() || !startTime || !endTime) {
-      alert("Please enter all required fields");
+      toast.error("Please enter all required fields");
       return;
     }
 
@@ -149,51 +148,95 @@ export function Schedule() {
     const endDate = new Date(endTime);
 
     if (endDate <= startDate) {
-      alert("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
-    if (editingEventId) {
-      // Update existing event
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === editingEventId
-            ? {
-              ...event,
-              title: eventTitle,
-              start: startDate,
-              end: endDate,
-            }
-            : event
-        )
-      );
-      setEditingEventId(null);
-    } else {
-      // Add new event
-      const newEvent: CalendarEvent = {
-        id: `event-${Date.now()}`,
-        title: eventTitle,
-        start: startDate,
-        end: endDate,
-      };
+    setSaving(true);
+    const token = localStorage.getItem("access_token");
 
-      setEvents((prev) => [...prev, newEvent]);
+    try {
+      if (editingEventId) {
+        // --- UPDATE ---
+        const updateDTO: UpdateScheduleDTO = {
+          id: parseInt(editingEventId),
+          title: eventTitle,
+          startTime: startTime,
+          endTime: endTime,
+        };
+
+        const res = await fetch(`${API_URL}/api/Schedule`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateDTO),
+        });
+
+        if (res.ok) {
+          toast.success("Schedule updated successfully!");
+          // Update local state
+          setEvents((prev) =>
+            prev.map((event) =>
+              event.id === editingEventId
+                ? { ...event, title: eventTitle, start: startDate, end: endDate }
+                : event
+            )
+          );
+        } else {
+          const errText = await res.text();
+          console.error("Update failed", errText);
+          toast.error("Failed to update schedule");
+        }
+        setEditingEventId(null);
+      } else {
+        // --- CREATE ---
+        const createDTO: CreateScheduleDTO = {
+          title: eventTitle,
+          startTime: startTime,
+          endTime: endTime,
+        };
+
+        const res = await fetch(`${API_URL}/api/Schedule`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(createDTO),
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            const newEvent: CalendarEvent = {
+              id: result.data.id.toString(),
+              title: result.data.title,
+              start: new Date(result.data.startTime),
+              end: new Date(result.data.endTime),
+            };
+            setEvents((prev) => [...prev, newEvent]);
+            toast.success("Schedule created successfully!");
+          }
+        } else {
+          const errText = await res.text();
+          console.error("Create failed", errText);
+          toast.error("Failed to create schedule");
+        }
+      }
+    } catch (err) {
+      console.error("Error saving schedule", err);
+      toast.error("An error occurred while saving");
+    } finally {
+      setSaving(false);
+      // Reset form
+      setEventTitle("");
+      setStartTime("");
+      setEndTime("");
+      setSelectedSlot(null);
+      setShowEventForm(false);
     }
-
-    // Reset form
-    setEventTitle("");
-    setStartTime("");
-    setEndTime("");
-    setSelectedSlot(null);
-    setShowEventForm(false);
-  };
-
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      navigate("/profile/candidate");
-    }, 2000);
   };
 
   const handleEditEvent = () => {
@@ -209,12 +252,38 @@ export function Schedule() {
     setSelectedEvent(null);
   };
 
-  const handleDeleteEvent = () => {
+  // ------ API: Delete ------
+  const handleDeleteEvent = async () => {
     if (!selectedEvent) return;
 
-    if (window.confirm(`Delete "${selectedEvent.title}"?`)) {
-      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
+    if (!window.confirm(`Delete "${selectedEvent.title}"?`)) {
+      setShowEventActions(false);
+      setSelectedEvent(null);
+      return;
     }
+
+    const token = localStorage.getItem("access_token");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/Schedule/${selectedEvent.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.ok) {
+        setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
+        toast.success("Schedule deleted successfully!");
+      } else {
+        toast.error("Failed to delete schedule");
+      }
+    } catch (err) {
+      console.error("Error deleting schedule", err);
+      toast.error("An error occurred while deleting");
+    }
+
     setShowEventActions(false);
     setSelectedEvent(null);
   };
@@ -236,24 +305,6 @@ export function Schedule() {
       },
     };
   };
-
-  if (saved) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <Card className="max-w-md w-full p-8 text-center border-2 border-[#4ADE80]/30 shadow-xl">
-          <div className="w-20 h-20 bg-[#4ADE80]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-[#4ADE80]" />
-          </div>
-          <h2 className="text-[#263238] mb-2 text-2xl">
-            Schedule Saved!
-          </h2>
-          <p className="text-[#263238]/70 mb-6">
-            Your availability has been updated successfully.
-          </p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white min-h-screen py-8 md:py-12">
@@ -398,13 +449,23 @@ export function Schedule() {
                 <div className="flex gap-3">
                   <Button
                     onClick={handleAddEvent}
+                    disabled={saving}
                     className={`flex-1 ${editingEventId
-                        ? "bg-[#4FC3F7] hover:bg-[#0398D4]"
-                        : "bg-[#4ADE80] hover:bg-[#22C55E]"
+                      ? "bg-[#4FC3F7] hover:bg-[#0398D4]"
+                      : "bg-[#4ADE80] hover:bg-[#22C55E]"
                       } text-white rounded-xl`}
                   >
-                    <Check className="w-4 h-4 mr-2" />
-                    {editingEventId ? "Update Slot" : "Add Slot"}
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        {editingEventId ? "Update Slot" : "Add Slot"}
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -423,34 +484,42 @@ export function Schedule() {
 
           {/* Calendar */}
           <Card className="p-6 mb-6 border-2 border-[#263238]/10 shadow-xl">
-            <div className="workhub-calendar">
-              <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: 600 }}
-                onSelectSlot={handleSelectSlot}
-                onSelectEvent={handleSelectEvent}
-                selectable
-                eventPropGetter={eventStyleGetter}
-                view={view}
-                onView={setView}
-                views={["month", "week", "day"]}
-                defaultView="week"
-                step={30}
-                timeslots={2}
-                showMultiDayTimes
-                messages={{
-                  next: "Next",
-                  previous: "Previous",
-                  today: "Today",
-                  month: "Month",
-                  week: "Week",
-                  day: "Day",
-                }}
-              />
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-[600px]">
+                <Loader2 className="w-8 h-8 text-[#FF9800] animate-spin" />
+                <span className="ml-3 text-[#263238]/60">Loading schedules...</span>
+              </div>
+            ) : (
+              <div className="workhub-calendar">
+                <Calendar
+                  localizer={localizer}
+                  events={events}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: 600 }}
+                  onSelectSlot={handleSelectSlot}
+                  onSelectEvent={handleSelectEvent}
+                  selectable
+                  eventPropGetter={eventStyleGetter}
+                  view={view}
+                  onView={setView}
+                  views={["month", "week", "day"]}
+                  defaultView="week"
+                  step={30}
+                  timeslots={2}
+                  showMultiDayTimes
+                  scrollToTime={new Date(1970, 1, 1, 8, 0, 0)}
+                  messages={{
+                    next: "Next",
+                    previous: "Previous",
+                    today: "Today",
+                    month: "Month",
+                    week: "Week",
+                    day: "Day",
+                  }}
+                />
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -507,6 +576,21 @@ export function Schedule() {
         .workhub-calendar .rbc-calendar {
           border-radius: 12px;
         }
+
+        .workhub-calendar .rbc-time-gutter,
+        .workhub-calendar .rbc-time-header-gutter {
+          min-width: 85px !important;
+          width: 85px !important;
+          max-width: 85px !important;
+        }
+
+        .workhub-calendar .rbc-label-cell {
+          min-width: 85px !important;
+        }
+
+        .workhub-calendar .rbc-time-gutter .rbc-timeslot-group {
+          min-width: 85px !important;
+        }
         
         .workhub-calendar .rbc-header {
           padding: 12px 8px;
@@ -553,6 +637,7 @@ export function Schedule() {
           border-radius: 8px;
           cursor: pointer;
           transition: all 0.2s;
+          min-height: 20px !important;
         }
         
         .workhub-calendar .rbc-event:hover {

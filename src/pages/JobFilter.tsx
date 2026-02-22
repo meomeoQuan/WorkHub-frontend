@@ -231,12 +231,13 @@ export default function JobFilter() {
           const firstJob = p.jobs && p.jobs.length > 0 ? p.jobs[0] : null;
           return {
             id: p.postId.toString(),
+            userId: p.userId,
             company: p.fullName,
             avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
             username: p.fullName.toLowerCase().replace(/\s/g, "_"),
             companyEmployees: "50-200 employees",
-            companyRating: `${p.rating || 4.5} rating`,
-            credibilityRating: p.rating || 4.5,
+            companyRating: p.rating ? `${p.rating} rating` : null,
+            credibilityRating: p.rating,
             timestamp: p.createdAt ? formatRelativeTime(p.createdAt) : "Just now",
             content: p.content,
             jobTitle: firstJob?.jobName || p.header || "No Title",
@@ -1314,7 +1315,7 @@ export default function JobFilter() {
                 <div className="px-4 py-6">
                   {/* Post Header */}
                   <div className="flex gap-3">
-                    <Link to="/profile/user">
+                    <Link to={`/profile/user?userId=${post.userId}`}>
                       <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
@@ -1328,7 +1329,7 @@ export default function JobFilter() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Link to="/profile/user">
+                            <Link to={`/profile/user?userId=${post.userId}`}>
                               <span className="font-semibold text-[#263238] hover:underline cursor-pointer">
                                 {post.company}
                               </span>
@@ -2147,8 +2148,8 @@ export default function JobFilter() {
                             avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email || 'User'}&backgroundColor=FF9800`,
                             username: user?.email?.split('@')[0] || 'user',
                             companyEmployees: '10-50 employees',
-                            companyRating: '4.5 rating',
-                            credibilityRating: 4.5,
+                            companyRating: null,
+                            credibilityRating: 0,
                             timestamp: 'Just now',
                             content: newPostContent,
                             jobTitle: newPostTopic || '',

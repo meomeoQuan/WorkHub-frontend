@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link, useSearchParams } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -27,6 +27,8 @@ interface Job {
 
 export function UserJobs() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const profileUserId = searchParams.get("userId");
   const [loading, setLoading] = useState(true);
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -36,7 +38,10 @@ export function UserJobs() {
       try {
         setLoading(true);
         const token = localStorage.getItem("access_token");
-        const res = await fetch(`${API_URL}/api/UserProfile/all-user-jobs`, {
+        const endpoint = profileUserId
+          ? `public-user-jobs/${profileUserId}`
+          : 'all-user-jobs';
+        const res = await fetch(`${API_URL}/api/UserProfile/${endpoint}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
