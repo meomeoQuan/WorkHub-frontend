@@ -7,7 +7,7 @@ import { mapUserDTOToUser } from '../mappers/MappingUser';
 const API = import.meta.env.VITE_API_URL;
 
 console.log("AuthContext using API URL:", API);
-export type PaymentPlan = 'free' | 'silver' | 'gold' | 'diamond';
+export type PaymentPlan = 'free' | 'silver' | 'gold';
 
 
 interface AuthContextType {

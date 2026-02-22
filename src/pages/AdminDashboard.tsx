@@ -99,7 +99,7 @@ const mockUsers = [
     email: 'mike.tech@gmail.com',
     fullName: 'Mike Johnson',
     userType: 'user' as const,
-    paymentPlan: 'diamond' as PaymentPlan,
+    paymentPlan: 'gold' as PaymentPlan,
     status: 'active' as const,
     revenue: 49.99,
     joinDate: '2024-01-05',
@@ -294,16 +294,15 @@ export function AdminDashboard() {
           new Chart(ctx, {
             type: 'doughnut',
             data: {
-              labels: ['Diamond', 'Gold', 'Silver', 'Free'],
+              labels: ['Gold', 'Silver', 'Free'],
               datasets: [{
-                data: [12, 156, 255, 2033],
+                data: [168, 255, 2033],
                 backgroundColor: [
-                  'rgba(6, 182, 212, 0.8)',
                   'rgba(234, 179, 8, 0.8)',
                   'rgba(156, 163, 175, 0.8)',
                   'rgba(100, 116, 139, 0.8)',
                 ],
-                borderColor: ['#06b6d4', '#eab308', '#9ca3af', '#64748b'],
+                borderColor: ['#eab308', '#9ca3af', '#64748b'],
                 borderWidth: 2,
               }]
             },
@@ -346,8 +345,8 @@ export function AdminDashboard() {
   }
 
   const handleSuspendUser = (userId: string) => {
-    setUsers(users.map(u => 
-      u.id === userId 
+    setUsers(users.map(u =>
+      u.id === userId
         ? { ...u, status: u.status === 'suspended' ? 'active' : 'suspended' as const }
         : u
     ));
@@ -359,8 +358,7 @@ export function AdminDashboard() {
   };
 
   const getPlanBadge = (plan: PaymentPlan) => {
-    const styles = {
-      diamond: 'bg-cyan-500/20 text-cyan-400 border-cyan-500',
+    const styles: Record<string, string> = {
       gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500',
       silver: 'bg-gray-400/20 text-gray-300 border-gray-400',
       free: 'bg-slate-500/20 text-slate-300 border-slate-500',
@@ -412,11 +410,10 @@ export function AdminDashboard() {
           <nav className="flex-1 p-4 space-y-2">
             <button
               onClick={() => setSelectedTab('dashboard')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                selectedTab === 'dashboard'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'dashboard'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
+                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
+                }`}
             >
               <BarChart3 className="w-5 h-5" />
               <span className="font-medium">Dashboard</span>
@@ -424,11 +421,10 @@ export function AdminDashboard() {
 
             <button
               onClick={() => setSelectedTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                selectedTab === 'users'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'users'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
+                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
+                }`}
             >
               <UserCog className="w-5 h-5" />
               <span className="font-medium">User Management</span>
@@ -436,11 +432,10 @@ export function AdminDashboard() {
 
             <button
               onClick={() => setSelectedTab('revenue')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                selectedTab === 'revenue'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'revenue'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
+                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
+                }`}
             >
               <DollarSign className="w-5 h-5" />
               <span className="font-medium">Revenue Analytics</span>
@@ -448,11 +443,10 @@ export function AdminDashboard() {
 
             <button
               onClick={() => setSelectedTab('jobs')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                selectedTab === 'jobs'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'jobs'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
+                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
+                }`}
             >
               <Briefcase className="w-5 h-5" />
               <span className="font-medium">Job Listings</span>
@@ -460,11 +454,10 @@ export function AdminDashboard() {
 
             <button
               onClick={() => setSelectedTab('settings')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                selectedTab === 'settings'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'settings'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
+                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
+                }`}
             >
               <Settings className="w-5 h-5" />
               <span className="font-medium">Settings</span>
@@ -622,7 +615,7 @@ export function AdminDashboard() {
               <div className="space-y-3">
                 {[
                   { icon: CheckCircle, text: 'New user registration: david.smith@gmail.com', time: '5 min ago', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-                  { icon: DollarSign, text: 'Payment received: $49.99 (Diamond Plan)', time: '12 min ago', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+                  { icon: DollarSign, text: 'Payment received: $19.99 (Gold Plan)', time: '12 min ago', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
                   { icon: AlertCircle, text: 'Job post flagged for review', time: '23 min ago', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
                   { icon: CheckCircle, text: 'User upgraded to Gold Plan', time: '1 hour ago', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
                   { icon: XCircle, text: 'Account suspended: policy violation', time: '2 hours ago', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
@@ -700,11 +693,10 @@ export function AdminDashboard() {
                       </button>
                       <button
                         onClick={() => handleSuspendUser(userAccount.id)}
-                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                          userAccount.status === 'suspended'
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
-                            : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
-                        }`}
+                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${userAccount.status === 'suspended'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                          }`}
                       >
                         {userAccount.status === 'suspended' ? (
                           <>
@@ -788,11 +780,11 @@ export function AdminDashboard() {
               <h3 className="text-xl font-bold text-purple-300 mb-6">Recent Transactions</h3>
               <div className="space-y-3">
                 {[
-                  { user: 'Mike Johnson', plan: 'Diamond', amount: 49.99, date: '2024-02-09', status: 'completed' },
+                  { user: 'Mike Johnson', plan: 'Gold', amount: 19.99, date: '2024-02-09', status: 'completed' },
                   { user: 'Company HR', plan: 'Gold', amount: 19.99, date: '2024-02-08', status: 'completed' },
                   { user: 'Sarah Wilson', plan: 'Silver', amount: 9.99, date: '2024-02-08', status: 'completed' },
                   { user: 'Lisa Anderson', plan: 'Gold', amount: 19.99, date: '2024-02-07', status: 'completed' },
-                  { user: 'Robert Chen', plan: 'Diamond', amount: 49.99, date: '2024-02-06', status: 'pending' },
+                  { user: 'Robert Chen', plan: 'Gold', amount: 19.99, date: '2024-02-06', status: 'pending' },
                 ].map((transaction, index) => (
                   <div key={index} className="flex items-center justify-between p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg hover:bg-purple-500/10 transition-all">
                     <div className="flex items-center gap-3">
@@ -806,11 +798,10 @@ export function AdminDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-purple-300 text-lg">${transaction.amount}</span>
-                      <span className={`text-xs px-3 py-1 rounded-full border font-bold uppercase ${
-                        transaction.status === 'completed'
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                          : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                      }`}>
+                      <span className={`text-xs px-3 py-1 rounded-full border font-bold uppercase ${transaction.status === 'completed'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                        }`}>
                         {transaction.status}
                       </span>
                     </div>
