@@ -186,7 +186,7 @@ export function PostJob() {
                 <Briefcase className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-[#263238] text-3xl">Post a New Job</h1>
+                <h1 className="text-[#263238] text-3xl">Add a New Job</h1>
                 <p className="text-[#263238]/70">Fill in the details to find perfect candidates</p>
               </div>
             </div>
@@ -382,18 +382,6 @@ export function PostJob() {
                     </div>
                   )}
 
-                  {/* Demo Preview Section */}
-                  <Card className="p-4 bg-gradient-to-br from-[#4FC3F7]/5 to-[#4ADE80]/5 border-2 border-[#4FC3F7]/20">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ImageIcon className="w-4 h-4 text-[#FF9800]" />
-                      <p className="text-sm text-[#263238]">Preview: Sample Job Image</p>
-                    </div>
-                    <img
-                      src={demoImage}
-                      alt="Demo Job Posting"
-                      className="w-full h-64 object-cover rounded-xl border-2 border-[#263238]/10"
-                    />
-                  </Card>
                 </div>
               </div>
 
@@ -404,7 +392,7 @@ export function PostJob() {
                   className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30"
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  Post Job
+                  Add Job
                 </Button>
                 <Button
                   type="button"
@@ -418,35 +406,7 @@ export function PostJob() {
             </form>
           </Card>
 
-          {/* Tips */}
-          <Card className="p-6 mt-6 bg-gradient-to-br from-[#4FC3F7]/10 to-[#4ADE80]/10 border-2 border-[#4FC3F7]/20">
-            <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-[#FF9800]" />
-              <h3 className="text-[#263238]">Tips for a Great Job Posting</h3>
-            </div>
-            <ul className="space-y-3 text-sm text-[#263238]/80">
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 flex-shrink-0"></div>
-                <span>Be specific about the role and responsibilities</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#4ADE80] mt-2 flex-shrink-0"></div>
-                <span>Clearly state the required skills and qualifications</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#FF9800] mt-2 flex-shrink-0"></div>
-                <span>Include salary information to attract serious candidates</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#FFD54F] mt-2 flex-shrink-0"></div>
-                <span>Mention any benefits or perks of the position</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 flex-shrink-0"></div>
-                <span>Highlight what makes your company a great place to work</span>
-              </li>
-            </ul>
-          </Card>
+
         </div>
       </div>
     </div>
