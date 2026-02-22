@@ -18,6 +18,8 @@ import {
   Plus,
   Repeat2,
   Search,
+  ArrowRight,
+  TrendingUp,
   Send,
   Share2,
   SlidersHorizontal,
@@ -42,8 +44,10 @@ import { SkeletonCommentModal } from "../components/SkeletonCommentModal";
 import { SkeletonNewPostModal } from "../components/SkeletonNewPostModal";
 
 import { JobPostDTO } from "../types/DTOs/ModelDTOs/JobsDTOs/JobPostDTO";
+import { RecruitmentSelectDTO } from "../types/DTOs/ModelDTOs/JobPostDTOs/RecruitmentSelectDTO";
 import type { ApiResponse } from "../types/ApiResponse";
 import { formatRelativeTime } from "../utils/dateUtils";
+import { toast } from "sonner";
 
 // Mock job posts data - removed
 const jobPosts: any[] = [];
@@ -88,8 +92,10 @@ export default function JobFilter() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isCommentModalLoading, setIsCommentModalLoading] = useState(false);
   const [isNewPostModalLoading, setIsNewPostModalLoading] = useState(false);
+  const [isJobsLoading, setIsJobsLoading] = useState(false);
 
-  // Load user-posted jobs from localStorage
+  // Load user-posted jobs from recruitment attachment
+  const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
   const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
 
   const [likedPosts, setLikedPosts] = useState<Set<string>>(
@@ -98,6 +104,7 @@ export default function JobFilter() {
   const [repostedPosts, setRepostedPosts] = useState<
     Set<string>
   >(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -257,11 +264,7 @@ export default function JobFilter() {
         }
 
         // If we got fewer than pageSize, there are no more posts
-        if (mappedPosts.length < pageSize) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
+        setHasMore(data.data.length === pageSize);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -271,6 +274,33 @@ export default function JobFilter() {
       setIsLoadingMore(false);
     }
   }, [pageSize]);
+
+  const fetchUserJobs = useCallback(async () => {
+    try {
+      setIsJobsLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/loading-create-post`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<{ jobs: RecruitmentSelectDTO[] }> = await response.json();
+      if (data.success && data.data) {
+        setAvailableJobs(data.data.jobs);
+      } else {
+        toast.error(data.message || "Failed to load your jobs");
+      }
+    } catch (error) {
+      console.error("Error fetching user jobs:", error);
+      toast.error("An error occurred while loading your jobs");
+    } finally {
+      setIsJobsLoading(false);
+    }
+  }, []);
+
+  const handleOpenNewPostModal = () => {
+    setShowNewPostModal(true);
+    fetchUserJobs();
+  };
 
   // Handle search refetching with debounce
   useEffect(() => {
@@ -802,19 +832,19 @@ export default function JobFilter() {
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10 flex-shrink-0">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" />
+                <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
                 <AvatarFallback className="bg-[#FF9800] text-white">
-                  U
+                  {user?.fullName?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
               <button
-                onClick={() => setShowNewPostModal(true)}
+                onClick={handleOpenNewPostModal}
                 className="flex-1 text-left px-4 py-3 text-[#263238]/50 bg-[#FAFAFA] rounded-full hover:bg-[#263238]/5 transition"
               >
                 What's new?
               </button>
               <Button
-                onClick={() => setShowNewPostModal(true)}
+                onClick={handleOpenNewPostModal}
                 className="bg-white hover:bg-[#FAFAFA] text-[#263238] border border-[#263238]/20 hover:border-[#263238]/40 rounded-lg px-6 h-10 text-sm font-medium shadow-sm"
               >
                 Post
@@ -1329,19 +1359,64 @@ export default function JobFilter() {
                           </div>
                         )}
 
-                        {/* Job Info Card - Only show if there's job information */}
-                        {post.jobTitle && post.location && post.salary && (
-                          <>
+                        {/* Job Info Cards - Show all attached jobs */}
+                        {post.attachedJobs && post.attachedJobs.length > 0 && (
+                          <div className="space-y-4">
                             {/* Separator Line */}
                             <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
 
+                            {post.attachedJobs.map((job: any) => (
+                              <Card key={job.id} className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition group/job">
+                                {/* Job Details */}
+                                <div className="p-4 space-y-2">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <h3 className="font-semibold text-[#263238] group-hover/job:text-[#FF9800] transition-colors leading-tight">
+                                      {job.jobName}
+                                    </h3>
+                                    <Badge className={`${typeColors[job.jobType as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-2 py-0.5 flex items-center gap-1 text-[10px] whitespace-nowrap`}>
+                                      {typeIcons[job.jobType as keyof typeof typeIcons] || "💼"}
+                                      {job.jobType}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#263238]/70">
+                                    <div className="flex items-center gap-1.5">
+                                      <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                                      <span>{job.location}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                                      <span>{job.salary}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-end mt-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/job/${job.id}`);
+                                      }}
+                                      className="text-xs text-[#4FC3F7] hover:underline font-medium flex items-center gap-1"
+                                    >
+                                      View Details <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Legacy Job Info Card Support (for posts that might not have attachedJobs yet) */}
+                        {!post.attachedJobs?.length && post.jobTitle && post.location && post.salary && (
+                          <>
+                            <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
                             <Card className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition">
-                              {/* Job Details */}
                               <div className="p-4 space-y-2">
                                 <h3 className="font-semibold text-[#263238] mb-2">
                                   {post.jobTitle}
                                 </h3>
-
+                                {/* ... existing card pins ... */}
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-[#263238]/70">
                                   <div className="flex items-center gap-1.5">
                                     <MapPin className="w-4 h-4 text-[#4FC3F7]" />
@@ -1752,15 +1827,15 @@ export default function JobFilter() {
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex gap-3">
                     <Avatar className="w-10 h-10 flex-shrink-0">
-                      <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" />
+                      <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
                       <AvatarFallback className="bg-[#FF9800] text-white">
-                        U
+                        {user?.fullName?.charAt(0) || "U"}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1">
                       <div className="font-medium text-[#263238] mb-2">
-                        Your Username
+                        {user?.fullName || "Your Username"}
                       </div>
 
                       {/* Topic Input */}
@@ -1864,46 +1939,56 @@ export default function JobFilter() {
                           </span>
                         </label>
                         <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-xl p-3 max-h-64 overflow-y-auto">
-                          {jobPosts.map((job) => (
-                            <label
-                              key={job.id}
-                              className="flex items-start gap-3 p-2 hover:bg-white rounded-lg transition cursor-pointer group"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedJobForPost.includes(
-                                  job.id,
-                                )}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedJobForPost([
-                                      ...selectedJobForPost,
-                                      job.id,
-                                    ]);
-                                  } else {
-                                    setSelectedJobForPost(
-                                      selectedJobForPost.filter(
-                                        (id) => id !== job.id,
-                                      ),
-                                    );
-                                  }
-                                }}
-                                className="mt-1 w-4 h-4 accent-[#FF9800] cursor-pointer"
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Briefcase className="w-3 h-3 text-[#FF9800]" />
-                                  <span className="text-sm font-medium text-[#263238] group-hover:text-[#FF9800] transition">
-                                    {job.jobTitle}
-                                  </span>
+                          {isJobsLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="w-6 h-6 text-[#FF9800] animate-spin" />
+                            </div>
+                          ) : availableJobs.length > 0 ? (
+                            availableJobs.map((job) => (
+                              <label
+                                key={job.id}
+                                className="flex items-start gap-3 p-2 hover:bg-white rounded-lg transition cursor-pointer group"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedJobForPost.includes(
+                                    job.id.toString(),
+                                  )}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedJobForPost([
+                                        ...selectedJobForPost,
+                                        job.id.toString(),
+                                      ]);
+                                    } else {
+                                      setSelectedJobForPost(
+                                        selectedJobForPost.filter(
+                                          (id) => id !== job.id.toString(),
+                                        ),
+                                      );
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4 accent-[#FF9800] cursor-pointer"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Briefcase className="w-3 h-3 text-[#FF9800]" />
+                                    <span className="text-sm font-medium text-[#263238] group-hover:text-[#FF9800] transition">
+                                      {job.jobName}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-[#263238]/60 mt-0.5">
+                                    {job.location} •{" "}
+                                    {job.salary}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-[#263238]/60 mt-0.5">
-                                  {job.company} • {job.location} •{" "}
-                                  {job.salary}
-                                </div>
-                              </div>
-                            </label>
-                          ))}
+                              </label>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-[#263238]/40 text-sm">
+                              No jobs found to attach
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1914,8 +1999,8 @@ export default function JobFilter() {
                             Selected Jobs:
                           </div>
                           {selectedJobForPost.map((jobId) => {
-                            const selectedJob = jobPosts.find(
-                              (j) => j.id === jobId,
+                            const selectedJob = availableJobs.find(
+                              (j) => j.id.toString() === jobId,
                             );
                             if (!selectedJob) return null;
 
@@ -1939,7 +2024,7 @@ export default function JobFilter() {
                                 <div className="flex items-center gap-2 mb-2">
                                   <Briefcase className="w-4 h-4 text-[#FF9800]" />
                                   <span className="text-sm font-medium text-[#263238]">
-                                    {selectedJob.jobTitle}
+                                    {selectedJob.jobName}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-[#263238]/60">
@@ -1952,7 +2037,7 @@ export default function JobFilter() {
                                     {selectedJob.salary}
                                   </span>
                                   <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 text-[10px] px-1.5 py-0">
-                                    {selectedJob.type}
+                                    {selectedJob.jobType}
                                   </Badge>
                                 </div>
                               </div>
@@ -1977,91 +2062,63 @@ export default function JobFilter() {
                     )}
                   </div>
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       if (newPostContent.trim()) {
-                        if (editingPost) {
-                          // Update existing post
-                          const existingPost = userPostedJobs.find(p => p.id === editingPost.id);
-                          if (!existingPost) return;
+                        setIsSubmitting(true);
+                        try {
+                          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/create-post`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            },
+                            body: JSON.stringify({
+                              content: newPostContent,
+                              postImageUrl: newPostImage,
+                              recruitmentIds: selectedJobForPost.map(id => parseInt(id))
+                            })
+                          });
 
-                          const updatedPost = {
-                            ...existingPost,
-                            content: newPostContent,
-                            jobTitle: newPostTopic || '',
-                            image: newPostImage,
-                            attachedJobs: selectedJobForPost,
-                          };
+                          const data: ApiResponse<any> = await response.json();
 
-                          // Update in localStorage
-                          const existingPosts = localStorage.getItem('userSocialPosts');
-                          if (existingPosts) {
-                            const posts = JSON.parse(existingPosts);
-                            const updatedPosts = posts.map((p: any) =>
-                              p.id === editingPost.id ? updatedPost : p
-                            );
-                            localStorage.setItem('userSocialPosts', JSON.stringify(updatedPosts));
+                          if (data.success) {
+                            toast.success("Post created successfully!");
+                            // Reset form and close modal
+                            setNewPostContent("");
+                            setNewPostTopic("");
+                            setSelectedJobForPost([]);
+                            setNewPostImage(null);
+                            setShowNewPostModal(false);
+                            // Refresh posts
+                            fetchPosts(1, searchQuery, {
+                              jobType: selectedJobType,
+                              location: selectedLocation,
+                              salaryRange: selectedSalaryRange,
+                              postedDate: selectedPostedDate,
+                              category: selectedCategory
+                            });
+                          } else {
+                            toast.error(data.message || "Failed to create post");
                           }
-
-                          // Update state
-                          setUserPostedJobs((prev) =>
-                            prev.map((p) => p.id === editingPost.id ? updatedPost : p)
-                          );
-
-                          setEditingPost(null);
-                        } else {
-                          // Create new post object
-                          const newPost = {
-                            id: `user-post-${Date.now()}`,
-                            company: user?.email?.split('@')[0] || 'User',
-                            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email || 'User'}&backgroundColor=FF9800`,
-                            username: user?.email?.split('@')[0] || 'user',
-                            companyEmployees: '10-50 employees',
-                            companyRating: null,
-                            credibilityRating: 0,
-                            timestamp: 'Just now',
-                            content: newPostContent,
-                            jobTitle: newPostTopic || '',
-                            location: '',
-                            salary: '',
-                            salaryMin: 0,
-                            salaryMax: 0,
-                            type: '',
-                            jobImage: newPostImage || '',
-                            likes: 0,
-                            comments: 0,
-                            reposts: 0,
-                            shares: 0,
-                            image: newPostImage,
-                            category: '',
-                            experienceLevel: '',
-                            workSetting: '',
-                            companySize: 'Small',
-                            postedDate: new Date().toISOString(),
-                            attachedJobs: selectedJobForPost,
-                          };
-
-                          // Save to localStorage
-                          const existingPosts = localStorage.getItem('userSocialPosts');
-                          const posts = existingPosts ? JSON.parse(existingPosts) : [];
-                          posts.unshift(newPost);
-                          localStorage.setItem('userSocialPosts', JSON.stringify(posts));
-
-                          // Update state to show immediately
-                          setUserPostedJobs((prev) => [newPost, ...prev]);
+                        } catch (error) {
+                          console.error("Error creating post:", error);
+                          toast.error("An error occurred while creating the post");
+                        } finally {
+                          setIsSubmitting(false);
                         }
-
-                        // Reset form
-                        setNewPostContent("");
-                        setNewPostTopic("");
-                        setSelectedJobForPost([]);
-                        setNewPostImage(null);
-                        setShowNewPostModal(false);
                       }
                     }}
-                    disabled={!newPostContent.trim()}
+                    disabled={!newPostContent.trim() || isSubmitting}
                     className="bg-[#263238] hover:bg-[#263238]/90 text-white rounded-full px-6 h-9 text-sm font-medium disabled:bg-[#263238]/20 disabled:text-[#263238]/40 transition-colors"
                   >
-                    {editingPost ? 'Update' : 'Post'}
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Posting...
+                      </span>
+                    ) : (
+                      editingPost ? 'Update' : 'Post'
+                    )}
                   </Button>
                 </div>
               </div>
