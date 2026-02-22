@@ -14,14 +14,10 @@ import {
   MapPin,
   MessageCircle,
   MoreHorizontal,
-  MoreVertical,
-  Plus,
   Repeat2,
   Search,
   ArrowRight,
-  TrendingUp,
   Send,
-  Share2,
   SlidersHorizontal,
   Star,
   Trash2,
@@ -158,7 +154,6 @@ export default function JobFilter() {
   const [showNewPostModal, setShowNewPostModal] =
     useState(false);
   const [newPostContent, setNewPostContent] = useState("");
-  const [newPostTopic, setNewPostTopic] = useState("");
   const [selectedJobForPost, setSelectedJobForPost] = useState<
     string[]
   >([]);
@@ -167,7 +162,6 @@ export default function JobFilter() {
   const [editingPost, setEditingPost] = useState<{
     id: string;
     content: string;
-    topic: string;
     image: string | null;
   } | null>(null);
 
@@ -634,11 +628,9 @@ export default function JobFilter() {
     setEditingPost({
       id: post.id,
       content: post.content,
-      topic: post.jobTitle || '',
       image: post.image || null,
     });
     setNewPostContent(post.content);
-    setNewPostTopic(post.jobTitle || '');
     setNewPostImage(post.image || null);
     // Preserve attached jobs
     setSelectedJobForPost(post.attachedJobs || []);
@@ -1810,7 +1802,7 @@ export default function JobFilter() {
                       setShowNewPostModal(false);
                       setEditingPost(null);
                       setNewPostContent("");
-                      setNewPostTopic("");
+                      setNewPostContent("");
                       setNewPostImage(null);
                     }}
                     className="text-[#263238] hover:text-[#263238]/70 transition font-medium"
@@ -1838,16 +1830,6 @@ export default function JobFilter() {
                         {user?.fullName || "Your Username"}
                       </div>
 
-                      {/* Topic Input */}
-                      <input
-                        type="text"
-                        value={newPostTopic}
-                        onChange={(e) =>
-                          setNewPostTopic(e.target.value)
-                        }
-                        placeholder="Add a topic (optional)"
-                        className="w-full text-[#263238] placeholder:text-[#263238]/40 outline-none text-sm mb-3"
-                      />
 
                       {/* Content Textarea */}
                       <textarea
@@ -2085,7 +2067,7 @@ export default function JobFilter() {
                             toast.success("Post created successfully!");
                             // Reset form and close modal
                             setNewPostContent("");
-                            setNewPostTopic("");
+                            setNewPostContent("");
                             setSelectedJobForPost([]);
                             setNewPostImage(null);
                             setShowNewPostModal(false);
