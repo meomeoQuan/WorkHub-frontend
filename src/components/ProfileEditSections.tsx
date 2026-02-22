@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Link } from 'react-router';
-import { Plus, Trash2, Upload, Briefcase, Calendar, FileText, Settings, X } from 'lucide-react';
+import { Plus, Trash2, Upload, Briefcase, Calendar, FileText, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Experience Section
@@ -167,8 +167,8 @@ export function WeeklyAvailabilitySection({ scheduleSlots, isEditing, isOwnProfi
 
   const hasSlots = scheduleSlots && scheduleSlots.length > 0;
 
-  // Always show for own profile; for others, only show if there are slots
-  if (!hasSlots && !isEditing && !isOwnProfile) return null;
+  // Hide if no slots and not in editing mode
+  if (!hasSlots && !isEditing) return null;
 
   return (
     <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
