@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,120 +30,205 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Mock application data
-const applicationData: Record<string, any> = {
-  '1': {
-    id: '1',
-    candidate: {
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '(555) 123-4567',
-      location: 'New York, NY',
-      education: 'BA in Communications - NYU',
-      experience: '2 years in customer service',
-    },
-    job: {
-      title: 'Part-time Barista',
-      company: 'Coffee & Co.',
-      location: 'New York, NY',
-    },
-    status: 'pending',
-    appliedDate: '2024-01-20',
-    coverLetter: `Dear Hiring Manager,\n\nI am writing to express my strong interest in the Part-time Barista position at Coffee & Co. With over 2 years of customer service experience and a genuine passion for coffee culture, I am confident I would be a valuable addition to your team.\n\nDuring my previous role at a busy cafe, I developed excellent multitasking abilities and learned to work efficiently in fast-paced environments. I pride myself on creating positive customer experiences and building rapport with regular customers.\n\nI am particularly drawn to Coffee & Co. because of your commitment to quality and community. I would love the opportunity to contribute to your team's success while continuing to develop my barista skills.\n\nThank you for considering my application. I look forward to the opportunity to discuss how I can contribute to Coffee & Co.\n\nBest regards,\nSarah Johnson`,
+interface ApplicationDetailData {
+  applicantId: number;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  applicantLocation: string;
+  applicantAvatar: string;
+  appliedDate: string;
+  coverLetter: string;
+  cvUrl: string;
+  status: string;
+  recruitmentId: number;
+  jobTitle: string;
+  companyName: string;
+  jobLocation: string;
+  educations: Array<{
+    id: number;
+    school: string;
+    degree: string;
+    fieldOfStudy: string;
+    startDate: string;
+    endDate: string | null;
+  }>;
+  experiences: Array<{
+    id: number;
+    company: string;
+    position: string;
+    location: string;
+    startDate: string;
+    endDate: string | null;
+    description: string;
+  }>;
+}
+
+const statusConfig: Record<string, any> = {
+  'New': {
+    label: 'New',
+    color: 'bg-[#FFC107]/20 text-[#F57C00] border-[#FFC107]/30',
+    icon: Clock,
+  },
+  'Reviewing': {
+    label: 'Reviewing',
+    color: 'bg-[#4FC3F7]/20 text-[#0277BD] border-[#4FC3F7]/30',
+    icon: FileText,
+  },
+  'Shortlisted': {
+    label: 'Shortlisted',
+    color: 'bg-[#4ADE80]/20 text-[#15803D] border-[#4ADE80]/30',
+    icon: CheckCircle,
+  },
+  'Interviewed': {
+    label: 'Interviewed',
+    color: 'bg-purple-100 text-purple-700 border-purple-200',
+    icon: Calendar,
+  },
+  'Rejected': {
+    label: 'Rejected',
+    color: 'bg-red-100 text-red-700 border-red-200',
+    icon: XCircle,
+  },
+  'Accepted': {
+    label: 'Accepted',
+    color: 'bg-green-100 text-green-700 border-green-200',
+    icon: CheckCircle,
   },
 };
 
 export function ApplicationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const application = applicationData[id || '1'] || applicationData['1'];
-  
-  const [status, setStatus] = useState(application.status);
-  const [selectedStatus, setSelectedStatus] = useState(application.status);
+  const [application, setApplication] = useState<ApplicationDetailData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const statusConfig = {
-    pending: {
-      label: 'Pending Review',
-      color: 'bg-[#FFC107]/20 text-[#F57C00] border-[#FFC107]/30',
-      icon: Clock,
-    },
-    reviewed: {
-      label: 'Reviewed',
-      color: 'bg-[#4FC3F7]/20 text-[#0277BD] border-[#4FC3F7]/30',
-      icon: FileText,
-    },
-    accepted: {
-      label: 'Accepted',
-      color: 'bg-[#4ADE80]/20 text-[#15803D] border-[#4ADE80]/30',
-      icon: CheckCircle,
-    },
-    rejected: {
-      label: 'Rejected',
-      color: 'bg-red-100 text-red-700 border-red-200',
-      icon: XCircle,
-    },
+  useEffect(() => {
+    fetchApplicationDetails();
+  }, [id]);
+
+  const fetchApplicationDetails = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ApplicationDetail/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setApplication(data.data);
+        setStatus(data.data.status);
+        setSelectedStatus(data.data.status);
+      } else {
+        toast.error(data.message || 'Failed to fetch details');
+      }
+    } catch (error) {
+      console.error('Error fetching details:', error);
+      toast.error('Connection error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const currentStatus = statusConfig[status as keyof typeof statusConfig];
+  const currentStatus = statusConfig[status] || statusConfig['New'];
   const StatusIcon = currentStatus.icon;
 
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus);
   };
 
-  const handleSaveStatus = () => {
-    setStatus(selectedStatus);
-    toast.success('Status updated successfully!', {
-      style: {
-        background: '#4ADE80',
-        color: '#ffffff',
-        border: '2px solid #22C55E',
-        borderRadius: '12px',
-        padding: '16px',
-        fontSize: '14px',
-        fontWeight: '500',
-      },
-    });
+  const handleSaveStatus = async () => {
+    setIsUpdatingStatus(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ApplicationDetail/update-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          applicationId: Number(id),
+          status: selectedStatus
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStatus(selectedStatus);
+        toast.success('Status updated successfully!', {
+          style: { background: '#4ADE80', color: '#ffffff', borderRadius: '12px' },
+        });
+      } else {
+        toast.error(data.message || 'Update failed');
+      }
+    } catch (error) {
+      toast.error('Connection error');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    if (name === 'subject') {
-      setEmailSubject(value);
-    } else if (name === 'message') {
-      setEmailMessage(value);
-    }
+    if (name === 'subject') setEmailSubject(value);
+    else if (name === 'message') setEmailMessage(value);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setAttachments(Array.from(files));
+    if (e.target.files) setAttachments(Array.from(e.target.files));
+  };
+
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    const formData = new FormData();
+    formData.append('ApplicationId', id || '0');
+    formData.append('Subject', emailSubject);
+    formData.append('Body', emailMessage);
+    attachments.forEach(file => formData.append('Attachments', file));
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ApplicationDetail/send-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Email sent successfully!', {
+          style: { background: '#4ADE80', color: '#ffffff', borderRadius: '12px' },
+        });
+        setEmailSubject('');
+        setEmailMessage('');
+        setAttachments([]);
+      } else {
+        toast.error(data.message || 'Send failed');
+      }
+    } catch (error) {
+      toast.error('Connection error');
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
-  const handleSendEmail = () => {
-    setIsSendingEmail(true);
-    // Simulate email sending
-    setTimeout(() => {
-      setIsSendingEmail(false);
-      toast.success('Email sent successfully!', {
-        style: {
-          background: '#4ADE80',
-          color: '#ffffff',
-          border: '2px solid #22C55E',
-          borderRadius: '12px',
-          padding: '16px',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
-      });
-    }, 2000);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-12 h-12 border-4 border-[#FF9800] border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-[#263238]/60 font-medium italic">Loading application details...</p>
+      </div>
+    );
+  }
+
+  if (!application) return null;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -170,14 +255,20 @@ export function ApplicationDetail() {
             <Card className="p-8 border-2 border-[#263238]/10">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-[#263238] mb-2 text-xl">{application.candidate.name}</h2>
-                  <Badge className={`${currentStatus.color} border`}>
+                  <h2 className="text-[#263238] mb-2 text-xl">{application.applicantName}</h2>
+                  <Badge className={`${currentStatus.color} border py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
                     <StatusIcon className="w-3 h-3 mr-1" />
                     {currentStatus.label}
                   </Badge>
                 </div>
-                <div className="w-16 h-16 bg-gradient-to-br from-[#FF9800]/20 to-[#4FC3F7]/20 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl">{application.candidate.name.charAt(0)}</span>
+                <div className="w-16 h-16 rounded-2xl bg-[#FF9800]/10 overflow-hidden flex-shrink-0">
+                  {application.applicantAvatar ? (
+                    <img src={application.applicantAvatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FF9800] to-[#FFC107] flex items-center justify-center">
+                      <span className="text-white text-2xl">{application.applicantName.charAt(0)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -188,7 +279,7 @@ export function ApplicationDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-[#263238]/60">Email</p>
-                    <p className="text-sm text-[#263238]">{application.candidate.email}</p>
+                    <p className="text-sm text-[#263238]">{application.applicantEmail}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -197,7 +288,7 @@ export function ApplicationDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-[#263238]/60">Phone</p>
-                    <p className="text-sm text-[#263238]">{application.candidate.phone}</p>
+                    <p className="text-sm text-[#263238]">{application.applicantPhone || 'Not provided'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -206,7 +297,7 @@ export function ApplicationDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-[#263238]/60">Location</p>
-                    <p className="text-sm text-[#263238]">{application.candidate.location}</p>
+                    <p className="text-sm text-[#263238]">{application.applicantLocation || 'Not provided'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -215,7 +306,7 @@ export function ApplicationDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-[#263238]/60">Applied</p>
-                    <p className="text-sm text-[#263238]">{application.appliedDate}</p>
+                    <p className="text-sm text-[#263238]">{new Date(application.appliedDate).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
@@ -227,14 +318,30 @@ export function ApplicationDetail() {
                   <GraduationCap className="w-5 h-5 text-[#FF9800] mt-1" />
                   <div>
                     <p className="text-sm font-medium text-[#263238] mb-1">Education</p>
-                    <p className="text-sm text-[#263238]/70">{application.candidate.education}</p>
+                    {application.educations && application.educations.length > 0 ? (
+                      application.educations.map((edu) => (
+                        <p key={edu.id} className="text-sm text-[#263238]/70">
+                          {edu.degree} in {edu.fieldOfStudy} - {edu.school}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-sm text-[#263238]/60">No education history provided</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Briefcase className="w-5 h-5 text-[#4FC3F7] mt-1" />
                   <div>
                     <p className="text-sm font-medium text-[#263238] mb-1">Experience</p>
-                    <p className="text-sm text-[#263238]/70">{application.candidate.experience}</p>
+                    {application.experiences && application.experiences.length > 0 ? (
+                      application.experiences.map((exp) => (
+                        <p key={exp.id} className="text-sm text-[#263238]/70">
+                          {exp.position} at {exp.company} ({new Date(exp.startDate).getFullYear()} - {exp.endDate ? new Date(exp.endDate).getFullYear() : 'Present'})
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-sm text-[#263238]/60">No professional experience provided</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -250,22 +357,26 @@ export function ApplicationDetail() {
             </Card>
 
             {/* Resume */}
-            <Card className="p-6 border-2 border-[#263238]/10 hover:border-[#FF9800] transition cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#FF9800]/10 rounded-xl flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-[#FF9800]" />
+            {application.cvUrl && (
+              <Card className="p-6 border-2 border-[#263238]/10 hover:border-[#FF9800] transition group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#FF9800]/10 rounded-xl flex items-center justify-center group-hover:bg-[#FF9800]/20 transition-colors">
+                      <FileText className="w-6 h-6 text-[#FF9800]" />
+                    </div>
+                    <div>
+                      <p className="text-[#263238] font-medium">Candidate Resume</p>
+                      <p className="text-sm text-[#263238]/60">PDF Document</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[#263238] font-medium">Resume.pdf</p>
-                    <p className="text-sm text-[#263238]/60">245 KB</p>
-                  </div>
+                  <a href={application.cvUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="border-2 border-[#263238]/20 rounded-xl hover:bg-[#FF9800] hover:text-white hover:border-[#FF9800] transition-all">
+                      View Resume
+                    </Button>
+                  </a>
                 </div>
-                <Button variant="outline" className="border-2 border-[#263238]/20 rounded-xl">
-                  Download
-                </Button>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             {/* Send Email Notification */}
             <Card className="p-8 border-2 border-[#263238]/10 bg-gradient-to-br from-[#263238] to-[#37474F]">
@@ -298,7 +409,7 @@ export function ApplicationDetail() {
                     name="message"
                     value={emailMessage}
                     onChange={handleEmailChange}
-                    placeholder={`Dear ${application.candidate.name},\n\nWe're writing to inform you about important updates to our platform policies...`}
+                    placeholder={`Dear ${application.applicantName},\n\nWe're writing to inform you about important updates to our platform policies...`}
                     rows={6}
                     className="w-full px-4 py-3 bg-[#1A1F2E] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF9800] focus:border-transparent transition-all resize-none"
                   />
@@ -320,7 +431,7 @@ export function ApplicationDetail() {
                   <div className="flex-1">
                     <span className="text-[#4FC3F7] text-sm font-medium">Recipient: </span>
                     <span className="text-white text-sm">
-                      {application.candidate.name} ({application.candidate.email})
+                      {application.applicantName} ({application.applicantEmail})
                     </span>
                   </div>
                 </div>
@@ -388,14 +499,14 @@ export function ApplicationDetail() {
             <Card className="p-6 border-2 border-[#263238]/10">
               <h3 className="text-[#263238] mb-4">Applied For</h3>
               <div className="p-4 bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 rounded-xl mb-4">
-                <p className="font-medium text-[#263238] mb-1">{application.job.title}</p>
-                <p className="text-sm text-[#263238]/70 mb-2">{application.job.company}</p>
+                <p className="font-medium text-[#263238] mb-1">{application.jobTitle}</p>
+                <p className="text-sm text-[#263238]/70 mb-2">{application.companyName}</p>
                 <div className="flex items-center gap-2 text-sm text-[#263238]/60">
                   <MapPin className="w-4 h-4" />
-                  <span>{application.job.location}</span>
+                  <span>{application.jobLocation}</span>
                 </div>
               </div>
-              <Link to={`/job/${application.id}`}>
+              <Link to={`/job/${application.recruitmentId}`}>
                 <Button variant="outline" className="w-full border-2 border-[#263238]/20 hover:border-[#FF9800] rounded-xl">
                   View Job Details
                 </Button>
@@ -410,17 +521,20 @@ export function ApplicationDetail() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending Review</SelectItem>
-                  <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Reviewing">Reviewing</SelectItem>
+                  <SelectItem value="Shortlisted">Shortlisted</SelectItem>
+                  <SelectItem value="Interviewed">Interviewed</SelectItem>
+                  <SelectItem value="Accepted">Accepted</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
+              <Button
                 className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl mt-4"
                 onClick={handleSaveStatus}
+                disabled={isUpdatingStatus}
               >
-                Save Status
+                {isUpdatingStatus ? 'Saving...' : 'Save Status'}
               </Button>
             </Card>
 
@@ -432,7 +546,7 @@ export function ApplicationDetail() {
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Schedule Interview
                 </Button>
-                <Link to="/profile/user">
+                <Link to={`/profile/${application.applicantId}`}>
                   <Button variant="outline" className="w-full justify-start border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
                     <Briefcase className="w-4 h-4 mr-2" />
                     View Full Profile
