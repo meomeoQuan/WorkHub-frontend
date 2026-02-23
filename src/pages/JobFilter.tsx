@@ -1732,10 +1732,13 @@ export default function JobFilter() {
                     <div className="space-y-3">
                       {(userComments[selectedPostForComment.id] || []).map((comment: any) => {
                         const renderComment = (node: any, depth: number = 0) => (
-                          <div key={`comment-${node.id}`} className="space-y-2" ref={lastCommentRef}>
-                            <div className={`flex gap-3 ${depth > 0 ? 'ml-' + Math.min(depth * 8, 24) : ''}`} style={depth > 0 ? { marginLeft: `${Math.min(depth * 2, 6)}rem` } : {}}>
-                              <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0`}>
-                                <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-xs`}>
+                          <div key={`comment-${node.id}`} className="space-y-2 mt-3" ref={lastCommentRef}>
+                            <div className="flex gap-3">
+                              {/* Connector line for nested comments handled by parent border */}
+
+                              <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0 relative z-10`}>
+                                <AvatarImage src={node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`} />
+                                <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-[10px]`}>
                                   {node.userName?.charAt(0) || "U"}
                                 </AvatarFallback>
                               </Avatar>
@@ -1804,7 +1807,7 @@ export default function JobFilter() {
 
                             {/* Render nested replies recursively */}
                             {node.replies && node.replies.length > 0 && (
-                              <div className="space-y-2">
+                              <div className="ml-10 space-y-3 border-l-2 border-[#263238]/5 pl-4 pb-2">
                                 {node.replies.map((reply: any) => renderComment(reply, depth + 1))}
                               </div>
                             )}

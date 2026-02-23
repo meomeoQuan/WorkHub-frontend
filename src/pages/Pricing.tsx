@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
-import type { PaymentPlan } from '../contexts/AuthContext';
+import type { PaymentPlan } from '../types/User';
 import type { ApiResponse } from '../types/ApiResponse';
 import { toast } from 'sonner';
 
@@ -120,7 +120,8 @@ export function Pricing() {
         // Redirect to PayOS checkout page
         window.location.href = data.data.checkoutUrl;
       } else {
-        toast.error(data.message || 'Không thể tạo thanh toán');
+        const errorMsg = data.errors ? `${data.message}: ${data.errors}` : (data.message || 'Không thể tạo thanh toán');
+        toast.error(errorMsg);
         setSelectedPlan(null);
       }
     } catch (error) {
@@ -154,10 +155,21 @@ export function Pricing() {
             </p>
 
             {user && (
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
-                <span className="text-white text-sm">
-                  Gói hiện tại: <strong className="capitalize">{currentPlan === 'free' ? 'Miễn Phí' : currentPlan}</strong>
-                </span>
+              <div className="flex flex-col items-center gap-2">
+                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
+                  <span className="text-white text-sm">
+                    Gói hiện tại: <strong className="capitalize">{currentPlan === 'free' ? 'Miễn Phí' : currentPlan}</strong>
+                  </span>
+                </div>
+                {user.subscription && user.subscription.plan !== 'free' && (
+                  <div className="text-white/80 text-xs flex flex-col items-center gap-1">
+                    <span className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${user.subscription.isActive ? 'bg-green-400' : 'bg-red-400'}`} />
+                      {user.subscription.isActive ? 'Đang hoạt động' : 'Đã hết hạn'}
+                    </span>
+                    <span>Hết hạn ngày: {new Date(user.subscription.endAt).toLocaleDateString()}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
