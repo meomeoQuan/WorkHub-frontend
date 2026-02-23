@@ -152,25 +152,10 @@ export default function JobFilter() {
     image: string | null;
   } | null>(null);
 
-  // Comments storage - maps post ID to array of comments
-  const [userComments, setUserComments] = useState<Record<string, Array<{
-    author: string;
-    text: string;
-    timestamp: string;
-    avatar: string;
-    likes?: number;
-    image?: string;
-    replies?: Array<{
-      author: string;
-      text: string;
-      timestamp: string;
-      avatar: string;
-      likes?: number;
-      image?: string;
-    }>;
-  }>>>({});
-
-
+  // Comments storage - maps post ID to tree of comments from API
+  const [userComments, setUserComments] = useState<Record<string, any[]>>({});
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
@@ -603,30 +588,51 @@ export default function JobFilter() {
     });
   };
 
-  const handleAddComment = (postId: string, commentText: string) => {
-    if (!commentText.trim()) return;
-
-    const timeAgo = "Just now";
-
-    const newComment = {
-      author: user?.fullName || "Anonymous User",
-      text: commentText,
-      timestamp: timeAgo,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`,
-    };
-
-    setUserComments((prev) => ({
-      ...prev,
-      [postId]: [...(prev[postId] || []), newComment],
-    }));
-
-    // Scroll to new comment after a short delay to ensure DOM update
-    setTimeout(() => {
-      lastCommentRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
+  const fetchComments = useCallback(async (postId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post?PostId=${postId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
       });
-    }, 100);
+      const data: ApiResponse<any> = await response.json();
+      if (data.success) {
+        setUserComments(prev => ({ ...prev, [postId]: data.data.comments || [] }));
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  }, []);
+
+  const handleAddComment = async (postId: string, text: string, parentCommentId?: number) => {
+    if (!text.trim()) return;
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/add-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          PostId: Number(postId),
+          Content: text,
+          ParentCommentId: parentCommentId ?? null
+        })
+      });
+      const data: ApiResponse<any> = await response.json();
+      if (data.success) {
+        await fetchComments(postId);
+        toast.success("Comment added");
+        setTimeout(() => {
+          lastCommentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      } else {
+        toast.error(data.message || "Failed to add comment");
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast.error("An error occurred");
+    }
   };
 
   const handleFollowToggle = async (targetUserId: number) => {
@@ -1528,9 +1534,10 @@ export default function JobFilter() {
                         </button>
 
                         <button
-                          onClick={() =>
-                            setSelectedPostForComment(post)
-                          }
+                          onClick={() => {
+                            setSelectedPostForComment(post);
+                            fetchComments(post.id);
+                          }}
                           className="flex items-center gap-2 px-3 py-2 hover:bg-[#4FC3F7]/10 rounded-full transition group"
                         >
                           <MessageCircle className="w-5 h-5 group-hover:text-[#4FC3F7] transition" />
@@ -1591,243 +1598,270 @@ export default function JobFilter() {
       </div>
 
 
-      {selectedPostForComment && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedPostForComment(null)}
-        >
-          {isCommentModalLoading ? (
-            <div onClick={(e) => e.stopPropagation()}>
-              <SkeletonCommentModal />
-            </div>
-          ) : (
-            <div
-              className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
-                <h2 className="font-semibold text-[#263238]">
-                  {selectedPostForComment.company}'s Post
-                </h2>
-                <button
-                  onClick={() => setSelectedPostForComment(null)}
-                  className="p-2 hover:bg-[#263238]/5 rounded-full transition"
-                >
-                  <X className="w-5 h-5 text-[#263238]/70" />
-                </button>
+      {
+        selectedPostForComment && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedPostForComment(null)}
+          >
+            {isCommentModalLoading ? (
+              <div onClick={(e) => e.stopPropagation()}>
+                <SkeletonCommentModal />
               </div>
-
-              {/* Modal Content - Scrollable */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Post Content */}
-                <div className="p-4 border-b border-[#263238]/10">
-                  <div className="flex gap-3">
-                    <Link to="/profile/user" onClick={() => setSelectedPostForComment(null)}>
-                      <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
-                        <AvatarImage src={selectedPostForComment.avatar} />
-                        <AvatarFallback className="bg-[#FF9800] text-white">
-                          {selectedPostForComment.company.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Link>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Link
-                          to="/profile/user"
-                          onClick={() => setSelectedPostForComment(null)}
-                          className="font-semibold text-[#263238] hover:underline cursor-pointer"
-                        >
-                          {selectedPostForComment.company}
-                        </Link>
-                        {selectedPostForComment.credibilityRating && (
-                          <div className="flex items-center gap-1 px-2 py-0.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-lg">
-                            <Star className="w-3 h-3 text-[#FF9800] fill-[#FF9800]" />
-                            <span className="text-xs font-semibold text-[#FF9800]">
-                              {selectedPostForComment.credibilityRating.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                        <span className="text-[#263238]/50 text-sm">·</span>
-                        <span className="text-[#263238]/50 text-sm">{selectedPostForComment.timestamp}</span>
-                      </div>
-                      <div className="text-[#263238]/60 text-sm mb-3">@{selectedPostForComment.username}</div>
-                      <p className="text-[#263238] text-[15px] leading-relaxed">{selectedPostForComment.content}</p>
-                    </div>
-                  </div>
-
-                  {selectedPostForComment.jobImage && (
-                    <div className="mt-4 rounded-xl overflow-hidden border border-[#263238]/10">
-                      <img
-                        src={selectedPostForComment.jobImage}
-                        alt={selectedPostForComment.jobTitle}
-                        className="w-full object-cover"
-                        style={{ maxHeight: "300px" }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Job Card Section */}
-                <div className="px-4 py-3 bg-[#FAFAFA] border-b border-[#263238]/10">
-                  <div
-                    className="bg-white border border-[#263238]/10 rounded-xl p-4 hover:border-[#FF9800]/30 transition cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/job/${selectedPostForComment.id}`);
-                    }}
+            ) : (
+              <div
+                className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
+                  <h2 className="font-semibold text-[#263238]">
+                    {selectedPostForComment.company}'s Post
+                  </h2>
+                  <button
+                    onClick={() => setSelectedPostForComment(null)}
+                    className="p-2 hover:bg-[#263238]/5 rounded-full transition"
                   >
-                    <h4 className="font-semibold text-[#263238] text-base mb-3">
-                      {selectedPostForComment.jobTitle || selectedPostForComment.company}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-[#263238]/60 mb-4">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-4 h-4 text-[#FF9800]" />
-                        {selectedPostForComment.company}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4 text-[#4FC3F7]" />
-                        {selectedPostForComment.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-[#4ADE80]" />
-                        {selectedPostForComment.salary}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-[#FF9800]" />
-                        {selectedPostForComment.type}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={`${typeColors[selectedPostForComment.type as keyof typeof typeColors] || 'bg-[#FF9800]/20 text-[#FF9800]'} border-0 text-xs px-2 py-1`}>
-                        <span className="mr-1">{typeIcons[selectedPostForComment.type as keyof typeof typeIcons] || '💼'}</span>
-                        {selectedPostForComment.type}
-                      </Badge>
-                      <span className="text-sm text-[#4FC3F7] hover:text-[#0288D1] font-medium transition">
-                        View Details →
-                      </span>
-                    </div>
-                  </div>
+                    <X className="w-5 h-5 text-[#263238]/70" />
+                  </button>
                 </div>
 
-                {/* Comments Section */}
-                <div className="p-4">
-                  <div className="text-sm text-[#263238]/60 mb-4">
-                    {(selectedPostForComment.comments || 0) + (userComments[selectedPostForComment.id]?.length || 0)} comments
-                  </div>
+                {/* Modal Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto">
+                  {/* Post Content */}
+                  <div className="p-4 border-b border-[#263238]/10">
+                    <div className="flex gap-3">
+                      <Link to="/profile/user" onClick={() => setSelectedPostForComment(null)}>
+                        <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
+                          <AvatarImage src={selectedPostForComment.avatar} />
+                          <AvatarFallback className="bg-[#FF9800] text-white">
+                            {selectedPostForComment.company.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
 
-                  <div className="space-y-4">
-                    {userComments[selectedPostForComment.id]?.map((comment: any, index: number) => (
-                      <div key={`comment-${index}`} className="space-y-3">
-                        <div className="flex gap-3">
-                          <Avatar className="w-8 h-8 flex-shrink-0">
-                            <AvatarImage src={comment.avatar} />
-                            <AvatarFallback className="bg-[#4FC3F7] text-white">
-                              {comment.author.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="bg-white border border-[#263238]/10 rounded-2xl px-4 py-3 shadow-sm">
-                              <div className="font-semibold text-[#263238] text-sm mb-1">{comment.author}</div>
-                              <p className="text-[#263238]/90 text-sm leading-relaxed">{comment.text}</p>
-                              {comment.image && (
-                                <img
-                                  src={comment.image}
-                                  alt="Comment attachment"
-                                  className="mt-2 rounded-lg max-h-60 w-full object-cover"
-                                />
-                              )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Link
+                            to="/profile/user"
+                            onClick={() => setSelectedPostForComment(null)}
+                            className="font-semibold text-[#263238] hover:underline cursor-pointer"
+                          >
+                            {selectedPostForComment.company}
+                          </Link>
+                          {selectedPostForComment.credibilityRating && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-lg">
+                              <Star className="w-3 h-3 text-[#FF9800] fill-[#FF9800]" />
+                              <span className="text-xs font-semibold text-[#FF9800]">
+                                {selectedPostForComment.credibilityRating.toFixed(1)}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-4 mt-1 px-4 text-xs text-[#263238]/50">
-                              <button className="hover:text-[#FF9800] transition">Like</button>
-                              <button className="hover:text-[#4FC3F7] transition">Reply</button>
-                              <span className="text-[#263238]/30">{comment.timestamp}</span>
-                            </div>
-                          </div>
+                          )}
+                          <span className="text-[#263238]/50 text-sm">·</span>
+                          <span className="text-[#263238]/50 text-sm">{selectedPostForComment.timestamp}</span>
                         </div>
-
-                        {/* Nested Replies Rendering */}
-                        {comment.replies && comment.replies.length > 0 && (
-                          <div className="ml-11 space-y-3">
-                            {comment.replies.map((reply: any, rIndex: number) => (
-                              <div key={`reply-${index}-${rIndex}`} className="flex gap-3">
-                                <Avatar className="w-7 h-7 flex-shrink-0">
-                                  <AvatarImage src={reply.avatar} />
-                                  <AvatarFallback className="bg-[#FF9800] text-white">
-                                    {reply.author?.charAt(0) || "U"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <div className="bg-white border border-[#263238]/10 rounded-2xl px-4 py-3 shadow-sm">
-                                    <div className="font-semibold text-[#263238] text-xs mb-1">{reply.author}</div>
-                                    <p className="text-[#263238]/90 text-xs leading-relaxed">{reply.text}</p>
-                                    {reply.image && (
-                                      <img
-                                        src={reply.image}
-                                        alt="Reply attachment"
-                                        className="mt-2 rounded-lg max-h-48 w-full object-cover"
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-4 mt-1 px-4 text-[10px] text-[#263238]/50">
-                                    <button className="hover:text-[#FF9800] transition">Like</button>
-                                    <button className="hover:text-[#4FC3F7] transition">Reply</button>
-                                    <span className="text-[#263238]/30">{reply.timestamp}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="text-[#263238]/60 text-sm mb-3">@{selectedPostForComment.username}</div>
+                        <p className="text-[#263238] text-[15px] leading-relaxed">{selectedPostForComment.content}</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                    </div>
 
-              {/* Comment Input */}
-              <div className="border-t border-[#263238]/10 p-4 bg-white">
-                <div className="flex gap-3 items-start">
-                  <Avatar className="w-10 h-10 flex-shrink-0">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
-                    <AvatarFallback className="bg-[#FF9800] text-white">
-                      {user?.fullName?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      type="text"
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Write a comment..."
-                      className="flex-1 px-4 py-2 bg-[#FAFAFA] rounded-full text-[#263238] placeholder:text-[#263238]/50 focus:outline-none focus:ring-2 focus:ring-[#FF9800]/30 transition text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && commentText.trim() && selectedPostForComment) {
-                          handleAddComment(selectedPostForComment.id, commentText);
-                          setCommentText("");
-                        }
+                    {selectedPostForComment.jobImage && (
+                      <div className="mt-4 rounded-xl overflow-hidden border border-[#263238]/10">
+                        <img
+                          src={selectedPostForComment.jobImage}
+                          alt={selectedPostForComment.jobTitle}
+                          className="w-full object-cover"
+                          style={{ maxHeight: "300px" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Job Card Section */}
+                  <div className="px-4 py-3 bg-[#FAFAFA] border-b border-[#263238]/10">
+                    <div
+                      className="bg-white border border-[#263238]/10 rounded-xl p-4 hover:border-[#FF9800]/30 transition cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/job/${selectedPostForComment.id}`);
                       }}
-                    />
-                    <button
-                      onClick={() => {
-                        if (commentText.trim() && selectedPostForComment) {
-                          handleAddComment(selectedPostForComment.id, commentText);
-                          setCommentText("");
-                        }
-                      }}
-                      disabled={!commentText.trim()}
-                      className="px-6 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium"
                     >
-                      Post
-                    </button>
+                      <h4 className="font-semibold text-[#263238] text-base mb-3">
+                        {selectedPostForComment.jobTitle || selectedPostForComment.company}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-[#263238]/60 mb-4">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-4 h-4 text-[#FF9800]" />
+                          {selectedPostForComment.company}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                          {selectedPostForComment.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                          {selectedPostForComment.salary}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-[#FF9800]" />
+                          {selectedPostForComment.type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge className={`${typeColors[selectedPostForComment.type as keyof typeof typeColors] || 'bg-[#FF9800]/20 text-[#FF9800]'} border-0 text-xs px-2 py-1`}>
+                          <span className="mr-1">{typeIcons[selectedPostForComment.type as keyof typeof typeIcons] || '💼'}</span>
+                          {selectedPostForComment.type}
+                        </Badge>
+                        <span className="text-sm text-[#4FC3F7] hover:text-[#0288D1] font-medium transition">
+                          View Details →
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comments Section */}
+                  <div className="p-4">
+                    <div className="text-sm text-[#263238]/60 mb-4">
+                      {(() => {
+                        const countComments = (comments: any[]): number =>
+                          comments.reduce((acc: number, c: any) => acc + 1 + countComments(c.replies || []), 0);
+                        return countComments(userComments[selectedPostForComment.id] || []);
+                      })()} comments
+                    </div>
+
+                    <div className="space-y-3">
+                      {(userComments[selectedPostForComment.id] || []).map((comment: any) => {
+                        const renderComment = (node: any, depth: number = 0) => (
+                          <div key={`comment-${node.id}`} className="space-y-2 mt-3" ref={lastCommentRef}>
+                            <div className="flex gap-3">
+                              {/* Connector line for nested comments handled by parent border */}
+
+                              <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0 relative z-10`}>
+                                <AvatarImage src={node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`} />
+                                <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-[10px]`}>
+                                  {node.userName?.charAt(0) || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-2xl px-4 py-2.5">
+                                  <div className="font-semibold text-[#263238] text-sm">{node.userName}</div>
+                                  <p className="text-[#263238]/90 text-sm leading-relaxed mt-0.5">{node.content}</p>
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 px-3 text-xs text-[#263238]/50">
+                                  <button
+                                    onClick={() => setReplyingTo(replyingTo === node.id ? null : node.id)}
+                                    className="hover:text-[#4FC3F7] transition font-medium"
+                                  >
+                                    Reply
+                                  </button>
+                                  <span className="text-[#263238]/30">
+                                    {node.createdAt ? formatRelativeTime(node.createdAt) : ''}
+                                  </span>
+                                </div>
+
+                                {/* Inline Reply Input */}
+                                {replyingTo === node.id && (
+                                  <div className="flex gap-2 mt-2 items-center">
+                                    <input
+                                      type="text"
+                                      value={replyText}
+                                      onChange={(e) => setReplyText(e.target.value)}
+                                      placeholder={`Reply to ${node.userName}...`}
+                                      className="flex-1 px-3 py-1.5 bg-white border border-[#263238]/15 rounded-full text-[#263238] placeholder:text-[#263238]/40 focus:outline-none focus:ring-2 focus:ring-[#4FC3F7]/30 transition text-sm"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && replyText.trim() && selectedPostForComment) {
+                                          handleAddComment(selectedPostForComment.id, replyText, node.id);
+                                          setReplyText('');
+                                          setReplyingTo(null);
+                                        }
+                                        if (e.key === 'Escape') {
+                                          setReplyingTo(null);
+                                          setReplyText('');
+                                        }
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        if (replyText.trim() && selectedPostForComment) {
+                                          handleAddComment(selectedPostForComment.id, replyText, node.id);
+                                          setReplyText('');
+                                          setReplyingTo(null);
+                                        }
+                                      }}
+                                      disabled={!replyText.trim()}
+                                      className="p-1.5 text-[#4FC3F7] hover:bg-[#4FC3F7]/10 disabled:text-[#263238]/20 rounded-full transition"
+                                    >
+                                      <Send className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                                      className="p-1.5 text-[#263238]/40 hover:bg-[#263238]/5 rounded-full transition"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Render nested replies recursively */}
+                            {node.replies && node.replies.length > 0 && (
+                              <div className="ml-10 space-y-3 border-l-2 border-[#263238]/5 pl-4 pb-2">
+                                {node.replies.map((reply: any) => renderComment(reply, depth + 1))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                        return renderComment(comment, 0);
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comment Input */}
+                <div className="border-t border-[#263238]/10 p-4 bg-white">
+                  <div className="flex gap-3 items-center">
+                    <Avatar className="w-9 h-9 flex-shrink-0">
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
+                      <AvatarFallback className="bg-[#FF9800] text-white">
+                        {user?.fullName?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Write a comment..."
+                        className="flex-1 px-4 py-2 bg-[#FAFAFA] rounded-full text-[#263238] placeholder:text-[#263238]/50 focus:outline-none focus:ring-2 focus:ring-[#FF9800]/30 transition text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && commentText.trim() && selectedPostForComment) {
+                            handleAddComment(selectedPostForComment.id, commentText);
+                            setCommentText("");
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (commentText.trim() && selectedPostForComment) {
+                            handleAddComment(selectedPostForComment.id, commentText);
+                            setCommentText("");
+                          }
+                        }}
+                        disabled={!commentText.trim()}
+                        className="px-5 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium"
+                      >
+                        Post
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )
+      }
 
       {/* Scroll to Top Button */}
       {
@@ -2168,7 +2202,8 @@ export default function JobFilter() {
               </div>
             )}
           </div>
-        )}
-    </div>
+        )
+      }
+    </div >
   );
 }

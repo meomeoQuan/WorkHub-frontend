@@ -10,4 +10,5 @@ export interface UserDTO {
     location?: string;
     age: number;
     provider?: string;
+    paymentPlan?: string;
 }

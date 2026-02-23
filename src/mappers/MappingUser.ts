@@ -15,6 +15,6 @@ export function mapUserDTOToUser(dto: UserDTO): UserModel {
     fullName: dto.fullName,
     userType: roleMap[dto.role] ?? "jobseeker", // safe fallback
     avatarUrl: dto.avatarUrl ?? null,
-    paymentPlan: null, // UserDTO does not have paymentPlan yet
+    paymentPlan: (dto as any).paymentPlan || (dto as any).PaymentPlan || 'free',
   };
 }

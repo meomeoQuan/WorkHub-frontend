@@ -17,6 +17,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<UserModel>) => void;
   upgradePlan: (plan: PaymentPlan) => void;
+  fetchPlan: () => Promise<void>;
   googleLogin: (idToken: string) => Promise<void>;
 }
 
@@ -54,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           parsedUser.paymentPlan = 'free';
         }
         setUser(parsedUser);
+        // Fetch latest plan to sync
+        fetchPlan();
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('workhub_user');
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     localStorage.setItem("access_token", data.token);
 
+    console.log("Incoming UserDTO:", data.userDTO);
     const mappedUser = mapUserDTOToUser(data.userDTO);
 
     setUser(mappedUser);
@@ -143,10 +147,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchPlan = async () => {
+    if (!user) return;
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API}/api/PayOs/get-subscription`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const result: ApiResponse<any> = await res.json();
+        if (result.success && result.data) {
+          const planData = result.data;
+          updateUser({
+            paymentPlan: planData.plan,
+            subscription: {
+              plan: planData.plan,
+              isActive: planData.isActive,
+              startAt: planData.startAt,
+              endAt: planData.endAt
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch subscription plan:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user, isLoggedIn: !!user,
-      login, logout, updateUser, upgradePlan, googleLogin
+      login, logout, updateUser, upgradePlan, googleLogin, fetchPlan
     }}>
       {children}
     </AuthContext.Provider>

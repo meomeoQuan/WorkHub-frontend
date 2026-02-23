@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -10,21 +10,12 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '../contexts/AuthContext';
-import type { PaymentPlan } from '../contexts/AuthContext';
-
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  userType: 'user' | 'admin';
-  profileImage?: string;
-  paymentPlan: PaymentPlan;
-}
+import type { UserModel, PaymentPlan } from '../types/User';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
   userType?: 'user' | 'admin';
-  user?: User | null;
+  user?: UserModel | null;
   currentPath?: string;
 }
 
@@ -97,8 +88,8 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                   <Button
                     variant="ghost"
                     className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${currentPath === '/my-applications' || currentPath === '/applications'
-                        ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
-                        : 'text-[#263238]/70'
+                      ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
+                      : 'text-[#263238]/70'
                       }`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
@@ -146,9 +137,9 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                       size="icon"
                       className="rounded-full border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] w-10 h-10 overflow-hidden"
                     >
-                      {user?.profileImage ? (
+                      {user?.avatarUrl ? (
                         <img
-                          src={user.profileImage}
+                          src={user.avatarUrl}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
@@ -164,9 +155,9 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                   <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex items-center">
-                        {user?.profileImage ? (
+                        {user?.avatarUrl ? (
                           <img
-                            src={user.profileImage}
+                            src={user.avatarUrl}
                             alt="Profile"
                             className="w-8 h-8 rounded-full mr-2"
                           />
