@@ -12,67 +12,67 @@ import { toast } from 'sonner';
 const plans = [
   {
     id: 'free' as PaymentPlan,
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    description: 'Perfect for getting started',
+    name: 'Miễn Phí',
+    price: '0₫',
+    period: 'mãi mãi',
+    description: 'Hoàn hảo để bắt đầu',
     icon: Zap,
     color: 'from-[#263238] to-[#37474F]',
     borderColor: 'border-[#263238]/20',
     features: [
-      'Browse unlimited jobs',
-      'Apply to 5 jobs per month',
-      'Basic profile',
-      'Email notifications',
-      'Community support'
+      'Xem không giới hạn công việc',
+      'Ứng tuyển 5 công việc mỗi tháng',
+      'Hồ sơ cơ bản',
+      'Thông báo qua email',
+      'Hỗ trợ cộng đồng'
     ],
     limitations: [
-      'Limited applications',
-      'Standard visibility',
-      'Basic features only'
+      'Giới hạn lượt ứng tuyển',
+      'Hiển thị tiêu chuẩn',
+      'Chỉ tính năng cơ bản'
     ]
   },
   {
     id: 'silver' as PaymentPlan,
     name: 'Silver',
-    price: '$9.99',
+    price: '1.000₫',
     priceVND: 1000,
-    period: 'per month',
-    description: 'For active job seekers',
+    period: 'mỗi tháng',
+    description: 'Dành cho người tìm việc tích cực',
     icon: Crown,
     color: 'from-gray-400 to-gray-600',
     borderColor: 'border-gray-400',
-    badge: 'Popular',
+    badge: 'Phổ Biến',
     features: [
-      'Everything in Free',
-      'Apply to 25 jobs per month',
-      'Priority support',
-      'Enhanced profile',
-      'Application tracking',
-      'Job alerts',
-      'Resume templates'
+      'Tất cả trong gói Miễn Phí',
+      'Ứng tuyển 25 công việc mỗi tháng',
+      'Hỗ trợ ưu tiên',
+      'Hồ sơ nâng cao',
+      'Theo dõi đơn ứng tuyển',
+      'Thông báo việc làm',
+      'Mẫu CV chuyên nghiệp'
     ]
   },
   {
     id: 'gold' as PaymentPlan,
     name: 'Gold',
-    price: '$19.99',
+    price: '2.000₫',
     priceVND: 2000,
-    period: 'per month',
-    description: 'For serious professionals',
+    period: 'mỗi tháng',
+    description: 'Dành cho chuyên gia nghiêm túc',
     icon: Star,
     color: 'from-yellow-400 to-yellow-600',
     borderColor: 'border-yellow-500',
-    badge: 'Best Value',
+    badge: 'Tốt Nhất',
     features: [
-      'Everything in Silver',
-      'Unlimited job applications',
-      '2x profile visibility',
-      'Featured profile badge',
-      'Advanced analytics',
-      'Priority job matching',
-      'Direct employer messaging',
-      'Interview preparation tips'
+      'Tất cả trong gói Silver',
+      'Ứng tuyển không giới hạn',
+      'Hiển thị hồ sơ gấp 2 lần',
+      'Huy hiệu hồ sơ nổi bật',
+      'Phân tích nâng cao',
+      'Gợi ý việc làm ưu tiên',
+      'Nhắn tin trực tiếp nhà tuyển dụng',
+      'Mẹo chuẩn bị phỏng vấn'
     ]
   }
 ];
@@ -106,7 +106,7 @@ export function Pricing() {
           totalAmount: (plan as any).priceVND,
           items: [
             {
-              name: `${plan.name} Plan Subscription`,
+              name: `Đăng ký gói ${plan.name}`,
               quantity: 1,
               price: (plan as any).priceVND
             }
@@ -120,12 +120,12 @@ export function Pricing() {
         // Redirect to PayOS checkout page
         window.location.href = data.data.checkoutUrl;
       } else {
-        toast.error(data.message || 'Failed to create payment');
+        toast.error(data.message || 'Không thể tạo thanh toán');
         setSelectedPlan(null);
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('An error occurred while creating payment');
+      toast.error('Đã xảy ra lỗi khi tạo thanh toán');
       setSelectedPlan(null);
     }
   };
@@ -142,21 +142,21 @@ export function Pricing() {
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
               <Crown className="w-4 h-4 text-white" />
-              <span className="text-sm text-white">Choose Your Plan</span>
+              <span className="text-sm text-white">Chọn Gói Của Bạn</span>
             </div>
 
             <h1 className="text-white mb-4 text-4xl md:text-5xl leading-tight">
-              Accelerate Your Career
+              Thăng Tiến Sự Nghiệp
             </h1>
 
             <p className="text-xl text-white/95 mb-8">
-              Unlock premium features and land your dream job faster
+              Mở khoá tính năng cao cấp và tìm việc mơ ước nhanh hơn
             </p>
 
             {user && (
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
                 <span className="text-white text-sm">
-                  Current Plan: <strong className="capitalize">{currentPlan}</strong>
+                  Gói hiện tại: <strong className="capitalize">{currentPlan === 'free' ? 'Miễn Phí' : currentPlan}</strong>
                 </span>
               </div>
             )}
@@ -189,7 +189,7 @@ export function Pricing() {
 
                   {isCurrentPlan && (
                     <Badge className="absolute -top-3 right-4 bg-[#4ADE80] text-white">
-                      Current
+                      Hiện tại
                     </Badge>
                   )}
 
@@ -224,20 +224,20 @@ export function Pricing() {
                     {isProcessing ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Processing...
+                        Đang xử lý...
                       </>
                     ) : isCurrentPlan ? (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        Current Plan
+                        Gói Hiện Tại
                       </>
                     ) : isUpgrade ? (
                       <>
-                        Upgrade Now
+                        Nâng Cấp Ngay
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     ) : (
-                      'Select Plan'
+                      'Chọn Gói'
                     )}
                   </Button>
 
@@ -254,7 +254,7 @@ export function Pricing() {
                   {/* Limitations (only for free plan) */}
                   {plan.limitations && (
                     <div className="mt-4 pt-4 border-t border-[#263238]/10">
-                      <p className="text-xs text-[#263238]/50 mb-2">Limitations:</p>
+                      <p className="text-xs text-[#263238]/50 mb-2">Hạn chế:</p>
                       <div className="space-y-2">
                         {plan.limitations.map((limitation, index) => (
                           <div key={index} className="flex items-start gap-2">
@@ -276,16 +276,16 @@ export function Pricing() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-white mb-4 text-3xl">
-              Ready to land your dream job?
+              Sẵn sàng tìm công việc mơ ước?
             </h2>
             <p className="text-xl mb-8 text-white/80">
-              Join thousands of successful job seekers who upgraded their careers
+              Tham gia cùng hàng nghìn ứng viên đã thăng tiến sự nghiệp
             </p>
             <Button
               onClick={() => !user ? navigate('/register') : navigate('/jobs')}
               className="bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 px-8 text-lg shadow-lg shadow-[#FF9800]/30 rounded-xl"
             >
-              {user ? 'Browse Jobs' : 'Get Started Free'}
+              {user ? 'Xem Việc Làm' : 'Bắt Đầu Miễn Phí'}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>

@@ -20,6 +20,7 @@ import { EmailConfirmation } from './pages/EmailConfirmation';
 import { ResendEmailConfirmation } from './pages/ResendEmailConfirmation';
 import { Unauthorized } from './pages/Unauthorized';
 import { Pricing } from './pages/Pricing';
+import { PaymentResult } from './pages/PaymentResult';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminUserProfile } from './pages/AdminUserProfile';
 import { Policy } from './pages/Policy';
@@ -108,6 +109,14 @@ export const router = createBrowserRouter([
       {
         path: 'pricing',
         element: <Pricing />,
+      },
+      {
+        path: 'payment/success',
+        element: <PaymentResult />,
+      },
+      {
+        path: 'payment/cancel',
+        element: <PaymentResult />,
       },
       {
         path: 'applications',
