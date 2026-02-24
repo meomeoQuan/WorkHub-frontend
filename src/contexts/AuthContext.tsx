@@ -24,20 +24,107 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 
-// Global fetch interceptor for session expiry
-const originalFetch = window.fetch;
-window.fetch = async (...args) => {
-  const response = await originalFetch(...args);
-  if (response.status === 401) {
-    // Clear auth data
-    localStorage.removeItem("workhub_user");
-    localStorage.removeItem("access_token");
+// Queue for requests while token is being refreshed
+let isRefreshing = false;
+let failedQueue: any[] = [];
 
-    // Force redirect to login
-    if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/login?expired=true';
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Global fetch interceptor for session expiry and automatic refresh
+const originalFetch = window.fetch;
+window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  // 1. Ensure credentials: 'include' is set for all relative or API-bound calls
+  // This allows the browser to send/receive the HttpOnly refresh cookie
+  const modifiedInit: RequestInit = {
+    ...init,
+    credentials: init?.credentials || 'include',
+  };
+
+  const response = await originalFetch(input, modifiedInit);
+
+  // 2. Handle 401 Unauthorized (unless it's the refresh call itself failing)
+  if (response.status === 401 && !input.toString().includes('/api/auth/refresh')) {
+
+    // If already refreshing, queue this request
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(token => {
+        // Retry with new token
+        if (modifiedInit.headers) {
+          const headers = new Headers(modifiedInit.headers);
+          headers.set('Authorization', `Bearer ${token}`);
+          modifiedInit.headers = headers;
+        }
+        return originalFetch(input, modifiedInit);
+      }).catch(err => {
+        return Promise.reject(err);
+      });
+    }
+
+    isRefreshing = true;
+    const oldAccessToken = localStorage.getItem("access_token");
+
+    try {
+      console.log("Token expired. Attempting refresh...");
+      const refreshRes = await originalFetch(`${API}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: oldAccessToken }),
+        credentials: 'include' // CRITICAL: Send HttpOnly refresh cookie
+      });
+
+      if (refreshRes.ok) {
+        const refreshResult: ApiResponse<LoginResponseDTO> = await refreshRes.json();
+        const newToken = refreshResult.data?.token;
+
+        if (newToken) {
+          console.log("Token refreshed successfully.");
+          localStorage.setItem("access_token", newToken);
+
+          isRefreshing = false;
+          processQueue(null, newToken);
+
+          // Retry the original request
+          if (modifiedInit.headers) {
+            const headers = new Headers(modifiedInit.headers);
+            headers.set('Authorization', `Bearer ${newToken}`);
+            modifiedInit.headers = headers;
+          }
+          return originalFetch(input, modifiedInit);
+        }
+      }
+
+      // If refresh failed (e.g. refresh token expired)
+      console.warn("Refresh failed. Logging out...");
+      processQueue(new Error("Refresh failed"), null);
+
+      // Clear auth data and redirect
+      localStorage.removeItem("workhub_user");
+      localStorage.removeItem("access_token");
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login?expired=true';
+      }
+      return response;
+
+    } catch (err) {
+      isRefreshing = false;
+      processQueue(err, null);
+      return Promise.reject(err);
+    } finally {
+      isRefreshing = false;
     }
   }
+
   return response;
 };
 
@@ -71,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
+      credentials: 'include' // Receive HttpOnly refresh cookie
     });
 
     const result: ApiResponse<LoginResponseDTO> = await res.json();
@@ -102,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(authCode),
+      credentials: 'include' // Receive HttpOnly refresh cookie
     });
 
     const result: ApiResponse<LoginResponseDTO> = await res.json();
