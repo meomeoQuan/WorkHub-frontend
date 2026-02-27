@@ -20,10 +20,10 @@ export function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  
+
   useEffect(() => {
     const token = searchParams.get('token');
-    
+
     if (!token) {
       setStatus('invalid');
       setErrorMessage('No reset token provided');
@@ -52,94 +52,94 @@ export function ResetPassword() {
     }
   }, [status, navigate]);
 
-const validateResetToken = async (token: string) => {
-  try {
-    const res = await fetch(
-      `${API}/api/auth/validate-reset-token`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+  const validateResetToken = async (token: string) => {
+    try {
+      const res = await fetch(
+        `${API}/api/auth/validate-reset-token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!result.success) {
+        setStatus("error");
+
+        switch (result.message) {
+          case "TOKEN_EXPIRED":
+            setErrorMessage(
+              "This password reset link has expired. Please request a new one."
+            );
+            break;
+
+          case "TOKEN_INVALID":
+            setErrorMessage(
+              "Invalid reset link. Please check your email."
+            );
+            break;
+
+          default:
+            setErrorMessage("Reset link is not valid.");
+        }
+        return;
       }
-    );
 
-    const result = await res.json();
-
-    if (!result.success) {
+      setStatus("valid");
+    } catch {
       setStatus("error");
+      setErrorMessage("Server error. Please try again later.");
+    }
+  };
 
-      switch (result.message) {
-        case "TOKEN_EXPIRED":
-          setErrorMessage(
-            "This password reset link has expired. Please request a new one."
-          );
-          break;
 
-        case "TOKEN_INVALID":
-          setErrorMessage(
-            "Invalid reset link. Please check your email."
-          );
-          break;
 
-        default:
-          setErrorMessage("Reset link is not valid.");
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
       return;
     }
 
-    setStatus("valid");
-  } catch {
-    setStatus("error");
-    setErrorMessage("Server error. Please try again later.");
-  }
-};
 
 
+    setIsSubmitting(true);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    try {
+      const res = await fetch(
+        `${API}/api/auth/password-reset`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            newPassword,
+          }),
+        }
+      );
 
-  if (newPassword !== confirmPassword) {
-    alert("Passwords do not match");
-    return;
-  }
+      const result = await res.json();
 
-  
-
-  setIsSubmitting(true);
-
-  try {
-    const res = await fetch(
-      "http://localhost:5222/api/auth/password-reset",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          newPassword,
-        }),
+      if (!result.success) {
+        alert(result.message);
+        return;
       }
-    );
 
-    const result = await res.json();
-
-    if (!result.success) {
-      alert(result.message);
-      return;
+      setStatus("success");
+    } catch {
+      alert("Failed to reset password.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setStatus("success");
-  } catch {
-    alert("Failed to reset password.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
 
   const getPasswordStrength = (password: string) => {
     if (!password) return { label: '', color: '', width: '0%' };
-    
+
     let strength = 0;
     if (password.length >= 8) strength++;
     if (password.length >= 12) strength++;
@@ -166,12 +166,12 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 bg-[#4ADE80]/20 rounded-full animate-ping" />
           </div>
-          
+
           <h2 className="text-[#263238] mb-3 text-2xl font-bold">Password Reset! 🎉</h2>
           <p className="text-[#263238]/70 mb-6 text-base">
             Your password has been successfully updated. You can now login with your new password.
           </p>
-          
+
           {/* Success Info */}
           <div className="bg-gradient-to-r from-[#4ADE80]/10 to-[#22C55E]/10 border-2 border-[#4ADE80]/30 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3 text-left">
@@ -186,14 +186,14 @@ const handleSubmit = async (e: React.FormEvent) => {
               </div>
             </div>
           </div>
-          
+
           {/* Countdown */}
           <div className="mb-6">
             <p className="text-sm text-[#263238]/60">
               Redirecting to login in <span className="font-bold text-[#FF9800]">{countdown}</span> seconds...
             </p>
           </div>
-          
+
           {/* Actions */}
           <div className="flex flex-col gap-3">
             <Button
@@ -225,12 +225,12 @@ const handleSubmit = async (e: React.FormEvent) => {
           <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-red-100">
             <XCircle className="w-10 h-10 text-red-500" />
           </div>
-          
+
           <h2 className="text-[#263238] mb-3 text-2xl font-bold">Invalid Reset Link</h2>
           <p className="text-[#263238]/70 mb-6 text-base">
             {errorMessage || 'This password reset link is no longer valid.'}
           </p>
-          
+
           {/* Error Details */}
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6 text-left">
             <p className="text-sm text-[#263238] font-semibold mb-2">Possible reasons:</p>
@@ -249,7 +249,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               </li>
             </ul>
           </div>
-          
+
           {/* Actions */}
           <div className="flex flex-col gap-3">
             <Button
@@ -332,7 +332,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            
+
             {/* Password Strength Indicator */}
             {newPassword && (
               <div className="mt-2">
@@ -378,12 +378,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            
+
             {/* Password Match Indicator */}
             {confirmPassword && (
-              <p className={`mt-2 text-xs flex items-center gap-1.5 ${
-                newPassword === confirmPassword ? 'text-[#4ADE80]' : 'text-red-500'
-              }`}>
+              <p className={`mt-2 text-xs flex items-center gap-1.5 ${newPassword === confirmPassword ? 'text-[#4ADE80]' : 'text-red-500'
+                }`}>
                 {newPassword === confirmPassword ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />

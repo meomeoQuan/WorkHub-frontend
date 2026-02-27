@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Textarea } from '../components/ui/textarea';
 import { Zap, User, Building2, Mail, Lock, Briefcase, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
+const API = import.meta.env.VITE_API_URL;
+
 export function Register() {
   const navigate = useNavigate();
 
@@ -21,48 +23,48 @@ export function Register() {
 
 
 
-const handleUserRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleUserRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (userPassword !== confirmPassword) {
-    setPasswordError("Passwords do not match");
-    return;
-  }
+    if (userPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
 
-  setPasswordError("");
+    setPasswordError("");
 
-  const payload = {
-    email: userEmail,
-    fullName: userName,          // ✅ matches FullName
-    password: userPassword,
-    confirmPassword: confirmPassword, // ✅ REQUIRED
-    role: role,                  // 0 or 1
+    const payload = {
+      email: userEmail,
+      fullName: userName,          // ✅ matches FullName
+      password: userPassword,
+      confirmPassword: confirmPassword, // ✅ REQUIRED
+      role: role,                  // 0 or 1
+    };
+
+    console.log("Register payload:", payload);
+
+    const res = await fetch(`${API}/api/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      console.error("Register failed:", result);
+      return;
+    }
+
+    // success → go confirm email
+    navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
   };
 
-  console.log("Register payload:", payload);
-
-  const res = await fetch("http://localhost:5222/api/auth/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    console.error("Register failed:", result);
-    return;
-  }
-
-  // success → go confirm email
-  navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
-};
 
 
 
- 
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
@@ -85,95 +87,95 @@ const handleUserRegister = async (e: React.FormEvent) => {
             <p className="text-[#263238]/70">Start earning with flexible jobs today</p>
           </div>
 
-           
-              <form onSubmit={handleUserRegister} className="space-y-5">
-                <div>
-                  <Label htmlFor="candidate-name" className="text-[#263238]">Full Name</Label>
-                  <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="candidate-name"
-                      placeholder="John Doe"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="candidate-email" className="text-[#263238]">Email</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="candidate-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                  </div>
-                </div>
+          <form onSubmit={handleUserRegister} className="space-y-5">
+            <div>
+              <Label htmlFor="candidate-name" className="text-[#263238]">Full Name</Label>
+              <div className="relative mt-1">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                <Input
+                  id="candidate-name"
+                  placeholder="John Doe"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                  required
+                />
+              </div>
+            </div>
 
-                <div>
-                  <Label htmlFor="candidate-password" className="text-[#263238]">Password</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="candidate-password"
-                      type={showUserPassword ? 'text' : 'password'}
-                      placeholder="Create a password"
-                      value={userPassword}
-                      onChange={(e) => setUserPassword(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowUserPassword(!showUserPassword)}
-                    >
-                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+            <div>
+              <Label htmlFor="candidate-email" className="text-[#263238]">Email</Label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                <Input
+                  id="candidate-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                  required
+                />
+              </div>
+            </div>
 
-                <div>
-                  <Label htmlFor="confirm-password" className="text-[#263238]">Confirm Password</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
-                    <Input
-                      id="confirm-password"
-                      type={showUserPassword ? 'text' : 'password'}
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
-                      onClick={() => setShowUserPassword(!showUserPassword)}
-                    >
-                      {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+            <div>
+              <Label htmlFor="candidate-password" className="text-[#263238]">Password</Label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                <Input
+                  id="candidate-password"
+                  type={showUserPassword ? 'text' : 'password'}
+                  placeholder="Create a password"
+                  value={userPassword}
+                  onChange={(e) => setUserPassword(e.target.value)}
+                  className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
+                  onClick={() => setShowUserPassword(!showUserPassword)}
+                >
+                  {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
 
-                <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Create Free Account
-                </Button>
+            <div>
+              <Label htmlFor="confirm-password" className="text-[#263238]">Confirm Password</Label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40" />
+                <Input
+                  id="confirm-password"
+                  type={showUserPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#263238]/40"
+                  onClick={() => setShowUserPassword(!showUserPassword)}
+                >
+                  {showUserPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
 
-                <p className="text-xs text-center text-[#263238]/60">
-                  By signing up, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </form>
-  
+            <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
+              <Zap className="w-4 h-4 mr-2" />
+              Create Free Account
+            </Button>
+
+            <p className="text-xs text-center text-[#263238]/60">
+              By signing up, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </form>
+
           <p className="text-center mt-6 text-sm text-[#263238]/70">
             Already have an account?{' '}
             <Link to="/login" className="text-[#FF9800] hover:text-[#F57C00]">
