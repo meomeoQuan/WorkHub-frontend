@@ -9,6 +9,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
 type VerificationStatus =
   | "success"
   | "error"
@@ -25,7 +27,7 @@ export function VerifyEmail() {
   useEffect(() => {
     const token = searchParams.get("token");
 
-     console.log("Verification token:", token);
+    console.log("Verification token:", token);
     if (!token) {
       setStatus("invalid");
       setErrorMessage("No verification token provided");
@@ -42,25 +44,25 @@ export function VerifyEmail() {
       // TODO: Replace with actual API call to your backend
       // const response = await fetch(`/api/verify-email?token=${token}`);
       // const data = await response.json();
-       
-   const response = await  fetch("http://localhost:5222/api/auth/verify-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token }),
-    });
-  
-    const data = await response.json();
-   
-    console.log("Verification response:", data);
 
-    if(!response.ok){
-      setStatus("error");
-      setErrorMessage(data.message ?? "Failed to verify email.");
-    } else {
-      setStatus("success");
-    }
+      const response = await fetch(`${API}/api/auth/verify-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      console.log("Verification response:", data);
+
+      if (!response.ok) {
+        setStatus("error");
+        setErrorMessage(data.message ?? "Failed to verify email.");
+      } else {
+        setStatus("success");
+      }
     } catch (error) {
       console.error("Verification error:", error);
       setStatus("error");

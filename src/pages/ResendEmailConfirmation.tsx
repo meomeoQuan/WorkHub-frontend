@@ -5,6 +5,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Zap, Mail, ArrowLeft, Send } from 'lucide-react';
 
+const API = import.meta.env.VITE_API_URL;
+
 export function ResendEmailConfirmation() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -13,14 +15,14 @@ export function ResendEmailConfirmation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-   const response = await fetch("http://localhost:5222/api/auth/resend-email", {
+    const response = await fetch(`${API}/api/auth/resend-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email }),
     });
-    
+
 
     console.log("Resend email response:", response);
     if (!response.ok) {
@@ -29,9 +31,9 @@ export function ResendEmailConfirmation() {
       return;
     }
 
-    
+
     setIsSubmitting(true);
-    
+
     // TODO: Implement actual email resend logic
     setTimeout(() => {
       setIsSubmitting(false);
