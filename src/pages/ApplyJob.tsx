@@ -30,7 +30,7 @@ interface ApiResponse<T> {
 export function ApplyJob() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user: authUser } = useAuth();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -73,10 +73,43 @@ export function ApplyJob() {
     }
   }, [id]);
 
+  // Fetch user profile for auto-filling
+  const fetchUserProfile = useCallback(async () => {
+    if (!isLoggedIn || !authUser?.id) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/show-profile/${authUser.id}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const profileData = result.data;
+
+          setFormData(prev => ({
+            ...prev,
+            fullName: prev.fullName || profileData.fullName || '',
+            email: prev.email || profileData.email || '',
+            phone: prev.phone || profileData.phone || '',
+            education: prev.education || (profileData.educations && profileData.educations.length > 0
+              ? `${profileData.educations[0].degree} @ ${profileData.educations[0].school}`
+              : '')
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user profile for auto-fill:', error);
+    }
+  }, [isLoggedIn, authUser?.id]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchJobDetails();
-  }, [fetchJobDetails]);
+    fetchUserProfile();
+  }, [fetchJobDetails, fetchUserProfile]);
 
   // Scroll to top when submission is successful
   useEffect(() => {

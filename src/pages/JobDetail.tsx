@@ -238,7 +238,7 @@ export function JobDetail() {
             ) : (
               <Card className="p-6 sticky top-24 border-2 border-[#263238]/10 shadow-xl">
                 <Button
-                  onClick={() => navigate(isLoggedIn ? `/ job / ${id} / apply` : '/login')}
+                  onClick={() => navigate(isLoggedIn ? `/job/${id}/apply` : '/login')}
                   className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30 mb-3"
                 >
                   <Zap className="w-5 h-5 mr-2" />
