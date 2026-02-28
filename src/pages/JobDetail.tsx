@@ -1,21 +1,37 @@
-import { useParams, Link, useNavigate } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, DollarSign, Briefcase, Calendar, ArrowLeft, Zap, Building2, Users, Star, Bookmark } from 'lucide-react';
+import {
+  Building2,
+  MapPin,
+  DollarSign,
+  Clock,
+  Zap,
+  Bookmark,
+  Share2,
+  CheckCircle,
+  ArrowLeft,
+  Loader2,
+  Calendar,
+  Briefcase,
+  Users,
+  Star
+} from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { SkeletonJobDetail } from '../components/SkeletonJobDetail';
 import { SkeletonJobSidebar } from '../components/SkeletonJobSidebar';
 import { RecruitmentDetailInfoDTO } from '../types/DTOs/ModelDTOs/RecruitmentDetailInfoDTO';
 import type { ApiResponse } from '../types/ApiResponse';
 import { formatRelativeTime } from '../utils/dateUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 export function JobDetail() {
   const { id } = useParams();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     const fetchJobDetail = async () => {
@@ -34,7 +50,6 @@ export function JobDetail() {
 
         if (data.success && data.data) {
           const p = data.data;
-          // Map DTO to component expected structure
           setJob({
             userId: p.userId,
             title: p.jobName,
@@ -65,30 +80,9 @@ export function JobDetail() {
     fetchJobDetail();
   }, [id]);
 
-  const typeColors: Record<string, string> = {
-    'Part-time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
-    'Part Time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
-    'Freelance': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
-    'Seasonal': 'bg-[#4ADE80]/10 text-[#2E7D32] border border-[#4ADE80]/20',
-    'Full-time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
-    'Full Time': 'bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20',
-    'Contract': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
-  };
-
-  const typeIcons: Record<string, string> = {
-    'Part-time': '⏰',
-    'Part Time': '⏰',
-    'Freelance': '💼',
-    'Seasonal': '🌟',
-    'Full-time': '🏢',
-    'Full Time': '🏢',
-    'Contract': '📑',
-  };
-
   if (loading || !job) {
     return (
       <div className="bg-white min-h-screen">
-        {/* Header */}
         <div className="bg-gradient-to-br from-[#FF9800] to-[#FFC107] py-8">
           <div className="container mx-auto px-4">
             <Button
@@ -243,13 +237,18 @@ export function JobDetail() {
               <SkeletonJobSidebar />
             ) : (
               <Card className="p-6 sticky top-24 border-2 border-[#263238]/10 shadow-xl">
-                <Link to={`/job/${id}/apply`}>
-                  <Button className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30 mb-3">
-                    <Zap className="w-5 h-5 mr-2" />
-                    Quick Apply Now
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full mb-6 h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl">
+                <Button
+                  onClick={() => navigate(isLoggedIn ? `/job/${id}/apply` : '/login')}
+                  className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30 mb-3"
+                >
+                  <Zap className="w-5 h-5 mr-2" />
+                  Quick Apply Now
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => !isLoggedIn && navigate('/login')}
+                  className="w-full mb-6 h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl"
+                >
                   <Bookmark className="w-4 h-4 mr-2" />
                   Save Job
                 </Button>
@@ -293,7 +292,7 @@ export function JobDetail() {
                     </div>
                   )}
 
-                  <Link to={`/profile/user?userId=${job.userId}`}>
+                  <Link to={`/ profile / user ? userId = ${job.userId} `}>
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
                       View User profile →
                     </Button>

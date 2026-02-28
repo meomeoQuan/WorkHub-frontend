@@ -69,58 +69,60 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
           </Link>
 
           {/* Center Navigation */}
-          {isLoggedIn && (
-            <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-              <Link to="/jobs">
-                <Button
-                  variant="ghost"
-                  className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${currentPath === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
-                    }`}
-                >
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  Browse Jobs
-                </Button>
-              </Link>
+          <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+            <Link to="/jobs">
+              <Button
+                variant="ghost"
+                className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${currentPath === '/jobs' ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'
+                  }`}
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Browse Jobs
+              </Button>
+            </Link>
 
-              {/* My Applications with Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+            {isLoggedIn && (
+              <>
+                {/* My Applications with Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${currentPath === '/my-applications' || currentPath === '/applications'
+                        ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
+                        : 'text-[#263238]/70'
+                        }`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      My Applications
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate('/applications')}>
+                      <Inbox className="mr-2 h-4 w-4" />
+                      <span>Applications</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/my-applications')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>My Applications</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Link to="/schedule">
                   <Button
                     variant="ghost"
-                    className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${currentPath === '/my-applications' || currentPath === '/applications'
-                      ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
-                      : 'text-[#263238]/70'
+                    className={`rounded-xl hover:bg-[#4ADE80]/10 hover:text-[#4ADE80] ${currentPath === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
                       }`}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    My Applications
-                    <ChevronDown className="w-4 h-4 ml-1" />
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/applications')}>
-                    <Inbox className="mr-2 h-4 w-4" />
-                    <span>Applications</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/my-applications')}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>My Applications</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Link to="/schedule">
-                <Button
-                  variant="ghost"
-                  className={`rounded-xl hover:bg-[#4ADE80]/10 hover:text-[#4ADE80] ${currentPath === '/schedule' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-[#263238]/70'
-                    }`}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Schedule
-                </Button>
-              </Link>
-            </div>
-          )}
+                </Link>
+              </>
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
