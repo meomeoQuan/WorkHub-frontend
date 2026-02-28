@@ -9,6 +9,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Separator } from '../components/ui/separator';
 import { ArrowLeft, Upload, CheckCircle, Briefcase, MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 interface JobDetails {
   id: number;
@@ -29,6 +30,13 @@ interface ApiResponse<T> {
 export function ApplyJob() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [isLoggedIn, navigate]);
 
   const [formData, setFormData] = useState({
     fullName: '',

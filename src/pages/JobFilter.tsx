@@ -61,7 +61,7 @@ const mapCategoryName = (category: string): string => {
 
 export default function JobFilter() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const typeColors: Record<string, string> = {
@@ -102,7 +102,15 @@ export default function JobFilter() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Feed tab state
-  const [activeTab, setActiveTab] = useState<"foryou" | "following">("foryou");
+  const [activeTab, setActiveTabState] = useState<"foryou" | "following">("foryou");
+
+  const setActiveTab = (tab: "foryou" | "following") => {
+    if (tab === "following" && !isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    setActiveTabState(tab);
+  };
   const [followingCount, setFollowingCount] = useState<number>(0);
 
   // Following state - Load from backend (Set of User IDs)
@@ -299,6 +307,10 @@ export default function JobFilter() {
   }, []);
 
   const handleOpenNewPostModal = () => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     setShowNewPostModal(true);
     fetchUserJobs();
   };
@@ -353,14 +365,16 @@ export default function JobFilter() {
 
   // Simulate initial loading
   useEffect(() => {
-    fetchFollowingCount();
-    fetchFollowedUsers();
+    if (isLoggedIn) {
+      fetchFollowingCount();
+      fetchFollowedUsers();
+    }
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [fetchFollowingCount, fetchFollowedUsers]);
+  }, [fetchFollowingCount, fetchFollowedUsers, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
   useEffect(() => {
@@ -394,10 +408,9 @@ export default function JobFilter() {
 
       setIsCommentModalLoading(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post`, {
-          method: 'POST',
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post?PostId=${selectedPostForComment.id}`, {
+          method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ PostId: parseInt(selectedPostForComment.id) })
         });
         const json = await response.json();
 
@@ -539,6 +552,10 @@ export default function JobFilter() {
   };
 
   const handleLike = async (postId: string) => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/toggle-like`, {
         method: 'POST',
@@ -577,6 +594,10 @@ export default function JobFilter() {
   };
 
   const handleRepost = (postId: string) => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     setRepostedPosts((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(postId)) {
@@ -605,6 +626,10 @@ export default function JobFilter() {
   }, []);
 
   const handleAddComment = async (postId: string, text: string, parentCommentId?: number) => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     if (!text.trim()) return;
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/add-comment`, {
@@ -636,6 +661,10 @@ export default function JobFilter() {
   };
 
   const handleFollowToggle = async (targetUserId: number) => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/toggle-follow`, {
         method: 'POST',
@@ -1677,47 +1706,49 @@ export default function JobFilter() {
                     )}
                   </div>
 
-                  {/* Job Card Section */}
-                  <div className="px-4 py-3 bg-[#FAFAFA] border-b border-[#263238]/10">
-                    <div
-                      className="bg-white border border-[#263238]/10 rounded-xl p-4 hover:border-[#FF9800]/30 transition cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/job/${selectedPostForComment.id}`);
-                      }}
-                    >
-                      <h4 className="font-semibold text-[#263238] text-base mb-3">
-                        {selectedPostForComment.jobTitle || selectedPostForComment.company}
-                      </h4>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-[#263238]/60 mb-4">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-4 h-4 text-[#FF9800]" />
-                          {selectedPostForComment.company}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4 text-[#4FC3F7]" />
-                          {selectedPostForComment.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-[#4ADE80]" />
-                          {selectedPostForComment.salary}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-[#FF9800]" />
-                          {selectedPostForComment.type}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={`${typeColors[selectedPostForComment.type as keyof typeof typeColors] || 'bg-[#FF9800]/20 text-[#FF9800]'} border-0 text-xs px-2 py-1`}>
-                          <span className="mr-1">{typeIcons[selectedPostForComment.type as keyof typeof typeIcons] || '💼'}</span>
-                          {selectedPostForComment.type}
-                        </Badge>
-                        <span className="text-sm text-[#4FC3F7] hover:text-[#0288D1] font-medium transition">
-                          View Details →
-                        </span>
+                  {/* Job Card Section - Only show if there's a job attached */}
+                  {(selectedPostForComment.attachedJobs?.length > 0 || (selectedPostForComment.jobTitle && (selectedPostForComment.location || selectedPostForComment.salary))) && (
+                    <div className="px-4 py-3 bg-[#FAFAFA] border-b border-[#263238]/10">
+                      <div
+                        className="bg-white border border-[#263238]/10 rounded-xl p-4 hover:border-[#FF9800]/30 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/job/${selectedPostForComment.id}`);
+                        }}
+                      >
+                        <h4 className="font-semibold text-[#263238] text-base mb-3">
+                          {selectedPostForComment.jobTitle || selectedPostForComment.company}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-[#263238]/60 mb-4">
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-4 h-4 text-[#FF9800]" />
+                            {selectedPostForComment.company}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                            {selectedPostForComment.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                            {selectedPostForComment.salary}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-[#FF9800]" />
+                            {selectedPostForComment.type}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge className={`${typeColors[selectedPostForComment.type as keyof typeof typeColors] || 'bg-[#FF9800]/20 text-[#FF9800]'} border-0 text-xs px-2 py-1`}>
+                            <span className="mr-1">{typeIcons[selectedPostForComment.type as keyof typeof typeIcons] || '💼'}</span>
+                            {selectedPostForComment.type}
+                          </Badge>
+                          <span className="text-sm text-[#4FC3F7] hover:text-[#0288D1] font-medium transition">
+                            View Details →
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Comments Section */}
                   <div className="p-4">

@@ -1,8 +1,9 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { MapPin, Clock, DollarSign, Zap } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { useAuth } from "../contexts/AuthContext";
 
 interface JobCardProps {
   id: string;
@@ -27,6 +28,18 @@ export function JobCard({
   postedDate,
   logo,
 }: JobCardProps) {
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+
+  const handleQuickApply = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      navigate("/login");
+    } else {
+      navigate(`/job/${id}/apply`);
+    }
+  };
+
   const typeColors: Record<string, string> = {
     "Part-time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
     "Part Time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
@@ -106,12 +119,13 @@ export function JobCard({
           </p>
 
           <div className="flex gap-2">
-            <Link to={`/job/${id}`} className="flex-1">
-              <Button className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
-                <Zap className="w-4 h-4 mr-2" />
-                Quick Apply
-              </Button>
-            </Link>
+            <Button
+              onClick={handleQuickApply}
+              className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Quick Apply
+            </Button>
             <Link to={`/job/${id}`}>
               <Button
                 variant="outline"
