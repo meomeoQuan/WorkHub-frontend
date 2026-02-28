@@ -208,10 +208,10 @@ export default function JobFilter() {
             credibilityRating: p.rating,
             timestamp: p.createdAt ? formatRelativeTime(p.createdAt) : "Just now",
             content: p.content,
-            jobTitle: firstJob?.jobName || p.header || "No Title",
-            location: firstJob?.location || "Remote",
-            salary: firstJob?.salary || "Competitive",
-            type: firstJob?.jobType || "Full-time",
+            jobTitle: firstJob?.jobName || p.header || null,
+            location: firstJob?.location || null,
+            salary: firstJob?.salary || null,
+            type: firstJob?.jobType || null,
             likes: p.likeCount,
             isLiked: p.isLiked,
             comments: p.commentCount,
@@ -1468,7 +1468,7 @@ export default function JobFilter() {
                         )}
 
                         {/* Legacy Job Info Card Support (for posts that might not have attachedJobs yet) */}
-                        {!post.attachedJobs?.length && post.jobTitle && post.location && post.salary && (
+                        {!post.attachedJobs?.length && post.jobTitle && (post.location || post.salary) && (
                           <>
                             <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
                             <Card className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition">

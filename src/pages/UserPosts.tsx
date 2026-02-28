@@ -92,10 +92,10 @@ export function UserPosts() {
               credibilityRating: p.rating,
               timestamp: p.createdAt,
               content: p.content,
-              jobTitle: p.jobs?.[0]?.jobName || p.header || "Social Post",
-              location: p.jobs?.[0]?.location || "Remote",
-              salary: p.jobs?.[0]?.salary || "Competitive",
-              type: p.jobs?.[0]?.jobType || "Other",
+              jobTitle: p.jobs?.[0]?.jobName || p.header || null,
+              location: p.jobs?.[0]?.location || null,
+              salary: p.jobs?.[0]?.salary || null,
+              type: p.jobs?.[0]?.jobType || null,
               likes: p.likeCount || 0,
               comments: p.commentCount || 0,
               reposts: 0,
@@ -364,7 +364,7 @@ export function UserPosts() {
                           )}
 
                           {/* Legacy Job Info Card Support */}
-                          {!post.attachedJobs?.length && post.jobTitle && post.location && post.salary && (
+                          {!post.attachedJobs?.length && post.jobTitle && (post.location || post.salary) && (
                             <>
                               {/* Separator Line */}
                               <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
