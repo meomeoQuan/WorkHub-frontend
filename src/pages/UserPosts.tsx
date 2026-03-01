@@ -13,8 +13,7 @@ import {
   Star,
   Heart,
   MessageCircle,
-  Repeat2,
-  Send,
+  Link as LinkIcon,
   MoreHorizontal,
   UserPlus,
   ArrowRight
@@ -140,6 +139,12 @@ export function UserPosts() {
   };
 
 
+
+  const handleCopyLink = (postId: string) => {
+    const url = `${window.location.origin}/jobs?postId=${postId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  };
 
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -424,18 +429,12 @@ export function UserPosts() {
                             </span>
                           </button>
 
-                          <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#4ADE80]/10 rounded-full transition group">
-                            <Repeat2 className="w-5 h-5 group-hover:text-[#4ADE80] transition" />
-                            <span className="text-sm group-hover:text-[#4ADE80]">
-                              {post.reposts}
-                            </span>
-                          </button>
-
-                          <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group">
-                            <Send className="w-5 h-5 group-hover:text-[#FF9800] transition" />
-                            <span className="text-sm group-hover:text-[#FF9800]">
-                              {post.shares}
-                            </span>
+                          <button
+                            onClick={() => handleCopyLink(post.id)}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group"
+                            title="Copy Link"
+                          >
+                            <LinkIcon className="w-5 h-5 group-hover:text-[#FF9800] transition" />
                           </button>
                         </div>
                       </div>
