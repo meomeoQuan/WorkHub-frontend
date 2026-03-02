@@ -95,7 +95,7 @@ export function ApplyJob() {
             email: prev.email || profileData.email || '',
             phone: prev.phone || profileData.phone || '',
             education: prev.education || (profileData.educations && profileData.educations.length > 0
-              ? `${profileData.educations[0].degree} @ ${profileData.educations[0].school}`
+              ? profileData.educations[profileData.educations.length - 1].school
               : '')
           }));
         }

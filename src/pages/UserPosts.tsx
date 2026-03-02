@@ -13,24 +13,21 @@ import {
   Star,
   Heart,
   MessageCircle,
-  Repeat2,
-  Send,
+  Link as LinkIcon,
   MoreHorizontal,
   UserPlus,
   ArrowRight
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+// Removed unused AlertDialog imports
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+// Removed unused Dialog, Button, and Textarea imports
+import { Edit, Trash2 } from 'lucide-react';
 
 interface JobPost {
   id: string;
@@ -57,79 +54,93 @@ interface JobPost {
 
 export function UserPosts() {
   const navigate = useNavigate();
-  const { } = useAuth();
   const [searchParams] = useSearchParams();
   const profileUserId = searchParams.get("userId");
   const [userPosts, setUserPosts] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<JobPost | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadUserPosts = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const endpoint = profileUserId
+        ? `public-user-posts/${profileUserId}`
+        : 'all-user-posts';
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          // Map backend JobPostDTO to internal JobPost interface
+          const mappedPosts = result.data.map((p: any) => ({
+            id: p.postId.toString(),
+            company: p.fullName,
+            avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+            username: p.userName,
+            userId: p.userId,
+            credibilityRating: p.rating,
+            timestamp: p.createdAt,
+            content: p.content,
+            jobTitle: p.jobs?.[0]?.jobName || p.header || null,
+            location: p.jobs?.[0]?.location || null,
+            salary: p.jobs?.[0]?.salary || null,
+            type: p.jobs?.[0]?.jobType || null,
+            likes: p.likeCount || 0,
+            comments: p.commentCount || 0,
+            reposts: 0,
+            shares: 0,
+            image: p.postImage,
+            postedDate: p.createdAt,
+            attachedJobs: p.jobs || []
+          }));
+          setUserPosts(mappedPosts);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user posts:', error);
+      toast.error('Failed to load your posts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadUserPosts = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("access_token");
-        const endpoint = profileUserId
-          ? `public-user-posts/${profileUserId}`
-          : 'all-user-posts';
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/${endpoint}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (res.ok) {
-          const result = await res.json();
-          if (result.success && result.data) {
-            // Map backend JobPostDTO to internal JobPost interface
-            const mappedPosts = result.data.map((p: any) => ({
-              id: p.postId.toString(),
-              company: p.fullName,
-              avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
-              username: p.userName,
-              userId: p.userId,
-              credibilityRating: p.rating,
-              timestamp: p.createdAt,
-              content: p.content,
-              jobTitle: p.jobs?.[0]?.jobName || p.header || null,
-              location: p.jobs?.[0]?.location || null,
-              salary: p.jobs?.[0]?.salary || null,
-              type: p.jobs?.[0]?.jobType || null,
-              likes: p.likeCount || 0,
-              comments: p.commentCount || 0,
-              reposts: 0,
-              shares: 0,
-              image: p.postImage,
-              postedDate: p.createdAt,
-              attachedJobs: p.jobs || []
-            }));
-            setUserPosts(mappedPosts);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user posts:', error);
-        toast.error('Failed to load your posts');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUserPosts();
-  }, []);
+  }, [profileUserId]);
 
   const handleDeleteClick = (postId: string) => {
     setPostToDelete(postId);
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (postToDelete) {
       try {
-        const updatedPosts = userPosts.filter(post => post.id !== postToDelete);
-        setUserPosts(updatedPosts);
-        localStorage.setItem('userPostedJobs', JSON.stringify(updatedPosts));
-        toast.success('Job post deleted successfully!');
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-post/${postToDelete}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          setUserPosts(prev => prev.filter(post => post.id !== postToDelete));
+          toast.success('Post deleted successfully!');
+        } else {
+          const result = await res.json();
+          toast.error(result.message || 'Failed to delete post');
+        }
       } catch (error) {
         console.error('Error deleting post:', error);
         toast.error('Failed to delete post');
@@ -139,7 +150,54 @@ export function UserPosts() {
     setPostToDelete(null);
   };
 
+  const handleEditClick = (post: JobPost) => {
+    setEditingPost(post);
+    setEditContent(post.content);
+    setIsEditDialogOpen(true);
+  };
 
+  const handleEditSave = async () => {
+    if (!editingPost) return;
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-post/${editingPost.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: editContent,
+          recruitmentIds: editingPost.attachedJobs?.map(j => j.id) || []
+        })
+      });
+
+      if (res.ok) {
+        setUserPosts(prev => prev.map(p =>
+          p.id === editingPost.id ? { ...p, content: editContent } : p
+        ));
+        toast.success('Post updated successfully!');
+        setIsEditDialogOpen(false);
+      } else {
+        const result = await res.json();
+        toast.error(result.message || 'Failed to update post');
+      }
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast.error('Failed to update post');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+
+  const handleCopyLink = (postId: string) => {
+    const url = `${window.location.origin}/jobs?postId=${postId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  };
 
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -289,15 +347,33 @@ export function UserPosts() {
                               <UserPlus className="w-4 h-4" />
                               Follow
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(post.id);
-                              }}
-                              className="p-1.5 hover:bg-[#263238]/5 rounded-full transition"
-                            >
-                              <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
-                            </button>
+
+                            {/* Actions Menu - Only show if it's the user's own post */}
+                            {!profileUserId && (
+                              <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="p-1.5 hover:bg-[#263238]/5 rounded-full transition outline-none">
+                                    <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40 z-[100]">
+                                  <DropdownMenuItem
+                                    onSelect={() => handleEditClick(post)}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                    Edit Post
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={() => handleDeleteClick(post.id)}
+                                    className="gap-2 text-red-600 focus:text-red-600 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Post
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                         </div>
 
@@ -424,18 +500,12 @@ export function UserPosts() {
                             </span>
                           </button>
 
-                          <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#4ADE80]/10 rounded-full transition group">
-                            <Repeat2 className="w-5 h-5 group-hover:text-[#4ADE80] transition" />
-                            <span className="text-sm group-hover:text-[#4ADE80]">
-                              {post.reposts}
-                            </span>
-                          </button>
-
-                          <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group">
-                            <Send className="w-5 h-5 group-hover:text-[#FF9800] transition" />
-                            <span className="text-sm group-hover:text-[#FF9800]">
-                              {post.shares}
-                            </span>
+                          <button
+                            onClick={() => handleCopyLink(post.id)}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group"
+                            title="Copy Link"
+                          >
+                            <LinkIcon className="w-5 h-5 group-hover:text-[#FF9800] transition" />
                           </button>
                         </div>
                       </div>
@@ -448,26 +518,78 @@ export function UserPosts() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Job Post</AlertDialogTitle>
-            <AlertDialogDescription>
+      {/* Delete Confirmation Modal (Manual) */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setDeleteDialogOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-[#263238]/10 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-[#263238] mb-2">Delete Job Post</h3>
+            <p className="text-[#263238]/70 mb-6">
               Are you sure you want to delete this job post? This action cannot be undone and all associated data will be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteDialogOpen(false)}
+                className="px-4 py-2 rounded-xl text-[#263238]/60 hover:bg-[#263238]/5 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition font-medium shadow-lg shadow-red-600/20"
+              >
+                Delete Post
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Post Modal (Manual) */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isSaving && setIsEditDialogOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-[#263238]/10 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-[#263238] mb-4">Edit Post</h3>
+            <div className="mb-6">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="What's on your mind?"
+                className="w-full min-h-[150px] p-4 rounded-xl border border-[#263238]/10 focus:border-[#FF9800] focus:ring-2 focus:ring-[#FF9800]/20 resize-none outline-none transition"
+                disabled={isSaving}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditDialogOpen(false)}
+                className="px-4 py-2 rounded-xl text-[#263238]/60 hover:bg-[#263238]/5 transition font-medium"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={isSaving || !editContent.trim()}
+                className="px-6 py-2 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl transition font-medium shadow-lg shadow-[#FF9800]/20 flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

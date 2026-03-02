@@ -13,8 +13,8 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  Link as LinkIcon,
   MoreHorizontal,
-  Repeat2,
   Search,
   ArrowRight,
   Send,
@@ -94,9 +94,6 @@ export default function JobFilter() {
   const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
   const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
 
-  const [repostedPosts, setRepostedPosts] = useState<
-    Set<string>
-  >(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -175,6 +172,35 @@ export default function JobFilter() {
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
+
+  const handleCopyLink = (postId: string) => {
+    const url = `${window.location.origin}/jobs?postId=${postId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  };
+
+  const fetchComments = useCallback(async (postId: string) => {
+    try {
+      setIsCommentModalLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post?PostId=${postId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<any> = await response.json();
+      if (data.success && data.data) {
+        setUserComments(prev => ({
+          ...prev,
+          [postId]: data.data.comments || []
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setIsCommentModalLoading(false);
+    }
+  }, []);
+
 
   const fetchPosts = useCallback(async (pageNum: number, query: string = "", filters: any = {}) => {
     try {
@@ -325,6 +351,7 @@ export default function JobFilter() {
     return () => clearTimeout(timer);
   }, [searchQuery, fetchPosts]);
 
+
   // Load user-posted jobs and social posts from localStorage
   useEffect(() => {
     const loadUserContent = () => {
@@ -403,49 +430,10 @@ export default function JobFilter() {
 
   // Handle comment modal loading and fetching
   useEffect(() => {
-    const fetchComments = async () => {
-      if (!selectedPostForComment) return;
-
-      setIsCommentModalLoading(true);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post?PostId=${selectedPostForComment.id}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const json = await response.json();
-
-        if (json.success && json.data?.comments) {
-          // Map API comments to internal UI structure if needed, or use as is
-          // The current UI seems to use a flat array if we just look at comments count
-          // but the modal likely uses userComments state
-          const apiComments = json.data.comments.map((c: any) => ({
-            id: c.id,
-            author: c.userName,
-            text: c.content,
-            timestamp: formatRelativeTime(c.createdAt),
-            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${c.userName}&backgroundColor=FF9800`,
-            replies: c.replies?.map((r: any) => ({
-              author: r.userName,
-              text: r.content,
-              timestamp: formatRelativeTime(r.createdAt),
-              avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${r.userName}&backgroundColor=4FC3F7`,
-            })) || []
-          }));
-
-          setUserComments(prev => ({
-            ...prev,
-            [selectedPostForComment.id]: apiComments
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching comments:", error);
-      } finally {
-        setIsCommentModalLoading(false);
-      }
-    };
-
-    fetchComments();
-  }, [selectedPostForComment]);
+    if (selectedPostForComment) {
+      fetchComments(selectedPostForComment.id);
+    }
+  }, [selectedPostForComment, fetchComments]);
 
   // Handle new post modal loading
   useEffect(() => {
@@ -547,6 +535,31 @@ export default function JobFilter() {
     fetchPosts
   ]);
 
+  // Effect to handle scroll-to-post when postId query param is present
+  useEffect(() => {
+    const postId = searchParams.get("postId");
+    if (postId && !isInitialLoading && apiPosts.length > 0) {
+      // Small timeout to ensure DOM has rendered
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`post-${postId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Optional: Highlight the post briefly
+          element.classList.add("ring-2", "ring-[#FF9800]", "ring-inset");
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-[#FF9800]", "ring-inset");
+          }, 2000);
+
+          // Clear the postId from URL to prevent re-scrolling on subsequent actions
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete("postId");
+          setSearchParams(newParams, { replace: true });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, isInitialLoading, apiPosts, setSearchParams]);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -593,37 +606,7 @@ export default function JobFilter() {
     }
   };
 
-  const handleRepost = (postId: string) => {
-    if (!isLoggedIn) {
-      navigate("/login");
-      return;
-    }
-    setRepostedPosts((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
-      } else {
-        newSet.add(postId);
-      }
-      return newSet;
-    });
-  };
 
-  const fetchComments = useCallback(async (postId: string) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/all-comments-post?PostId=${postId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      const data: ApiResponse<any> = await response.json();
-      if (data.success) {
-        setUserComments(prev => ({ ...prev, [postId]: data.data.comments || [] }));
-      }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  }, []);
 
   const handleAddComment = async (postId: string, text: string, parentCommentId?: number) => {
     if (!isLoggedIn) {
@@ -1287,15 +1270,12 @@ export default function JobFilter() {
           ) : null}
 
           {filteredJobs.map((post) => {
-            const isReposted = repostedPosts.has(post.id);
-            const repostCount = isReposted
-              ? post.reposts + 1
-              : post.reposts;
 
             return (
               <div
                 key={post.id}
-                className="bg-white hover:bg-[#FAFAFA]/50 transition"
+                id={`post-${post.id}`}
+                className="bg-white hover:bg-[#FAFAFA]/50 transition scroll-mt-24"
               >
                 <div className="px-4 py-6">
                   {/* Post Header */}
@@ -1576,25 +1556,11 @@ export default function JobFilter() {
                         </button>
 
                         <button
-                          onClick={() => handleRepost(post.id)}
-                          className={`flex items-center gap-2 px-3 py-2 hover:bg-[#4ADE80]/10 rounded-full transition group ${isReposted ? "text-[#4ADE80]" : ""
-                            }`}
+                          onClick={() => handleCopyLink(post.id)}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group"
+                          title="Copy Link"
                         >
-                          <Repeat2
-                            className={`w-5 h-5 group-hover:text-[#4ADE80] transition`}
-                          />
-                          <span
-                            className={`text-sm ${isReposted ? "text-[#4ADE80] font-medium" : "group-hover:text-[#4ADE80]"}`}
-                          >
-                            {repostCount}
-                          </span>
-                        </button>
-
-                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#FF9800]/10 rounded-full transition group">
-                          <Send className="w-5 h-5 group-hover:text-[#FF9800] transition" />
-                          <span className="text-sm group-hover:text-[#FF9800]">
-                            {post.shares}
-                          </span>
+                          <LinkIcon className="w-5 h-5 group-hover:text-[#FF9800] transition" />
                         </button>
                       </div>
                     </div>
