@@ -260,7 +260,7 @@ export function Home() {
                           All Cities
                         </SelectItem>
                         {cities.map((city) => (
-                          <SelectItem key={city} value={city.toLowerCase().replace(/ /g, '-')}>
+                          <SelectItem key={city} value={city}>
                             {city}
                           </SelectItem>
                         ))}
