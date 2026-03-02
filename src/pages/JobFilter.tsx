@@ -165,6 +165,17 @@ export default function JobFilter() {
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (selectedPostForComment || showNewPostModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedPostForComment, showNewPostModal]);
+
   // Infinite scroll states
   const [apiPosts, setApiPosts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);

@@ -5,32 +5,7 @@ import { Input } from './ui/input';
 
 export function Footer() {
   return (
-    <footer className="bg-[#263238] text-white">
-      {/* Newsletter Section */}
-      <div className="border-b border-white/10">
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-[#FF9800]/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
-              <Mail className="w-4 h-4 text-[#FF9800]" />
-              <span className="text-sm">Stay Updated</span>
-            </div>
-            <h3 className="text-white mb-2 text-2xl">Get the latest jobs in your inbox</h3>
-            <p className="text-white/70 mb-6">
-              Subscribe to receive new job alerts matching your preferences
-            </p>
-            <div className="flex gap-2 max-w-md mx-auto">
-              <Input
-                placeholder="Enter your email"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl h-12"
-              />
-              <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl px-6 h-12 shadow-lg">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <footer className="bg-[#263238] text-white relative z-0">
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
@@ -158,8 +133,31 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Newsletter Section */}
+        <div className="border-t border-white/10 mt-12 py-12">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-[#FF9800]/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
+              <Mail className="w-4 h-4 text-[#FF9800]" />
+              <span className="text-sm">Stay Updated</span>
+            </div>
+            <h3 className="text-white mb-2 text-2xl">Get the latest jobs in your inbox</h3>
+            <p className="text-white/70 mb-6">
+              Subscribe to receive new job alerts matching your preferences
+            </p>
+            <div className="flex gap-2 max-w-md mx-auto">
+              <Input
+                placeholder="Enter your email"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl h-12"
+              />
+              <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl px-6 h-12 shadow-lg">
+                Subscribe
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/60">
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/60">
           <p>&copy; 2025 WorkHub. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-[#FF9800] transition">Sitemap</a>

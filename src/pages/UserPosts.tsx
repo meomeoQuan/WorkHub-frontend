@@ -18,8 +18,7 @@ import {
   UserPlus,
   ArrowRight,
   Send,
-  Building2,
-  X
+  Building2
 } from 'lucide-react';
 import { SkeletonCommentModal } from '../components/SkeletonCommentModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,7 +36,8 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 // Removed unused Dialog, Button, and Textarea imports
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Loader2, X } from 'lucide-react';
+import { RecruitmentSelectDTO } from '../types/DTOs/ModelDTOs/JobPostDTOs/RecruitmentSelectDTO';
 
 interface JobPost {
   id: string;
@@ -71,9 +71,11 @@ export function UserPosts() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<JobPost | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editSelectedJobIds, setEditSelectedJobIds] = useState<string[]>([]);
+  const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
+  const [isJobsLoading, setIsJobsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { user, isLoggedIn } = useAuth();
   const [selectedPostForComment, setSelectedPostForComment] = useState<any | null>(null);
@@ -104,6 +106,17 @@ export function UserPosts() {
     "Full Time": "🏢",
     Contract: "📑",
   };
+
+  useEffect(() => {
+    if (deleteDialogOpen || selectedPostForComment) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [deleteDialogOpen, selectedPostForComment]);
 
   const loadUserPosts = async () => {
     setLoading(true);
@@ -153,6 +166,28 @@ export function UserPosts() {
       setLoading(false);
     }
   };
+
+  const fetchAvailableJobs = useCallback(async () => {
+    try {
+      setIsJobsLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/loading-create-post`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<{ jobs: RecruitmentSelectDTO[] }> = await response.json();
+      if (data.success && data.data) {
+        setAvailableJobs(data.data.jobs);
+      } else {
+        toast.error(data.message || "Failed to load your jobs");
+      }
+    } catch (error) {
+      console.error("Error fetching user jobs:", error);
+      toast.error("An error occurred while loading your jobs");
+    } finally {
+      setIsJobsLoading(false);
+    }
+  }, []);
 
   const handleCopyLink = (postId: string) => {
     const url = `${window.location.origin}/jobs?postId=${postId}`;
@@ -353,17 +388,23 @@ export function UserPosts() {
   };
 
   const handleEditClick = (post: JobPost) => {
-    setEditingPost(post);
+    setEditingPostId(post.id);
     setEditContent(post.content);
-    setIsEditDialogOpen(true);
+    setEditSelectedJobIds(post.attachedJobs?.map(j => j.id.toString()) || []);
+    fetchAvailableJobs();
   };
 
-  const handleEditSave = async () => {
-    if (!editingPost) return;
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setEditContent('');
+    setEditSelectedJobIds([]);
+  };
+
+  const handleEditSave = async (postId: string) => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-post/${editingPost.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-post/${postId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -371,16 +412,49 @@ export function UserPosts() {
         },
         body: JSON.stringify({
           content: editContent,
-          recruitmentIds: editingPost.attachedJobs?.map(j => j.id) || []
+          recruitmentIds: editSelectedJobIds.map(id => parseInt(id))
         })
       });
 
       if (res.ok) {
-        setUserPosts(prev => prev.map(p =>
-          p.id === editingPost.id ? { ...p, content: editContent } : p
-        ));
+        const result = await res.json();
+        // The API returns the updated post in result.data
+        if (result.success && result.data) {
+          const p = result.data;
+          const updatedPost = {
+            id: p.postId.toString(),
+            company: p.fullName,
+            avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+            username: p.userName,
+            userId: p.userId,
+            credibilityRating: p.rating,
+            timestamp: p.createdAt,
+            content: p.content,
+            jobTitle: p.jobs?.[0]?.jobName || p.header || null,
+            location: p.jobs?.[0]?.location || null,
+            salary: p.jobs?.[0]?.salary || null,
+            type: p.jobs?.[0]?.jobType || null,
+            likes: p.likeCount || 0,
+            comments: p.commentCount || 0,
+            reposts: 0,
+            shares: 0,
+            image: p.postImage,
+            postedDate: p.createdAt,
+            attachedJobs: p.jobs || []
+          };
+
+          setUserPosts(prev => prev.map(post =>
+            post.id === postId ? updatedPost : post
+          ));
+        } else {
+          // Fallback if data is missing
+          setUserPosts(prev => prev.map(post =>
+            post.id === postId ? { ...post, content: editContent } : post
+          ));
+        }
+
         toast.success('Post updated successfully!');
-        setIsEditDialogOpen(false);
+        handleCancelEdit();
       } else {
         const result = await res.json();
         toast.error(result.message || 'Failed to update post');
@@ -555,24 +629,24 @@ export function UserPosts() {
                               </button>
                             )}
 
-                            <DropdownMenu modal={false}>
+                            <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button onClick={(e: any) => e.stopPropagation()} className="p-1.5 hover:bg-[#263238]/5 rounded-full transition outline-none">
                                   <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
                                 </button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40 z-[100]">
+                              <DropdownMenuContent align="end" className="w-40 z-[101]">
                                 {(post.userId === Number(user?.id) || user?.userType === "admin") ? (
                                   <>
                                     <DropdownMenuItem
-                                      onSelect={(e: any) => { e.preventDefault(); e.stopPropagation(); handleEditClick(post); }}
+                                      onSelect={(e: any) => { e.stopPropagation(); handleEditClick(post); }}
                                       className="gap-2 cursor-pointer"
                                     >
                                       <Edit className="w-4 h-4" />
                                       Edit Post
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onSelect={(e: any) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(post.id); }}
+                                      onSelect={(e: any) => { e.stopPropagation(); handleDeleteClick(post.id); }}
                                       className="gap-2 text-red-600 focus:text-red-600 cursor-pointer"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -582,13 +656,13 @@ export function UserPosts() {
                                 ) : (
                                   <>
                                     <DropdownMenuItem
-                                      onSelect={(e: any) => { e.preventDefault(); e.stopPropagation(); toast.info("Report functionality coming soon!"); }}
+                                      onSelect={(e: any) => { e.stopPropagation(); toast.info("Report functionality coming soon!"); }}
                                       className="gap-2 cursor-pointer"
                                     >
                                       Report
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onSelect={(e: any) => { e.preventDefault(); e.stopPropagation(); toast.info("Hide functionality coming soon!"); }}
+                                      onSelect={(e: any) => { e.stopPropagation(); toast.info("Hide functionality coming soon!"); }}
                                       className="gap-2 cursor-pointer"
                                     >
                                       Hide
@@ -600,118 +674,206 @@ export function UserPosts() {
                           </div>
                         </div>
 
-                        {/* Post Content */}
-                        <div className="mb-3">
-                          <p className="text-[#263238] text-[15px] leading-relaxed mb-4">
-                            {post.content}
-                          </p>
+                        {/* Post Body - Description & Media */}
+                        {editingPostId === post.id ? (
+                          <div className="mb-4 space-y-4 p-4 bg-[#FAFAFA] rounded-2xl border border-[#263238]/10 animate-in fade-in zoom-in duration-200">
+                            {/* Text Editor */}
+                            <textarea
+                              value={editContent}
+                              onChange={(e: any) => setEditContent(e.target.value)}
+                              placeholder="What's on your mind?"
+                              className="w-full min-h-[120px] p-4 bg-white rounded-xl border border-[#263238]/10 focus:border-[#FF9800] focus:ring-2 focus:ring-[#FF9800]/20 resize-none outline-none transition text-[15px] leading-relaxed"
+                              disabled={isSaving}
+                              autoFocus
+                            />
 
-                          {/* Post Image (if exists) */}
-                          {post.image && (
-                            <div className="rounded-xl overflow-hidden border border-[#263238]/10 mb-4">
-                              <img
-                                src={post.image}
-                                alt="Post content"
-                                className="w-full object-cover"
-                                style={{ maxHeight: "400px" }}
-                              />
-                            </div>
-                          )}
-
-                          {/* Job Info Cards - Show all attached jobs */}
-                          {post.attachedJobs && post.attachedJobs.length > 0 && (
-                            <div className="space-y-4">
-                              {/* Separator Line */}
-                              <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
-
-                              {post.attachedJobs.map((job: any) => (
-                                <Card key={job.id} className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition group/job">
-                                  {/* Job Details */}
-                                  <div className="p-4 space-y-2">
-                                    <div className="flex items-start justify-between gap-4">
-                                      <h3 className="font-semibold text-[#263238] group-hover/job:text-[#FF9800] transition-colors leading-tight">
-                                        {job.jobName}
-                                      </h3>
-                                      <Badge className={`${typeColors[job.jobType as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-2 py-0.5 flex items-center gap-1 text-[10px] whitespace-nowrap`}>
-                                        {typeIcons[job.jobType as keyof typeof typeIcons] || "💼"}
-                                        {job.jobType}
-                                      </Badge>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#263238]/70">
-                                      <div className="flex items-center gap-1.5">
-                                        <MapPin className="w-4 h-4 text-[#4FC3F7]" />
-                                        <span>{job.location}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <DollarSign className="w-4 h-4 text-[#4ADE80]" />
-                                        <span>{job.salary}</span>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-end mt-2">
-                                      <button
-                                        onClick={(e: any) => {
-                                          e.stopPropagation();
-                                          navigate(`/job/${job.id}`);
-                                        }}
-                                        className="text-xs text-[#4FC3F7] hover:underline font-medium flex items-center gap-1"
-                                      >
-                                        View Details <ArrowRight className="w-3 h-3" />
-                                      </button>
-                                    </div>
+                            {/* Job Selector Inline */}
+                            <div className="space-y-3">
+                              <label className="flex items-center gap-2 text-sm font-semibold text-[#263238] opacity-70">
+                                <Briefcase className="w-4 h-4" />
+                                Manage Job Attachments
+                              </label>
+                              <div className="bg-white border border-[#263238]/10 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2">
+                                {isJobsLoading ? (
+                                  <div className="flex items-center justify-center py-6">
+                                    <Loader2 className="w-5 h-5 text-[#FF9800] animate-spin" />
                                   </div>
-                                </Card>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Legacy Job Info Card Support */}
-                          {!post.attachedJobs?.length && post.jobTitle && (post.location || post.salary) && (
-                            <>
-                              <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
-                              <Card className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition">
-                                <div className="p-4 space-y-2">
-                                  <h3 className="font-semibold text-[#263238] mb-2">
-                                    {post.jobTitle}
-                                  </h3>
-                                  <div className="flex flex-wrap items-center gap-3 text-sm text-[#263238]/70">
-                                    <div className="flex items-center gap-1.5">
-                                      <MapPin className="w-4 h-4 text-[#4FC3F7]" />
-                                      <span>{post.location}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <DollarSign className="w-4 h-4 text-[#4ADE80]" />
-                                      <span>{post.salary}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock className="w-4 h-4 text-[#FF9800]" />
-                                      <span>{post.type}</span>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 mt-3">
-                                    <Badge className={`${typeColors[post.type as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-3 py-1 flex items-center gap-1`}>
-                                      <span className="mr-1">
-                                        {typeIcons[post.type as keyof typeof typeIcons] || "💼"}
-                                      </span>
-                                      {post.type}
-                                    </Badge>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/job/${post.id}`);
-                                      }}
-                                      className="text-xs text-[#4FC3F7] hover:underline font-medium"
+                                ) : (availableJobs || []).length > 0 ? (
+                                  (availableJobs || []).map((job) => (
+                                    <label
+                                      key={job.id}
+                                      className="flex items-start gap-3 p-2 hover:bg-[#FAFAFA] rounded-lg transition cursor-pointer group"
                                     >
-                                      View Details →
-                                    </button>
+                                      <input
+                                        type="checkbox"
+                                        checked={editSelectedJobIds.includes(job.id.toString())}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setEditSelectedJobIds([...editSelectedJobIds, job.id.toString()]);
+                                          } else {
+                                            setEditSelectedJobIds(editSelectedJobIds.filter(id => id !== job.id.toString()));
+                                          }
+                                        }}
+                                        className="mt-1 w-4 h-4 accent-[#FF9800] cursor-pointer"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-medium text-[#263238] truncate group-hover:text-[#FF9800] transition">
+                                            {job.jobName}
+                                          </span>
+                                        </div>
+                                        <div className="text-[10px] text-[#263238]/50 truncate font-medium">
+                                          {job.location} • {job.salary}
+                                        </div>
+                                      </div>
+                                    </label>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-6 text-[#263238]/40 text-sm">
+                                    No jobs found to attach
                                   </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex justify-end gap-3 pt-2">
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-4 py-2 rounded-xl text-[#263238]/60 hover:bg-[#263238]/5 transition font-medium text-sm"
+                                disabled={isSaving}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleEditSave(post.id)}
+                                disabled={isSaving || !editContent.trim()}
+                                className="px-6 py-2 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl transition font-medium text-sm shadow-lg shadow-[#FF9800]/20 flex items-center gap-2 disabled:opacity-50"
+                              >
+                                {isSaving ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : 'Save Changes'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-3">
+                              <p className="text-[#263238] text-[15px] leading-relaxed mb-4">
+                                {post.content}
+                              </p>
+
+                              {/* Post Image (if exists) */}
+                              {post.image && (
+                                <div className="rounded-xl overflow-hidden border border-[#263238]/10 mb-4">
+                                  <img
+                                    src={post.image}
+                                    alt="Post content"
+                                    className="w-full object-cover"
+                                    style={{ maxHeight: "400px" }}
+                                  />
                                 </div>
-                              </Card>
-                            </>
-                          )}
-                        </div>
+                              )}
+
+                              {/* Job Info Cards - Show all attached jobs */}
+                              {post.attachedJobs && post.attachedJobs.length > 0 && (
+                                <div className="space-y-4">
+                                  {/* Separator Line */}
+                                  <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
+
+                                  {post.attachedJobs.map((job: any) => (
+                                    <Card key={job.id} className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition group/job">
+                                      {/* Job Details */}
+                                      <div className="p-4 space-y-2">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <h3 className="font-semibold text-[#263238] group-hover/job:text-[#FF9800] transition-colors leading-tight">
+                                            {job.jobName}
+                                          </h3>
+                                          <Badge className={`${typeColors[job.jobType as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-2 py-0.5 flex items-center gap-1 text-[10px] whitespace-nowrap`}>
+                                            {typeIcons[job.jobType as keyof typeof typeIcons] || "💼"}
+                                            {job.jobType}
+                                          </Badge>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#263238]/70">
+                                          <div className="flex items-center gap-1.5">
+                                            <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                                            <span>{job.location}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                                            <span>{job.salary}</span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end mt-2">
+                                          <button
+                                            onClick={(e: any) => {
+                                              e.stopPropagation();
+                                              navigate(`/job/${job.id}`);
+                                            }}
+                                            className="text-xs text-[#4FC3F7] hover:underline font-medium flex items-center gap-1"
+                                          >
+                                            View Details <ArrowRight className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Legacy Job Info Card Support */}
+                              {!post.attachedJobs?.length && post.jobTitle && (post.location || post.salary) && (
+                                <>
+                                  <div className="h-px bg-gradient-to-r from-transparent via-[#263238]/20 to-transparent mb-4" />
+                                  <Card className="border-2 border-[#263238]/10 overflow-hidden bg-white hover:border-[#FF9800]/30 transition">
+                                    <div className="p-4 space-y-2">
+                                      <h3 className="font-semibold text-[#263238] mb-2">
+                                        {post.jobTitle}
+                                      </h3>
+                                      <div className="flex flex-wrap items-center gap-3 text-sm text-[#263238]/70">
+                                        <div className="flex items-center gap-1.5">
+                                          <MapPin className="w-4 h-4 text-[#4FC3F7]" />
+                                          <span>{post.location}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <DollarSign className="w-4 h-4 text-[#4ADE80]" />
+                                          <span>{post.salary}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <Clock className="w-4 h-4 text-[#FF9800]" />
+                                          <span>{post.type}</span>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 mt-3">
+                                        <Badge className={`${typeColors[post.type as keyof typeof typeColors] || "bg-[#263238]/10 text-[#263238]"} rounded-xl px-3 py-1 flex items-center gap-1`}>
+                                          <span className="mr-1">
+                                            {typeIcons[post.type as keyof typeof typeIcons] || "💼"}
+                                          </span>
+                                          {post.type}
+                                        </Badge>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/job/${post.id}`);
+                                          }}
+                                          className="text-xs text-[#4FC3F7] hover:underline font-medium"
+                                        >
+                                          View Details →
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
 
                         {/* Interaction Buttons */}
                         <div className="flex items-center justify-between text-[#263238]/60 pt-1">
@@ -762,7 +924,7 @@ export function UserPosts() {
 
       {/* Delete Confirmation Modal (Manual) */}
       {deleteDialogOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setDeleteDialogOpen(false)}
@@ -781,7 +943,7 @@ export function UserPosts() {
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition font-medium shadow-lg shadow-red-600/20"
+                className="px-6 py-2 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl transition font-medium shadow-lg shadow-[#FF9800]/20 active:scale-95"
               >
                 Delete Post
               </button>
@@ -790,52 +952,11 @@ export function UserPosts() {
         </div>
       )}
 
-      {/* Edit Post Modal (Manual) */}
-      {isEditDialogOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => !isSaving && setIsEditDialogOpen(false)}
-          />
-          <div className="relative bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-[#263238]/10 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-[#263238] mb-4">Edit Post</h3>
-            <div className="mb-6">
-              <textarea
-                value={editContent}
-                onChange={(e: any) => setEditContent(e.target.value)}
-                placeholder="What's on your mind?"
-                className="w-full min-h-[150px] p-4 rounded-xl border border-[#263238]/10 focus:border-[#FF9800] focus:ring-2 focus:ring-[#FF9800]/20 resize-none outline-none transition"
-                disabled={isSaving}
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setIsEditDialogOpen(false)}
-                className="px-4 py-2 rounded-xl text-[#263238]/60 hover:bg-[#263238]/5 transition font-medium"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEditSave}
-                disabled={isSaving || !editContent.trim()}
-                className="px-6 py-2 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl transition font-medium shadow-lg shadow-[#FF9800]/20 flex items-center gap-2"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Saving...
-                  </>
-                ) : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal containers removed */}
 
       {selectedPostForComment && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4"
           onClick={() => setSelectedPostForComment(null)}
         >
           {isCommentModalLoading ? (
