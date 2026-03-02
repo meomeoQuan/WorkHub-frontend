@@ -372,7 +372,7 @@ export function UserPosts() {
         });
 
         if (res.ok) {
-          setUserPosts(prev => prev.filter(post => post.id !== postToDelete));
+          await loadUserPosts();
           toast.success('Post deleted successfully!');
         } else {
           const result = await res.json();
@@ -417,42 +417,7 @@ export function UserPosts() {
       });
 
       if (res.ok) {
-        const result = await res.json();
-        // The API returns the updated post in result.data
-        if (result.success && result.data) {
-          const p = result.data;
-          const updatedPost = {
-            id: p.postId.toString(),
-            company: p.fullName,
-            avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
-            username: p.userName,
-            userId: p.userId,
-            credibilityRating: p.rating,
-            timestamp: p.createdAt,
-            content: p.content,
-            jobTitle: p.jobs?.[0]?.jobName || p.header || null,
-            location: p.jobs?.[0]?.location || null,
-            salary: p.jobs?.[0]?.salary || null,
-            type: p.jobs?.[0]?.jobType || null,
-            likes: p.likeCount || 0,
-            comments: p.commentCount || 0,
-            reposts: 0,
-            shares: 0,
-            image: p.postImage,
-            postedDate: p.createdAt,
-            attachedJobs: p.jobs || []
-          };
-
-          setUserPosts(prev => prev.map(post =>
-            post.id === postId ? updatedPost : post
-          ));
-        } else {
-          // Fallback if data is missing
-          setUserPosts(prev => prev.map(post =>
-            post.id === postId ? { ...post, content: editContent } : post
-          ));
-        }
-
+        await loadUserPosts();
         toast.success('Post updated successfully!');
         handleCancelEdit();
       } else {
