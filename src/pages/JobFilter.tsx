@@ -854,7 +854,7 @@ export default function JobFilter() {
     <div className="min-h-screen bg-[#FAFAFA]">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white border-b border-[#263238]/10 sticky top-0 z-30 backdrop-blur-sm bg-white/80">
+        <div className="bg-white border-b border-[#263238]/10 sticky top-[72px] z-40 backdrop-blur-sm bg-white/80">
           <div className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
