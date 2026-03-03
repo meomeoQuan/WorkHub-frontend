@@ -51,7 +51,9 @@ const jobPosts: any[] = [];
 // Map category names from home page to JobFilter categories
 const mapCategoryName = (category: string): string => {
   const mapping: Record<string, string> = {
-    "Tech & IT": "IT",
+    "IT": "IT&Tech",
+    "Tech & IT": "IT&Tech",
+    "IT&Tech": "IT&Tech",
     "Delivery & Driving": "Transportation",
     "Creative & Design": "Design",
     "Food & Beverage": "Food & Beverage",
