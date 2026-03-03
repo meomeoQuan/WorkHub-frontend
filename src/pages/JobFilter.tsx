@@ -51,13 +51,18 @@ const jobPosts: any[] = [];
 // Map category names from home page to JobFilter categories
 const mapCategoryName = (category: string): string => {
   const mapping: Record<string, string> = {
-    "Tech & IT": "Technology",
+    "Tech & IT": "IT",
     "Delivery & Driving": "Transportation",
     "Creative & Design": "Design",
     "Food & Beverage": "Food & Beverage",
   };
   return mapping[category] || category;
 };
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 export default function JobFilter() {
   const navigate = useNavigate();
@@ -126,6 +131,7 @@ export default function JobFilter() {
     const categoryParam = searchParams.get("category");
     return categoryParam ? mapCategoryName(categoryParam) : null;
   });
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [selectedPostForComment, setSelectedPostForComment] =
     useState<any | null>(null);
@@ -321,6 +327,20 @@ export default function JobFilter() {
     }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Job/get-categories`);
+      if (response.ok) {
+        const result: ApiResponse<Category[]> = await response.json();
+        if (result.success && result.data) {
+          setCategories(result.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  }, []);
+
   const fetchUserJobs = useCallback(async () => {
     try {
       setIsJobsLoading(true);
@@ -404,6 +424,7 @@ export default function JobFilter() {
   // Simulate initial loading
   useEffect(() => {
     fetchCities();
+    fetchCategories();
     if (isLoggedIn) {
       fetchFollowingCount();
       fetchFollowedUsers();
@@ -413,7 +434,7 @@ export default function JobFilter() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, isLoggedIn]);
+  }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
   useEffect(() => {
@@ -1171,15 +1192,11 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">All Categories</option>
-                      <option value="Technology">Technology</option>
-                      <option value="Healthcare">Healthcare</option>
-                      <option value="Education">Education</option>
-                      <option value="Design">Design</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Food & Beverage">Food & Beverage</option>
-                      <option value="Transportation">Transportation</option>
-                      <option value="Construction">Construction</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
