@@ -54,7 +54,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
   };
 
   return (
-    <header className="bg-white border-b border-[#263238]/10 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white border-b border-[#263238]/10 sticky top-0 z-40 shadow-sm">
       <div className="container mx-auto px-4">
         {/* Top Navigation */}
         <div className="flex items-center justify-between py-4">
