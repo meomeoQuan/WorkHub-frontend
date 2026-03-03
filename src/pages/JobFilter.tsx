@@ -51,13 +51,20 @@ const jobPosts: any[] = [];
 // Map category names from home page to JobFilter categories
 const mapCategoryName = (category: string): string => {
   const mapping: Record<string, string> = {
-    "Tech & IT": "Technology",
+    "IT": "IT&Tech",
+    "Tech & IT": "IT&Tech",
+    "IT&Tech": "IT&Tech",
     "Delivery & Driving": "Transportation",
     "Creative & Design": "Design",
     "Food & Beverage": "Food & Beverage",
   };
   return mapping[category] || category;
 };
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 export default function JobFilter() {
   const navigate = useNavigate();
@@ -95,7 +102,9 @@ export default function JobFilter() {
   const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return searchParams.get("q") || searchParams.get("searchQuery") || "";
+  });
   const [showFilters, setShowFilters] = useState(false);
 
   // Feed tab state
@@ -116,22 +125,7 @@ export default function JobFilter() {
   // Filter states - Initialize from URL params
   const [selectedJobType, setSelectedJobType] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(() => {
-    const locationParam = searchParams.get("location");
-    if (!locationParam) return null;
-
-    // Map location codes from home page to actual location names
-    const locationMap: Record<string, string> = {
-      "new-york": "New York",
-      "san-francisco": "San Francisco",
-      "chicago": "Chicago",
-      "boston": "Boston",
-      "los-angeles": "Los Angeles",
-      "seattle": "Seattle",
-      "austin": "Austin",
-      "remote": "Remote",
-    };
-
-    return locationMap[locationParam] || null;
+    return searchParams.get("location") || null;
   });
   const [selectedSalaryRange, setSelectedSalaryRange] = useState<string | null>(null);
   const [selectedPostedDate, setSelectedPostedDate] = useState<string | null>(null);
@@ -139,6 +133,8 @@ export default function JobFilter() {
     const categoryParam = searchParams.get("category");
     return categoryParam ? mapCategoryName(categoryParam) : null;
   });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
   const [selectedPostForComment, setSelectedPostForComment] =
     useState<any | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -164,6 +160,17 @@ export default function JobFilter() {
 
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedPostForComment || showNewPostModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedPostForComment, showNewPostModal]);
 
   // Infinite scroll states
   const [apiPosts, setApiPosts] = useState<any[]>([]);
@@ -310,6 +317,32 @@ export default function JobFilter() {
     }
   }, []);
 
+  const fetchCities = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/cities-filter`);
+      const data: ApiResponse<string[]> = await response.json();
+      if (data.success && data.data) {
+        setCities(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+    }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Job/get-categories`);
+      if (response.ok) {
+        const result: ApiResponse<Category[]> = await response.json();
+        if (result.success && result.data) {
+          setCategories(result.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  }, []);
+
   const fetchUserJobs = useCallback(async () => {
     try {
       setIsJobsLoading(true);
@@ -392,6 +425,8 @@ export default function JobFilter() {
 
   // Simulate initial loading
   useEffect(() => {
+    fetchCities();
+    fetchCategories();
     if (isLoggedIn) {
       fetchFollowingCount();
       fetchFollowedUsers();
@@ -401,7 +436,7 @@ export default function JobFilter() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [fetchFollowingCount, fetchFollowedUsers, isLoggedIn]);
+  }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
   useEffect(() => {
@@ -490,18 +525,7 @@ export default function JobFilter() {
     }
 
     if (locationParam) {
-      const locationMap: Record<string, string> = {
-        "new-york": "New York, NY",
-        "san-francisco": "San Francisco, CA",
-        "chicago": "Chicago, IL",
-        "boston": "Boston, MA",
-        "los-angeles": "Los Angeles, CA",
-        "seattle": "Seattle, WA",
-        "austin": "Austin, TX",
-        "remote": "Remote",
-      };
-      const mappedLocation = locationMap[locationParam] || locationParam.replace(/-/g, ' ');
-      setSelectedLocation(mappedLocation);
+      setSelectedLocation(locationParam);
     }
 
     if (categoryParam) {
@@ -736,11 +760,11 @@ export default function JobFilter() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch =
-        post.jobTitle.toLowerCase().includes(query) ||
-        post.company.toLowerCase().includes(query) ||
-        post.content.toLowerCase().includes(query) ||
-        post.location.toLowerCase().includes(query) ||
-        post.category.toLowerCase().includes(query);
+        (post.jobTitle?.toLowerCase().includes(query) ?? false) ||
+        (post.company?.toLowerCase().includes(query) ?? false) ||
+        (post.content?.toLowerCase().includes(query) ?? false) ||
+        (post.location?.toLowerCase().includes(query) ?? false) ||
+        (post.category?.toLowerCase().includes(query) ?? false);
       if (!matchesSearch) return false;
     }
 
@@ -752,7 +776,7 @@ export default function JobFilter() {
       if (selectedLocation === "Remote") {
         if (post.location !== "Remote") return false;
       } else {
-        if (!post.location.includes(selectedLocation)) return false;
+        if (!post.location?.includes(selectedLocation)) return false;
       }
     }
 
@@ -853,7 +877,7 @@ export default function JobFilter() {
     <div className="min-h-screen bg-[#FAFAFA]">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white border-b border-[#263238]/10 sticky top-0 z-10 backdrop-blur-sm bg-white/80">
+        <div className="bg-white border-b border-[#263238]/10 sticky top-[72px] z-40 backdrop-blur-sm bg-white/80">
           <div className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1102,15 +1126,11 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">All Locations</option>
-                      <option value="New York">New York</option>
-                      <option value="San Francisco">
-                        San Francisco
-                      </option>
-                      <option value="Chicago">Chicago</option>
-                      <option value="Boston">Boston</option>
-                      <option value="Los Angeles">Los Angeles</option>
-                      <option value="Austin">Austin</option>
-                      <option value="Seattle">Seattle</option>
+                      {cities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
                       <option value="Remote">Remote</option>
                     </select>
                   </div>
@@ -1174,15 +1194,11 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">All Categories</option>
-                      <option value="Technology">Technology</option>
-                      <option value="Healthcare">Healthcare</option>
-                      <option value="Education">Education</option>
-                      <option value="Design">Design</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Food & Beverage">Food & Beverage</option>
-                      <option value="Transportation">Transportation</option>
-                      <option value="Construction">Construction</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1596,7 +1612,7 @@ export default function JobFilter() {
       {
         selectedPostForComment && (
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4"
             onClick={() => setSelectedPostForComment(null)}
           >
             {isCommentModalLoading ? (
@@ -1857,350 +1873,309 @@ export default function JobFilter() {
               </div>
             )}
           </div>
-        )
-      }
+        )}
 
       {/* Scroll to Top Button */}
-      {
-        showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="fixed bottom-5 right-5 p-3 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-full shadow-md shadow-[#FF9800]/30 transition"
-          >
-            <ArrowUp className="w-5 h-5" />
-          </button>
-        )
-      }
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-5 right-5 p-3 bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-full shadow-md shadow-[#FF9800]/30 transition z-40"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
 
       {/* New Post Modal */}
-      {
-        showNewPostModal && (
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setShowNewPostModal(false)}
-          >
-            {isNewPostModalLoading ? (
-              <div onClick={(e) => e.stopPropagation()}>
-                <SkeletonNewPostModal />
+      {showNewPostModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4"
+          onClick={() => setShowNewPostModal(false)}
+        >
+          {isNewPostModalLoading ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <SkeletonNewPostModal />
+            </div>
+          ) : (
+            <div
+              className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
+                <button
+                  onClick={() => {
+                    setShowNewPostModal(false);
+                    setEditingPost(null);
+                    setNewPostContent("");
+                    setNewPostImage(null);
+                  }}
+                  className="text-[#263238] hover:text-[#263238]/70 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <h2 className="font-semibold text-[#263238]">
+                  {editingPost ? 'Edit post' : 'New thread'}
+                </h2>
+                <div className="w-16"></div>
               </div>
-            ) : (
-              <div
-                className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10">
-                  <button
-                    onClick={() => {
-                      setShowNewPostModal(false);
-                      setEditingPost(null);
-                      setNewPostContent("");
-                      setNewPostContent("");
-                      setNewPostImage(null);
-                    }}
-                    className="text-[#263238] hover:text-[#263238]/70 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <h2 className="font-semibold text-[#263238]">
-                    {editingPost ? 'Edit post' : 'New thread'}
-                  </h2>
-                  <div className="w-16"></div>
-                </div>
 
-                {/* Modal Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="flex gap-3">
-                    <Avatar className="w-10 h-10 flex-shrink-0">
-                      <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
-                      <AvatarFallback className="bg-[#FF9800] text-white">
-                        {user?.fullName?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+              {/* Modal Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex gap-3">
+                  <Avatar className="w-10 h-10 flex-shrink-0">
+                    <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
+                    <AvatarFallback className="bg-[#FF9800] text-white">
+                      {user?.fullName?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
 
-                    <div className="flex-1">
-                      <div className="font-medium text-[#263238] mb-2">
-                        {user?.fullName || "Your Username"}
-                      </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-[#263238] mb-2">
+                      {user?.fullName || "Your Username"}
+                    </div>
 
+                    {/* Content Textarea */}
+                    <textarea
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      placeholder="What's new?"
+                      className="w-full text-[#263238] placeholder:text-[#263238]/50 resize-none outline-none text-base mb-3"
+                      rows={4}
+                    />
 
-                      {/* Content Textarea */}
-                      <textarea
-                        value={newPostContent}
-                        onChange={(e) =>
-                          setNewPostContent(e.target.value)
-                        }
-                        placeholder="What's new?"
-                        className="w-full text-[#263238] placeholder:text-[#263238]/50 resize-none outline-none text-base mb-3"
-                        rows={4}
+                    {/* Toolbar Icons */}
+                    <div className="flex items-center gap-1 mb-4">
+                      <input
+                        type="file"
+                        id="new-post-image"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewPostImage(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
                       />
+                      <label
+                        htmlFor="new-post-image"
+                        className="p-2 hover:bg-[#4FC3F7]/10 rounded-lg transition group cursor-pointer"
+                        title="Add image"
+                      >
+                        <ImageIcon className="w-5 h-5 text-[#263238]/50 group-hover:text-[#4FC3F7]" />
+                      </label>
+                      <button
+                        className="p-2 hover:bg-[#FF9800]/10 rounded-lg transition group"
+                        title="Attach job posting"
+                        onClick={() => {
+                          const jobSection = document.getElementById("job-selector-section");
+                          if (jobSection) {
+                            jobSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                          }
+                        }}
+                      >
+                        <Briefcase className="w-5 h-5 text-[#263238]/50 group-hover:text-[#FF9800]" />
+                      </button>
+                    </div>
 
-                      {/* Toolbar Icons */}
-                      <div className="flex items-center gap-1 mb-4">
-                        <input
-                          type="file"
-                          id="new-post-image"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                setNewPostImage(reader.result as string);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          className="hidden"
+                    {/* Image Preview */}
+                    {newPostImage && (
+                      <div className="mb-4 relative group">
+                        <img
+                          src={newPostImage}
+                          alt="Post attachment"
+                          className="w-full h-64 object-cover rounded-xl border-2 border-[#263238]/10"
                         />
-                        <label
-                          htmlFor="new-post-image"
-                          className="p-2 hover:bg-[#4FC3F7]/10 rounded-lg transition group cursor-pointer"
-                          title="Add image"
-                        >
-                          <ImageIcon className="w-5 h-5 text-[#263238]/50 group-hover:text-[#4FC3F7]" />
-                        </label>
                         <button
-                          className="p-2 hover:bg-[#FF9800]/10 rounded-lg transition group"
-                          title="Attach job posting"
-                          onClick={() => {
-                            const jobSection =
-                              document.getElementById(
-                                "job-selector-section",
-                              );
-                            if (jobSection) {
-                              jobSection.scrollIntoView({
-                                behavior: "smooth",
-                                block: "nearest",
-                              });
-                            }
-                          }}
+                          onClick={() => setNewPostImage(null)}
+                          className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Briefcase className="w-5 h-5 text-[#263238]/50 group-hover:text-[#FF9800]" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
+                    )}
 
-                      {/* Image Preview */}
-                      {newPostImage && (
-                        <div className="mb-4 relative group">
-                          <img
-                            src={newPostImage}
-                            alt="Post attachment"
-                            className="w-full h-64 object-cover rounded-xl border-2 border-[#263238]/10"
-                          />
-                          <button
-                            onClick={() => setNewPostImage(null)}
-                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Job Selector - Optional Section */}
-                      <div
-                        id="job-selector-section"
-                        className="mb-3"
-                      >
-                        <label className="block text-sm text-[#263238]/60 mb-2">
-                          <span className="flex items-center gap-2">
-                            <Briefcase className="w-4 h-4" />
-                            Attach job posting (optional)
-                            {selectedJobForPost.length > 0 && (
-                              <span className="text-[#FF9800] font-medium">
-                                {selectedJobForPost.length} selected
-                              </span>
-                            )}
-                          </span>
-                        </label>
-                        <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-xl p-3 max-h-64 overflow-y-auto">
-                          {isJobsLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 className="w-6 h-6 text-[#FF9800] animate-spin" />
-                            </div>
-                          ) : availableJobs.length > 0 ? (
-                            availableJobs.map((job) => (
-                              <label
-                                key={job.id}
-                                className="flex items-start gap-3 p-2 hover:bg-white rounded-lg transition cursor-pointer group"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedJobForPost.includes(
-                                    job.id.toString(),
-                                  )}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedJobForPost([
-                                        ...selectedJobForPost,
-                                        job.id.toString(),
-                                      ]);
-                                    } else {
-                                      setSelectedJobForPost(
-                                        selectedJobForPost.filter(
-                                          (id) => id !== job.id.toString(),
-                                        ),
-                                      );
-                                    }
-                                  }}
-                                  className="mt-1 w-4 h-4 accent-[#FF9800] cursor-pointer"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <Briefcase className="w-3 h-3 text-[#FF9800]" />
-                                    <span className="text-sm font-medium text-[#263238] group-hover:text-[#FF9800] transition">
-                                      {job.jobName}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-[#263238]/60 mt-0.5">
-                                    {job.location} •{" "}
-                                    {job.salary}
-                                  </div>
-                                </div>
-                              </label>
-                            ))
-                          ) : (
-                            <div className="text-center py-8 text-[#263238]/40 text-sm">
-                              No jobs found to attach
-                            </div>
+                    {/* Job Selector - Optional Section */}
+                    <div id="job-selector-section" className="mb-3">
+                      <label className="block text-sm text-[#263238]/60 mb-2">
+                        <span className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
+                          Attach job posting (optional)
+                          {selectedJobForPost.length > 0 && (
+                            <span className="text-[#FF9800] font-medium">
+                              {selectedJobForPost.length} selected
+                            </span>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Selected Jobs Preview */}
-                      {selectedJobForPost.length > 0 && (
-                        <div className="mb-3 space-y-2">
-                          <div className="text-xs text-[#263238]/60 mb-2">
-                            Selected Jobs:
+                        </span>
+                      </label>
+                      <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-xl p-3 max-h-64 overflow-y-auto">
+                        {isJobsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-[#FF9800] animate-spin" />
                           </div>
-                          {selectedJobForPost.map((jobId) => {
-                            const selectedJob = availableJobs.find(
-                              (j) => j.id.toString() === jobId,
-                            );
-                            if (!selectedJob) return null;
-
-                            return (
-                              <div
-                                key={jobId}
-                                className="p-3 bg-gradient-to-r from-[#FF9800]/10 to-[#4FC3F7]/10 rounded-xl border border-[#FF9800]/20 relative group"
-                              >
-                                <button
-                                  onClick={() =>
-                                    setSelectedJobForPost(
-                                      selectedJobForPost.filter(
-                                        (id) => id !== jobId,
-                                      ),
-                                    )
+                        ) : availableJobs.length > 0 ? (
+                          availableJobs.map((job) => (
+                            <label
+                              key={job.id}
+                              className="flex items-start gap-3 p-2 hover:bg-white rounded-lg transition cursor-pointer group"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedJobForPost.includes(job.id.toString())}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedJobForPost([...selectedJobForPost, job.id.toString()]);
+                                  } else {
+                                    setSelectedJobForPost(selectedJobForPost.filter((id) => id !== job.id.toString()));
                                   }
-                                  className="absolute top-2 right-2 p-1 bg-white hover:bg-red-50 rounded-full shadow-sm transition opacity-0 group-hover:opacity-100"
-                                >
-                                  <X className="w-3 h-3 text-[#263238]/70 hover:text-red-500" />
-                                </button>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Briefcase className="w-4 h-4 text-[#FF9800]" />
-                                  <span className="text-sm font-medium text-[#263238]">
-                                    {selectedJob.jobName}
+                                }}
+                                className="mt-1 w-4 h-4 accent-[#FF9800] cursor-pointer"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <Briefcase className="w-3 h-3 text-[#FF9800]" />
+                                  <span className="text-sm font-medium text-[#263238] group-hover:text-[#FF9800] transition">
+                                    {job.jobName}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-[#263238]/60">
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {selectedJob.location}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <DollarSign className="w-3 h-3" />
-                                    {selectedJob.salary}
-                                  </span>
-                                  <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 text-[10px] px-1.5 py-0">
-                                    {selectedJob.jobType}
-                                  </Badge>
+                                <div className="text-xs text-[#263238]/60 mt-0.5">
+                                  {job.location} • {job.salary}
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                            </label>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-[#263238]/40 text-sm">
+                            No jobs found to attach
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Modal Footer */}
-                <div className="border-t border-[#263238]/10 px-4 py-3 flex items-center justify-between bg-white">
-                  <div className="text-xs text-[#263238]/50">
+                    {/* Selected Jobs Preview */}
                     {selectedJobForPost.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-3 h-3" />
-                        {selectedJobForPost.length} job
-                        {selectedJobForPost.length > 1 ? "s" : ""}{" "}
-                        attached
-                      </span>
+                      <div className="mb-3 space-y-2">
+                        <div className="text-xs text-[#263238]/60 mb-2">
+                          Selected Jobs:
+                        </div>
+                        {selectedJobForPost.map((jobId) => {
+                          const selectedJob = availableJobs.find((j) => j.id.toString() === jobId);
+                          if (!selectedJob) return null;
+
+                          return (
+                            <div
+                              key={jobId}
+                              className="p-3 bg-gradient-to-r from-[#FF9800]/10 to-[#4FC3F7]/10 rounded-xl border border-[#FF9800]/20 relative group"
+                            >
+                              <button
+                                onClick={() => setSelectedJobForPost(selectedJobForPost.filter((id) => id !== jobId))}
+                                className="absolute top-2 right-2 p-1 bg-white hover:bg-red-50 rounded-full shadow-sm transition opacity-0 group-hover:opacity-100"
+                              >
+                                <X className="w-3 h-3 text-[#263238]/70 hover:text-red-500" />
+                              </button>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Briefcase className="w-4 h-4 text-[#FF9800]" />
+                                <span className="text-sm font-medium text-[#263238]">
+                                  {selectedJob.jobName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-[#263238]/60">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {selectedJob.location}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  {selectedJob.salary}
+                                </span>
+                                <Badge className="bg-[#FF9800]/20 text-[#FF9800] border-0 text-[10px] px-1.5 py-0">
+                                  {selectedJob.jobType}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                  <Button
-                    onClick={async () => {
-                      if (newPostContent.trim()) {
-                        setIsSubmitting(true);
-                        try {
-                          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/create-post`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                            },
-                            body: JSON.stringify({
-                              content: newPostContent,
-                              postImageUrl: newPostImage,
-                              recruitmentIds: selectedJobForPost.map(id => parseInt(id))
-                            })
-                          });
-
-                          const data: ApiResponse<any> = await response.json();
-
-                          if (data.success) {
-                            toast.success("Post created successfully!");
-                            // Reset form and close modal
-                            setNewPostContent("");
-                            setNewPostContent("");
-                            setSelectedJobForPost([]);
-                            setNewPostImage(null);
-                            setShowNewPostModal(false);
-                            // Refresh posts
-                            fetchPosts(1, searchQuery, {
-                              jobType: selectedJobType,
-                              location: selectedLocation,
-                              salaryRange: selectedSalaryRange,
-                              postedDate: selectedPostedDate,
-                              category: selectedCategory
-                            });
-                          } else {
-                            toast.error(data.message || "Failed to create post");
-                          }
-                        } catch (error) {
-                          console.error("Error creating post:", error);
-                          toast.error("An error occurred while creating the post");
-                        } finally {
-                          setIsSubmitting(false);
-                        }
-                      }
-                    }}
-                    disabled={!newPostContent.trim() || isSubmitting}
-                    className="bg-[#263238] hover:bg-[#263238]/90 text-white rounded-full px-6 h-9 text-sm font-medium disabled:bg-[#263238]/20 disabled:text-[#263238]/40 transition-colors"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Posting...
-                      </span>
-                    ) : (
-                      editingPost ? 'Update' : 'Post'
-                    )}
-                  </Button>
                 </div>
               </div>
-            )}
-          </div>
-        )
-      }
-    </div >
+
+              {/* Modal Footer */}
+              <div className="border-t border-[#263238]/10 px-4 py-3 flex items-center justify-between bg-white">
+                <div className="text-xs text-[#263238]/50">
+                  {selectedJobForPost.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="w-3 h-3" />
+                      {selectedJobForPost.length} job{selectedJobForPost.length > 1 ? "s" : ""} attached
+                    </span>
+                  )}
+                </div>
+                <Button
+                  onClick={async () => {
+                    if (newPostContent.trim()) {
+                      setIsSubmitting(true);
+                      try {
+                        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/create-post`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                          },
+                          body: JSON.stringify({
+                            content: newPostContent,
+                            postImageUrl: newPostImage,
+                            recruitmentIds: selectedJobForPost.map(id => parseInt(id))
+                          })
+                        });
+
+                        const data: ApiResponse<any> = await response.json();
+
+                        if (data.success) {
+                          toast.success("Post created successfully!");
+                          setNewPostContent("");
+                          setSelectedJobForPost([]);
+                          setNewPostImage(null);
+                          setShowNewPostModal(false);
+                          fetchPosts(1, searchQuery, {
+                            jobType: selectedJobType,
+                            location: selectedLocation,
+                            salaryRange: selectedSalaryRange,
+                            postedDate: selectedPostedDate,
+                            category: selectedCategory
+                          });
+                        } else {
+                          toast.error(data.message || "Failed to create post");
+                        }
+                      } catch (error) {
+                        console.error("Error creating post:", error);
+                        toast.error("An error occurred while creating the post");
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }
+                  }}
+                  disabled={!newPostContent.trim() || isSubmitting}
+                  className="bg-[#263238] hover:bg-[#263238]/90 text-white rounded-full px-6 h-9 text-sm font-medium disabled:bg-[#263238]/20 disabled:text-[#263238]/40 transition-colors"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Posting...
+                    </span>
+                  ) : (
+                    editingPost ? 'Update' : 'Post'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

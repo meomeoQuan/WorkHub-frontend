@@ -150,6 +150,17 @@ export function PostJob() {
     setJobFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
+  useEffect(() => {
+    if (showSuccessMessage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showSuccessMessage]);
+
   return (
     <div className="bg-white min-h-screen py-12">
       {/* Success Message Overlay */}

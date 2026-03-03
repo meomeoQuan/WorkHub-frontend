@@ -34,32 +34,44 @@ import { formatRelativeTime } from "../utils/dateUtils";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const quickJobs = [
-  {
-    icon: "☕",
-    title: "Food & Beverage",
-    count: "234 jobs",
-    color: "bg-orange-100",
-  },
-  {
-    icon: "💻",
-    title: "Tech & IT",
-    count: "189 jobs",
-    color: "bg-blue-100",
-  },
-  {
-    icon: "🚗",
-    title: "Delivery & Driving",
-    count: "156 jobs",
-    color: "bg-green-100",
-  },
-  {
-    icon: "✏️",
-    title: "Creative & Design",
-    count: "142 jobs",
-    color: "bg-purple-100",
-  },
-];
+interface Category {
+  id: number;
+  name: string;
+}
+
+const getCategoryIcon = (name: string) => {
+  const mapping: Record<string, string> = {
+    "IT": "💻",
+    "IT&Tech": "💻",
+    "Tech & IT": "💻",
+    "Food & Beverage": "☕",
+    "Transportation": "🚗",
+    "Delivery & Driving": "🚗",
+    "Design": "✏️",
+    "Creative & Design": "✏️",
+    "Education": "🎓",
+    "Retail": "🛍️",
+    "Others": "🧩",
+  };
+  return mapping[name] || "💼";
+};
+
+const getCategoryColor = (name: string) => {
+  const mapping: Record<string, string> = {
+    "IT": "bg-blue-100",
+    "IT&Tech": "bg-blue-100",
+    "Tech & IT": "bg-blue-100",
+    "Food & Beverage": "bg-orange-100",
+    "Transportation": "bg-green-100",
+    "Delivery & Driving": "bg-green-100",
+    "Design": "bg-purple-100",
+    "Creative & Design": "bg-purple-100",
+    "Education": "bg-orange-100",
+    "Retail": "bg-pink-100",
+    "Others": "bg-orange-100",
+  };
+  return mapping[name] || "bg-slate-100";
+};
 
 // Advertisement data
 const advertisements = [
@@ -124,6 +136,7 @@ export function Home() {
 
   const [latestJobs, setLatestJobs] = useState<RecruitmentOverviewInfoDTO[]>([]);
   const [featuredUsers, setFeaturedUsers] = useState<UserFeatureDTO[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -155,6 +168,15 @@ export function Home() {
           const citiesData: ApiResponse<string[]> = await citiesRes.json();
           if (citiesData.success && citiesData.data) {
             setCities(citiesData.data);
+          }
+        }
+
+        // Fetch categories
+        const catsRes = await fetch(`${API_URL}/api/Job/get-categories`);
+        if (catsRes.ok) {
+          const catsData: ApiResponse<Category[]> = await catsRes.json();
+          if (catsData.success && catsData.data) {
+            setCategories(catsData.data);
           }
         }
       } catch (error) {
@@ -260,7 +282,7 @@ export function Home() {
                           All Cities
                         </SelectItem>
                         {cities.map((city) => (
-                          <SelectItem key={city} value={city.toLowerCase().replace(/ /g, '-')}>
+                          <SelectItem key={city} value={city}>
                             {city}
                           </SelectItem>
                         ))}
@@ -491,23 +513,28 @@ export function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickJobs.map((category, index) => (
-              <Link key={index} to={`/jobs?category=${encodeURIComponent(category.title)}`}>
+            {categories.slice(0, 4).map((category) => (
+              <Link key={category.id} to={`/jobs?category=${encodeURIComponent(category.name)}`}>
                 <Card className="p-6 hover:shadow-lg transition cursor-pointer border-2 hover:border-[#FF9800] group">
                   <div
-                    className={`w-16 h-16 ${category.color} rounded-2xl flex items-center justify-center mb-4 text-3xl group-hover:scale-110 transition`}
+                    className={`w-16 h-16 ${getCategoryColor(category.name)} rounded-2xl flex items-center justify-center mb-4 text-3xl group-hover:scale-110 transition`}
                   >
-                    {category.icon}
+                    {getCategoryIcon(category.name)}
                   </div>
                   <h3 className="text-[#263238] mb-1">
-                    {category.title}
+                    {category.name}
                   </h3>
                   <p className="text-sm text-[#263238]/60">
-                    {category.count}
+                    Explore opportunities
                   </p>
                 </Card>
               </Link>
             ))}
+            {categories.length === 0 && !loading && (
+              <div className="col-span-full text-center py-8 text-[#263238]/60">
+                No categories available
+              </div>
+            )}
           </div>
         </div>
       </section>
