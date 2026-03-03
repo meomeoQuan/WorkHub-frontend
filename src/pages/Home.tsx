@@ -163,11 +163,11 @@ export function Home() {
         }
 
         // Fetch cities
-        const citiesRes = await fetch(`${API_URL}/api/JobPost/cities-filter`);
+        const citiesRes = await fetch(`${API_URL}/api/Job/get-cities`);
         if (citiesRes.ok) {
-          const citiesData: ApiResponse<string[]> = await citiesRes.json();
+          const citiesData: ApiResponse<{ id: number; name: string }[]> = await citiesRes.json();
           if (citiesData.success && citiesData.data) {
-            setCities(citiesData.data);
+            setCities(citiesData.data.map(c => c.name));
           }
         }
 

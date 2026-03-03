@@ -79,6 +79,9 @@ export default function JobFilter() {
     "Full-time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
     "Full Time": "bg-[#FF9800]/10 text-[#F57C00] border border-[#FF9800]/20",
     Contract: "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    "On-site": "bg-[#263238]/10 text-[#263238] border border-[#263238]/20",
+    "Remote": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
+    "Hybrid": "bg-[#8E24AA]/10 text-[#8E24AA] border border-[#8E24AA]/20",
   };
 
   const typeIcons: Record<string, string> = {
@@ -89,6 +92,9 @@ export default function JobFilter() {
     "Full-time": "🏢",
     "Full Time": "🏢",
     Contract: "📑",
+    "On-site": "📍",
+    "Remote": "🏠",
+    "Hybrid": "🏢",
   };
 
   // Initial loading state
@@ -135,6 +141,7 @@ export default function JobFilter() {
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [jobTypes, setJobTypes] = useState<{ id: number; name: string }[]>([]);
   const [selectedPostForComment, setSelectedPostForComment] =
     useState<any | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -319,10 +326,10 @@ export default function JobFilter() {
 
   const fetchCities = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/cities-filter`);
-      const data: ApiResponse<string[]> = await response.json();
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Job/get-cities`);
+      const data: ApiResponse<{ id: number; name: string }[]> = await response.json();
       if (data.success && data.data) {
-        setCities(data.data);
+        setCities(data.data.map(c => c.name));
       }
     } catch (error) {
       console.error("Error fetching cities:", error);
@@ -340,6 +347,18 @@ export default function JobFilter() {
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
+    }
+  }, []);
+
+  const fetchJobTypes = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Job/get-jobtypes`);
+      const data: ApiResponse<{ id: number; name: string }[]> = await response.json();
+      if (data.success && data.data) {
+        setJobTypes(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching job types:", error);
     }
   }, []);
 
@@ -427,6 +446,7 @@ export default function JobFilter() {
   useEffect(() => {
     fetchCities();
     fetchCategories();
+    fetchJobTypes();
     if (isLoggedIn) {
       fetchFollowingCount();
       fetchFollowedUsers();
@@ -436,7 +456,7 @@ export default function JobFilter() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, isLoggedIn]);
+  }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, fetchJobTypes, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
   useEffect(() => {
@@ -998,42 +1018,18 @@ export default function JobFilter() {
               >
                 All
               </button>
-              <button
-                onClick={() => setSelectedJobType("Full-time")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedJobType === "Full-time"
-                  ? "bg-[#263238] text-white"
-                  : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#263238]/5"
-                  }`}
-              >
-                Full-time
-              </button>
-              <button
-                onClick={() => setSelectedJobType("Part-time")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedJobType === "Part-time"
-                  ? "bg-[#FF9800] text-white"
-                  : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#FF9800]/10"
-                  }`}
-              >
-                Part-time
-              </button>
-              <button
-                onClick={() => setSelectedJobType("Freelance")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedJobType === "Freelance"
-                  ? "bg-[#4ADE80] text-white"
-                  : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#4ADE80]/10"
-                  }`}
-              >
-                Freelance
-              </button>
-              <button
-                onClick={() => setSelectedJobType("Seasonal")}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedJobType === "Seasonal"
-                  ? "bg-[#FF9800] text-white"
-                  : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#FF9800]/10"
-                  }`}
-              >
-                Seasonal
-              </button>
+              {jobTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setSelectedJobType(type.name)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedJobType === type.name
+                    ? "bg-[#263238] text-white"
+                    : "bg-[#FAFAFA] text-[#263238]/70 hover:bg-[#263238]/5"
+                    }`}
+                >
+                  {type.name}
+                </button>
+              ))}
             </div>
 
             {/* Active Filters Display */}

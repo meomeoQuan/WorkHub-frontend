@@ -53,6 +53,7 @@ export function PostJob() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [jobTypes, setJobTypes] = useState<{ id: number, name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number, name: string }[]>([]);
+  const [cities, setCities] = useState<{ id: number, name: string }[]>([]);
   const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -68,6 +69,12 @@ export function PostJob() {
         if (catsRes.ok) {
           const result = await catsRes.json();
           if (result.success) setCategories(result.data);
+        }
+
+        const citiesRes = await fetch(`${API_URL}/api/Job/get-cities`);
+        if (citiesRes.ok) {
+          const result = await citiesRes.json();
+          if (result.success) setCities(result.data);
         }
       } catch (error) {
         console.error("Failed to fetch metadata", error);
@@ -231,14 +238,22 @@ export function PostJob() {
                     <MapPin className="w-4 h-4 text-[#4FC3F7]" />
                     Location *
                   </Label>
-                  <Input
-                    id="location"
-                    placeholder="e.g., New York, NY or Remote"
+                  <Select
                     value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="mt-2 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                    onValueChange={(value: string) => setFormData({ ...formData, location: value })}
                     required
-                  />
+                  >
+                    <SelectTrigger id="location" className="mt-2 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.name}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="category" className="text-[#263238]">Category *</Label>
