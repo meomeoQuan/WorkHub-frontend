@@ -232,6 +232,31 @@ export function UserProfile() {
     }
   };
 
+  const handleReport = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/UserProfile/report-user/${profileUserId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setCredibilityRating((prev) => Math.max(0, prev - 0.25));
+          toast.success("User reported. Rating penalized.");
+        }
+      } else {
+        toast.error("Failed to report user");
+      }
+    } catch (err) {
+      console.error("Report error", err);
+      toast.error("An error occurred while reporting");
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -680,13 +705,13 @@ export function UserProfile() {
                             <DropdownMenuItem
                               onClick={handleFollowToggle}
                               className={`cursor-pointer mb-1 py-3 px-4 rounded-xl transition-colors ${isFollowing
-                                  ? "text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 group"
+                                  ? "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
                                   : "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
                                 }`}
                             >
                               {isFollowing ? (
                                 <>
-                                  <UserCheck className="w-4 h-4 mr-3 text-red-500/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
+                                  <UserCheck className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
                                   Unfollow
                                 </>
                               ) : (
@@ -697,7 +722,7 @@ export function UserProfile() {
                               )}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => toast.info("Report functionality coming soon!")}
+                              onClick={handleReport}
                               className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
                             >
                               <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />

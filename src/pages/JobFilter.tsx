@@ -1351,6 +1351,7 @@ export default function JobFilter() {
                               )}
                             </button>
                           )}
+                          {/* 
                           <div className="relative post-menu-dropdown">
                             <button
                               onClick={(e) => {
@@ -1362,10 +1363,8 @@ export default function JobFilter() {
                               <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
                             </button>
 
-                            {/* Dropdown Menu */}
                             {openMenuPostId === post.id && (
                               <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#263238]/10 py-1 min-w-[160px] z-50">
-                                {/* Check if this is the user's post */}
                                 {post.username === (user?.email?.split('@')[0] || 'user') && (
                                   <>
                                     <button
@@ -1391,7 +1390,6 @@ export default function JobFilter() {
                                   </>
                                 )}
 
-                                {/* Show default options for other users' posts */}
                                 {post.username !== (user?.email?.split('@')[0] || 'user') && (
                                   <>
                                     <button
@@ -1419,6 +1417,7 @@ export default function JobFilter() {
                               </div>
                             )}
                           </div>
+                          */}
                         </div>
                       </div>
 
