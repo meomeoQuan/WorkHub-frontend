@@ -228,7 +228,32 @@ export default function JobFilter() {
       // Add filters to params
       if (filters.jobType && filters.jobType !== 'all') params.set("jobType", filters.jobType);
       if (filters.location && filters.location !== 'all-cities') params.set("location", filters.location);
-      if (filters.salaryRange && filters.salaryRange !== 'all') params.set("salaryRange", filters.salaryRange);
+
+      if (filters.salaryRange && filters.salaryRange !== 'all') {
+        // Simple mapping for current hardcoded ranges
+        const salaryMapping: Record<string, { min?: number, max?: number, currency?: string, cycle?: string }> = {
+          "$10-20/hr": { min: 10, max: 20, currency: "USD", cycle: "Hour" },
+          "$20-40/hr": { min: 20, max: 40, currency: "USD", cycle: "Hour" },
+          "$40-60/hr": { min: 40, max: 60, currency: "USD", cycle: "Hour" },
+          "$60+/hr": { min: 60, currency: "USD", cycle: "Hour" },
+          "20k-50k VND/h": { min: 20000, max: 50000, currency: "VND", cycle: "Hour" },
+          "50k-100k VND/h": { min: 50000, max: 100000, currency: "VND", cycle: "Hour" },
+          "3M-10M VND/month": { min: 3000000, max: 10000000, currency: "VND", cycle: "Month" },
+          "10M-30M VND/month": { min: 10000000, max: 30000000, currency: "VND", cycle: "Month" },
+          "30M+ VND/month": { min: 30000000, currency: "VND", cycle: "Month" },
+        };
+
+        const map = salaryMapping[filters.salaryRange];
+        if (map) {
+          if (map.min !== undefined) params.set("minSalary", map.min.toString());
+          if (map.max !== undefined) params.set("maxSalary", map.max.toString());
+          if (map.currency) params.set("salaryCurrency", map.currency);
+          if (map.cycle) params.set("salaryCycle", map.cycle);
+        } else {
+          // Fallback to string if not in mapping
+          params.set("salaryRange", filters.salaryRange);
+        }
+      }
       if (filters.postedDate && filters.postedDate !== 'anytime') params.set("postedDate", filters.postedDate);
       if (filters.category && filters.category !== 'all') params.set("category", filters.category);
 
@@ -260,6 +285,10 @@ export default function JobFilter() {
             jobTitle: firstJob?.jobName || p.header || null,
             location: firstJob?.location || null,
             salary: firstJob?.salary || null,
+            salaryMin: firstJob?.minSalary || 0,
+            salaryMax: firstJob?.maxSalary || null,
+            salaryCurrency: firstJob?.salaryCurrency || 'VND',
+            salaryCycle: firstJob?.salaryCycle || 'Month',
             type: firstJob?.jobType || null,
             likes: p.likeCount,
             isLiked: p.isLiked,
@@ -774,15 +803,30 @@ export default function JobFilter() {
     }
 
     // Salary range filter
-    if (selectedSalaryRange) {
-      if (selectedSalaryRange === "$10-20/hr") {
-        if (post.salaryMin < 10 || post.salaryMax > 20) return false;
-      } else if (selectedSalaryRange === "$20-40/hr") {
-        if (post.salaryMin < 20 || post.salaryMax > 40) return false;
-      } else if (selectedSalaryRange === "$40-60/hr") {
-        if (post.salaryMin < 40 || post.salaryMax > 60) return false;
-      } else if (selectedSalaryRange === "$60+/hr") {
-        if (post.salaryMin < 60) return false;
+    if (selectedSalaryRange && selectedSalaryRange !== 'all') {
+      const salaryMapping: Record<string, { min?: number, max?: number, currency?: string, cycle?: string }> = {
+        "$10-20/hr": { min: 10, max: 20, currency: "USD", cycle: "Hour" },
+        "$20-40/hr": { min: 20, max: 40, currency: "USD", cycle: "Hour" },
+        "$40-60/hr": { min: 40, max: 60, currency: "USD", cycle: "Hour" },
+        "$60+/hr": { min: 60, currency: "USD", cycle: "Hour" },
+        "20k-50k VND/h": { min: 20000, max: 50000, currency: "VND", cycle: "Hour" },
+        "50k-100k VND/h": { min: 50000, max: 100000, currency: "VND", cycle: "Hour" },
+        "3M-10M VND/month": { min: 3000000, max: 10000000, currency: "VND", cycle: "Month" },
+        "10M-30M VND/month": { min: 10000000, max: 30000000, currency: "VND", cycle: "Month" },
+        "30M+ VND/month": { min: 30000000, currency: "VND", cycle: "Month" },
+      };
+
+      const map = salaryMapping[selectedSalaryRange];
+      if (map) {
+        // Filter by currency first
+        if (map.currency && post.salaryCurrency !== map.currency) return false;
+        // Filter by cycle
+        if (map.cycle && post.salaryCycle !== map.cycle) return false;
+
+        // Filter by min
+        if (map.min !== undefined && post.salaryMin < map.min) return false;
+        // Filter by max
+        if (map.max !== undefined && post.salaryMax && post.salaryMax > map.max) return false;
       }
     }
 
@@ -1119,10 +1163,21 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">All Salaries</option>
-                      <option value="$10-20/hr">$10-20/hr</option>
-                      <option value="$20-40/hr">$20-40/hr</option>
-                      <option value="$40-60/hr">$40-60/hr</option>
-                      <option value="$60+/hr">$60+/hr</option>
+                      <optgroup label="VND / Hour">
+                        <option value="20k-50k VND/h">20k - 50k VND/h</option>
+                        <option value="50k-100k VND/h">50k - 100k VND/h</option>
+                      </optgroup>
+                      <optgroup label="VND / Month">
+                        <option value="3M-10M VND/month">3M - 10M VND/month</option>
+                        <option value="10M-30M VND/month">10M - 30M VND/month</option>
+                        <option value="30M+ VND/month">30M+ VND/month</option>
+                      </optgroup>
+                      <optgroup label="USD / Hour">
+                        <option value="$10-20/hr">$10 - $20/hr</option>
+                        <option value="$20-40/hr">$20 - $40/hr</option>
+                        <option value="$40-60/hr">$40 - $60/hr</option>
+                        <option value="$60+/hr">$60+/hr</option>
+                      </optgroup>
                     </select>
                   </div>
                 </div>
