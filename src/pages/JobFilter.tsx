@@ -105,7 +105,6 @@ export default function JobFilter() {
 
   // Load user-posted jobs from recruitment attachment
   const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
-  const [userPostedJobs, setUserPostedJobs] = useState<typeof jobPosts>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -254,7 +253,9 @@ export default function JobFilter() {
             companyEmployees: "50-200 employees",
             companyRating: p.rating ? `${p.rating} rating` : null,
             credibilityRating: p.rating,
-            timestamp: p.createdAt ? formatRelativeTime(p.createdAt) : "Just now",
+            timestamp: p.createdAt
+              ? new Date(p.createdAt).toLocaleDateString('en-GB') // DD/MM/YYYY
+              : "Just now",
             content: p.content,
             jobTitle: firstJob?.jobName || p.header || null,
             location: firstJob?.location || null,
@@ -404,37 +405,10 @@ export default function JobFilter() {
   }, [searchQuery, fetchPosts]);
 
 
-  // Load user-posted jobs and social posts from localStorage
+  // One-time cleanup of ghost posts in localStorage
   useEffect(() => {
-    const loadUserContent = () => {
-      // Load job postings
-      const storedJobs = localStorage.getItem('userPostedJobs');
-      const storedSocialPosts = localStorage.getItem('userSocialPosts');
-
-      const allUserContent: typeof jobPosts = [];
-
-      if (storedJobs) {
-        try {
-          const parsedJobs = JSON.parse(storedJobs);
-          allUserContent.push(...parsedJobs);
-        } catch (error) {
-          console.error('Error parsing user jobs:', error);
-        }
-      }
-
-      if (storedSocialPosts) {
-        try {
-          const parsedPosts = JSON.parse(storedSocialPosts);
-          allUserContent.push(...parsedPosts);
-        } catch (error) {
-          console.error('Error parsing user social posts:', error);
-        }
-      }
-
-      setUserPostedJobs(allUserContent);
-    };
-
-    loadUserContent();
+    localStorage.removeItem('userPostedJobs');
+    localStorage.removeItem('userSocialPosts');
   }, []);
 
   // Scroll to top on mount
@@ -625,16 +599,14 @@ export default function JobFilter() {
       const data: ApiResponse<number> = await response.json();
 
       if (data.success) {
-        // Update both apiPosts and userPostedJobs if needed
-        const updatePosts = (posts: any[]) =>
-          posts.map(p =>
+        // Update apiPosts immediately
+        setApiPosts(prev =>
+          prev.map(p =>
             p.id === postId
               ? { ...p, isLiked: !p.isLiked, likes: data.data }
               : p
-          );
-
-        setApiPosts(prev => updatePosts(prev));
-        setUserPostedJobs(prev => updatePosts(prev));
+          )
+        );
 
         if (data.message === "Liked") {
           toast.success("Liked post");
@@ -726,30 +698,31 @@ export default function JobFilter() {
     }
   };
 
-  const handleDeletePost = (postId: string) => {
+  const handleDeletePost = async (postId: string) => {
     if (!window.confirm('Are you sure you want to delete this post?')) {
       return;
     }
 
-    // Remove from localStorage
-    const existingPosts = localStorage.getItem('userSocialPosts');
-    if (existingPosts) {
-      const posts = JSON.parse(existingPosts);
-      const updatedPosts = posts.filter((p: any) => p.id !== postId);
-      localStorage.setItem('userSocialPosts', JSON.stringify(updatedPosts));
-    }
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-post/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data: ApiResponse<any> = await response.json();
 
-    // Also check userPostedJobs
-    const existingJobs = localStorage.getItem('userPostedJobs');
-    if (existingJobs) {
-      const jobs = JSON.parse(existingJobs);
-      const updatedJobs = jobs.filter((j: any) => j.id !== postId);
-      localStorage.setItem('userPostedJobs', JSON.stringify(updatedJobs));
+      if (data.success) {
+        toast.success("Post deleted successfully");
+        setApiPosts((prev) => prev.filter((p) => p.id !== postId));
+        setOpenMenuPostId(null);
+      } else {
+        toast.error(data.message || "Failed to delete post");
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("An error occurred while deleting the post");
     }
-
-    // Update state
-    setUserPostedJobs((prev) => prev.filter((p) => p.id !== postId));
-    setOpenMenuPostId(null);
   };
 
   const handleEditPost = (post: typeof jobPosts[0]) => {
@@ -767,7 +740,7 @@ export default function JobFilter() {
   };
 
   // Combine user-posted jobs and API posts
-  const allJobPosts = [...apiPosts, ...userPostedJobs];
+  const allJobPosts = apiPosts;
 
   // Filter jobs based on all selected filters
   const filteredJobs = allJobPosts.filter((post) => {
@@ -1052,9 +1025,10 @@ export default function JobFilter() {
                   <div className="flex items-center gap-1 px-2.5 py-1 bg-[#4FC3F7]/10 border border-[#4FC3F7]/30 text-[#4FC3F7] rounded-full text-xs">
                     <Calendar className="w-3 h-3" />
                     <span>
-                      {selectedPostedDate === "24h" && "Last 24 hours"}
-                      {selectedPostedDate === "7d" && "Last 7 days"}
-                      {selectedPostedDate === "30d" && "Last 30 days"}
+                      {selectedPostedDate === "1d" && "Recently"}
+                      {selectedPostedDate === "1w" && "Weeks"}
+                      {selectedPostedDate === "1m" && "Months"}
+                      {selectedPostedDate === "1y" && "Years"}
                     </span>
                     <button
                       onClick={() => setSelectedPostedDate(null)}
@@ -1170,9 +1144,10 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">Anytime</option>
-                      <option value="24h">Last 24 hours</option>
-                      <option value="7d">Last 7 days</option>
-                      <option value="30d">Last 30 days</option>
+                      <option value="1d">Recently</option>
+                      <option value="1w">Weeks</option>
+                      <option value="1m">Months</option>
+                      <option value="1y">Years</option>
                     </select>
                   </div>
                   <div>
