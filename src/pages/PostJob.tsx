@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -21,13 +21,13 @@ import {
   Check,
   ArrowLeft
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 export function PostJob() {
   const navigate = useNavigate();
-  useAuth();
+  const { id } = useParams();
+  const isEditMode = !!id;
+  const token = localStorage.getItem('access_token');
 
   const parseSalaryInput = (input: string): string => {
     if (!input) return "";
@@ -104,6 +104,45 @@ export function PostJob() {
     fetchMetadata();
   }, [API_URL]);
 
+  useEffect(() => {
+    if (isEditMode && token) {
+      const fetchJobData = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/Job/get-job/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const job = result.data;
+              setFormData({
+                title: job.jobName || '',
+                location: job.location || '',
+                category: job.category || '',
+                jobType: job.jobType || '',
+                workTime: job.workTime || '',
+                salary: '',
+                minSalary: job.minSalary?.toString() || '',
+                maxSalary: job.maxSalary?.toString() || '',
+                salaryCurrency: job.salaryCurrency || 'VND',
+                salaryCycle: job.salaryCycle || 'Month',
+                description: job.description || '',
+                requirements: job.requirements || '',
+                benefits: job.benefits || '',
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching job data:", error);
+          toast.error("Failed to load job data");
+        }
+      };
+      fetchJobData();
+    }
+  }, [isEditMode, id, token, API_URL]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -129,8 +168,14 @@ export function PostJob() {
       formDataToSend.append("Requirements", formData.requirements);
       formDataToSend.append("Benefits", formData.benefits);
 
-      const res = await fetch(`${API_URL}/api/Job/create-job`, {
-        method: "POST",
+      const endpoint = isEditMode
+        ? `${API_URL}/api/Job/update-job/${id}`
+        : `${API_URL}/api/Job/create-job`;
+
+      const method = isEditMode ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -140,15 +185,18 @@ export function PostJob() {
       if (res.ok) {
         const result = await res.json();
         if (result.success) {
-          setShowSuccessMessage(true);
-          setTimeout(() => {
-            navigate('/user-jobs');
-          }, 1500);
+          toast.success(isEditMode ? "Job updated successfully" : "Job posted successfully");
+          setShowSuccessMessage(!isEditMode); // Show overlay only for new posts if desired, or always
+          if (isEditMode) {
+            setTimeout(() => navigate('/user-jobs'), 1500);
+          } else {
+            setTimeout(() => navigate('/user-jobs'), 1500);
+          }
         } else {
-          toast.error(result.message || "Failed to post job");
+          toast.error(result.message || "Failed to submit job");
         }
       } else {
-        toast.error("An error occurred while posting the job");
+        toast.error("An error occurred while submitting the job");
       }
     } catch (error) {
       console.error("Error submitting job:", error);
@@ -209,8 +257,12 @@ export function PostJob() {
                 <Briefcase className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-[#263238] text-3xl">Add a New Job</h1>
-                <p className="text-[#263238]/70">Fill in the details to find perfect candidates</p>
+                <h1 className="text-[#263238] text-3xl">{isEditMode ? "Edit Job" : "Add a New Job"}</h1>
+                <p className="text-[#263238]/70">
+                  {isEditMode
+                    ? "Update your job posting to attract the best candidates"
+                    : "Fill in the details to find perfect candidates"}
+                </p>
               </div>
             </div>
           </div>
@@ -293,7 +345,7 @@ export function PostJob() {
                     </SelectTrigger>
                     <SelectContent>
                       {jobTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id.toString()}>
+                        <SelectItem key={type.id} value={type.name}>
                           {type.name}
                         </SelectItem>
                       ))}
@@ -441,7 +493,7 @@ export function PostJob() {
                   className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30"
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  Add Job
+                  {isEditMode ? "Update Job" : "Add Job"}
                 </Button>
                 <Button
                   type="button"
