@@ -31,18 +31,21 @@ export function PostJob() {
 
   const parseSalaryInput = (input: string): string => {
     if (!input) return "";
-    let cleanInput = input.toLowerCase().replace(/,/g, "").trim();
+    let cleanInput = input.toLowerCase()
+      .replace(/,/g, "")
+      .replace(/vnd|usd|đ/g, "")
+      .trim();
     let multiplier = 1;
 
-    if (cleanInput.includes("triệu") || cleanInput.endsWith("tr") || cleanInput.endsWith("m")) {
+    if (cleanInput.includes("triệu") || cleanInput.includes("million") || cleanInput.includes("milion") || cleanInput.endsWith("tr") || cleanInput.endsWith("m")) {
       multiplier = 1000000;
-      cleanInput = cleanInput.replace(/triệu|tr|m/g, "").trim();
-    } else if (cleanInput.includes("tỷ") || cleanInput.endsWith("b")) {
+      cleanInput = cleanInput.replace(/triệu|million|milion|tr|m/g, "").trim();
+    } else if (cleanInput.includes("tỷ") || cleanInput.includes("billion") || cleanInput.endsWith("b")) {
       multiplier = 1000000000;
-      cleanInput = cleanInput.replace(/tỷ|b/g, "").trim();
-    } else if (cleanInput.includes("nghìn") || cleanInput.endsWith("k") || cleanInput.endsWith("ng")) {
+      cleanInput = cleanInput.replace(/tỷ|billion|b/g, "").trim();
+    } else if (cleanInput.includes("nghìn") || cleanInput.includes("ngàn") || cleanInput.includes("thousand") || cleanInput.endsWith("k") || cleanInput.endsWith("ng")) {
       multiplier = 1000;
-      cleanInput = cleanInput.replace(/nghìn|k|ng/g, "").trim();
+      cleanInput = cleanInput.replace(/nghìn|ngàn|thousand|k|ng/g, "").trim();
     }
 
     const numericValue = parseFloat(cleanInput);
