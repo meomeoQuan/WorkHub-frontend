@@ -21,22 +21,19 @@ const plans = [
     borderColor: 'border-[#263238]/20',
     features: [
       'Xem không giới hạn công việc',
-      'Ứng tuyển 5 công việc mỗi tháng',
-      'Hồ sơ cơ bản',
-      'Thông báo qua email',
       'Hỗ trợ cộng đồng'
     ],
     limitations: [
-      'Giới hạn lượt ứng tuyển',
-      'Hiển thị tiêu chuẩn',
+      'Giới hạn 5 lượt ứng tuyển/tháng',
+      'Giới hạn 5 lượt đăng bài/tháng',
       'Chỉ tính năng cơ bản'
     ]
   },
   {
     id: 'silver' as PaymentPlan,
     name: 'Silver',
-    price: '1.000₫',
-    priceVND: 1000,
+    price: '2.000₫',
+    priceVND: 2000,
     period: 'mỗi tháng',
     description: 'Dành cho người tìm việc tích cực',
     icon: Crown,
@@ -45,19 +42,17 @@ const plans = [
     badge: 'Phổ Biến',
     features: [
       'Tất cả trong gói Miễn Phí',
-      'Ứng tuyển 25 công việc mỗi tháng',
-      'Hỗ trợ ưu tiên',
-      'Hồ sơ nâng cao',
-      'Theo dõi đơn ứng tuyển',
-      'Thông báo việc làm',
-      'Mẫu CV chuyên nghiệp'
+      'Đăng 20 bài Post công việc mỗi tháng',
+      'Ứng tuyển không giới hạn',
+      'Tự động thông báo qua Email tình trạng đơn ứng tuyển',
+      'Thông báo việc làm'
     ]
   },
   {
     id: 'gold' as PaymentPlan,
     name: 'Gold',
-    price: '2.000₫',
-    priceVND: 2000,
+    price: '3.000₫',
+    priceVND: 3000,
     period: 'mỗi tháng',
     description: 'Dành cho chuyên gia nghiêm túc',
     icon: Star,
@@ -67,12 +62,11 @@ const plans = [
     features: [
       'Tất cả trong gói Silver',
       'Ứng tuyển không giới hạn',
+      'Đăng không giới hạn bài Post',
       'Hiển thị hồ sơ gấp 2 lần',
       'Huy hiệu hồ sơ nổi bật',
       'Phân tích nâng cao',
-      'Gợi ý việc làm ưu tiên',
-      'Nhắn tin trực tiếp nhà tuyển dụng',
-      'Mẹo chuẩn bị phỏng vấn'
+      'Gợi ý việc làm ưu tiên'
     ]
   }
 ];

@@ -30,7 +30,6 @@ import howItWorksImg from "figma:asset/35710fa8a2ad22f1bc7ef5e3899f7b6a4daf97c0.
 import type { RecruitmentOverviewInfoDTO } from "../types/DTOs/ModelDTOs/RecruitmentOverviewInfoDTO";
 import type { UserFeatureDTO } from "../types/DTOs/ModelDTOs/HomeDTOs/UserFeatureDTO";
 import type { ApiResponse } from "../types/ApiResponse";
-import { formatRelativeTime } from "../utils/dateUtils";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -163,11 +162,11 @@ export function Home() {
         }
 
         // Fetch cities
-        const citiesRes = await fetch(`${API_URL}/api/JobPost/cities-filter`);
+        const citiesRes = await fetch(`${API_URL}/api/Job/get-cities`);
         if (citiesRes.ok) {
-          const citiesData: ApiResponse<string[]> = await citiesRes.json();
+          const citiesData: ApiResponse<{ id: number; name: string }[]> = await citiesRes.json();
           if (citiesData.success && citiesData.data) {
-            setCities(citiesData.data);
+            setCities(citiesData.data.map(c => c.name));
           }
         }
 
@@ -578,7 +577,9 @@ export function Home() {
                       type={(job.jobType as "Part-time" | "Freelance" | "Seasonal") || "Part-time"}
                       description={job.description || "No description available"}
                       salary={job.salary}
-                      postedDate={formatRelativeTime(job.createdAt)}
+                      postedDate={job.createdAt
+                        ? new Date(job.createdAt).toLocaleDateString('en-GB')
+                        : "Just now"}
                     />
                   ))
                 )}
@@ -665,9 +666,9 @@ export function Home() {
       </section>
 
       {/* Featured Companies Carousel */}
-      <section className="py-16 bg-white">
+      <section className="bg-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
+          {/* <div className="flex items-center justify-between mb-12">
             <h2 className="text-[#263238]">Featured Companies</h2>
             <Link to="/jobs">
               <Button
@@ -678,10 +679,10 @@ export function Home() {
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
+          </div> */}
 
           {/* Companies Carousel */}
-          <div className="max-w-6xl mx-auto">
+          {/* <div className="max-w-6xl mx-auto">
             {featuredUsers.length > 0 ? (
               <Slider
                 {...{
@@ -730,7 +731,7 @@ export function Home() {
             ) : (
               <div className="text-center text-[#263238]/60 py-8">Loading featured companies...</div>
             )}
-          </div>
+          </div> */}
         </div>
       </section>
 
