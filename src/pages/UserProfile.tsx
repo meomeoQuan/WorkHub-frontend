@@ -17,7 +17,15 @@ import {
   Trash2,
   UserPlus,
   UserCheck,
+  Flag,
+  MoreHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -656,27 +664,47 @@ export function UserProfile() {
                         )}
                       </div>
 
-                      {/* Follow Button */}
+                      {/* Follow & Report Dropdown */}
                       {!isOwnProfile && (
-                        <Button
-                          onClick={handleFollowToggle}
-                          className={`${isFollowing
-                            ? "bg-white border-2 border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800]/5"
-                            : "bg-[#FF9800] hover:bg-[#F57C00] text-white border-2 border-[#FF9800]"
-                            } rounded-xl shadow-md hover:shadow-lg transition flex-shrink-0`}
-                        >
-                          {isFollowing ? (
-                            <>
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              Following
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Follow
-                            </>
-                          )}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="rounded-full w-10 h-10 border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] transition-colors"
+                            >
+                              <MoreHorizontal className="w-5 h-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52 rounded-2xl border-[#263238]/10 shadow-2xl p-1.5">
+                            <DropdownMenuItem
+                              onClick={handleFollowToggle}
+                              className={`cursor-pointer mb-1 py-3 px-4 rounded-xl transition-colors ${isFollowing
+                                  ? "text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 group"
+                                  : "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
+                                }`}
+                            >
+                              {isFollowing ? (
+                                <>
+                                  <UserCheck className="w-4 h-4 mr-3 text-red-500/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
+                                  Unfollow
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
+                                  Follow
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => toast.info("Report functionality coming soon!")}
+                              className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
+                            >
+                              <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
+                              Report
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
 

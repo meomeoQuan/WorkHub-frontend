@@ -24,8 +24,8 @@ const plans = [
       'Hỗ trợ cộng đồng'
     ],
     limitations: [
-      'Giới hạn 5 lượt ứng tuyển',
-      'Giới hạn 5 lượt đăng bài',
+      'Giới hạn 5 lượt ứng tuyển/tháng',
+      'Giới hạn 5 lượt đăng bài/tháng',
       'Chỉ tính năng cơ bản'
     ]
   },

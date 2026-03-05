@@ -665,9 +665,9 @@ export function Home() {
       </section>
 
       {/* Featured Companies Carousel */}
-      <section className="py-16 bg-white">
+      <section className="bg-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
+          {/* <div className="flex items-center justify-between mb-12">
             <h2 className="text-[#263238]">Featured Companies</h2>
             <Link to="/jobs">
               <Button
@@ -678,10 +678,10 @@ export function Home() {
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
+          </div> */}
 
           {/* Companies Carousel */}
-          <div className="max-w-6xl mx-auto">
+          {/* <div className="max-w-6xl mx-auto">
             {featuredUsers.length > 0 ? (
               <Slider
                 {...{
@@ -730,7 +730,7 @@ export function Home() {
             ) : (
               <div className="text-center text-[#263238]/60 py-8">Loading featured companies...</div>
             )}
-          </div>
+          </div> */}
         </div>
       </section>
 
