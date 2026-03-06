@@ -60,7 +60,7 @@ export function UserJobs() {
               type: j.jobType,
               description: j.description || "No description provided.",
               salary: j.salary,
-              postedDate: new Date(j.createdAt).toLocaleDateString(),
+              postedDate: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : "Just now",
               logo: j.avatarUrl
             }));
             setPostedJobs(mappedJobs);
@@ -224,7 +224,7 @@ export function UserJobs() {
                         </div>
                       </div>
 
-                      <p className="text-[#263238]/70 mb-4">{job.description}</p>
+
 
                       <div className="flex items-center gap-3">
                         <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
