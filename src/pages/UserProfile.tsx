@@ -68,6 +68,8 @@ export function UserProfile() {
   const isOwnProfile =
     !profileUserId || (user && profileUserId.toString() === user.id.toString());
 
+  const displayUserId = profileUserId || user?.id;
+
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [companyData, setCompanyData] = useState({
@@ -699,8 +701,8 @@ export function UserProfile() {
                         )}
 
                         {/* Actions Row - Moved inside card below info */}
-                        {user && isOwnProfile && (
-                          <div className="flex flex-wrap gap-3 mt-4">
+                        <div className="flex flex-wrap gap-3 mt-4">
+                          {isOwnProfile && (
                             <Button
                               onClick={handleEdit}
                               className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition px-4 h-10"
@@ -708,23 +710,23 @@ export function UserProfile() {
                               <Edit className="w-4 h-4 mr-2" />
                               Edit Profile
                             </Button>
-                            <Link to="/post-job" className="contents">
-                              <Button
-                                className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
-                              >
-                                User Posts
-                              </Button>
-                            </Link>
-                            <Link to="/user-jobs" className="contents">
-                              <Button
-                                className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
-                              >
-                                <Briefcase className="w-4 h-4 mr-2" />
-                                User Jobs
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
+                          )}
+                          <Link to={`/post-job?userId=${displayUserId}`} className="contents">
+                            <Button
+                              className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
+                            >
+                              User Posts
+                            </Button>
+                          </Link>
+                          <Link to={`/user-jobs?userId=${displayUserId}`} className="contents">
+                            <Button
+                              className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
+                            >
+                              <Briefcase className="w-4 h-4 mr-2" />
+                              User Jobs
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
 
                       {/* Follow & Report Dropdown - Only for non-owners */}
