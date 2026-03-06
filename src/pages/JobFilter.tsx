@@ -1375,7 +1375,7 @@ export default function JobFilter() {
                 <div className="px-4 py-6">
                   {/* Post Header */}
                   <div className="flex gap-3">
-                    <Link to={`/profile/user?userId=${post.userId}`}>
+                    <Link to={`/profile/${post.userId}`}>
                       <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
@@ -1389,7 +1389,7 @@ export default function JobFilter() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Link to={`/profile/user?userId=${post.userId}`}>
+                            <Link to={`/profile/${post.userId}`}>
                               <span className="font-semibold text-[#263238] hover:underline cursor-pointer">
                                 {post.company}
                               </span>
@@ -1720,7 +1720,7 @@ export default function JobFilter() {
                   {/* Post Content */}
                   <div className="p-4 border-b border-[#263238]/10">
                     <div className="flex gap-3">
-                      <Link to="/profile/user" onClick={() => setSelectedPostForComment(null)}>
+                      <Link to={`/profile/${selectedPostForComment.userId}`} onClick={() => setSelectedPostForComment(null)}>
                         <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
                           <AvatarImage src={selectedPostForComment.avatar} />
                           <AvatarFallback className="bg-[#FF9800] text-white">
@@ -1732,7 +1732,7 @@ export default function JobFilter() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Link
-                            to="/profile/user"
+                            to={`/profile/${selectedPostForComment.userId}`}
                             onClick={() => setSelectedPostForComment(null)}
                             className="font-semibold text-[#263238] hover:underline cursor-pointer"
                           >

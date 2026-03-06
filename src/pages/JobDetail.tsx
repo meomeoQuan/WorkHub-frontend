@@ -292,7 +292,7 @@ export function JobDetail() {
                     </div>
                   )}
 
-                  <Link to={`/ profile / user ? userId = ${job.userId} `}>
+                  <Link to={`/profile/${job.userId}`}>
                     <Button variant="link" className="p-0 h-auto text-[#FF9800] hover:text-[#F57C00]">
                       View User profile →
                     </Button>
