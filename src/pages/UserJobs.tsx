@@ -9,9 +9,11 @@ import {
   DollarSign,
   Clock,
   Briefcase,
-  Zap
+  Zap,
+  Edit2,
+  Trash2
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface Job {
   id: string;
@@ -72,7 +74,35 @@ export function UserJobs() {
     };
 
     fetchJobs();
-  }, []);
+  }, [API_URL, profileUserId]);
+
+  const handleDeleteJob = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this job?")) return;
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/Job/delete-job/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        toast.success("Job deleted successfully");
+        setPostedJobs(prev => prev.filter(j => j.id !== id));
+      } else {
+        toast.error("Failed to delete job");
+      }
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast.error("An error occurred");
+    }
+  };
+
+  const handleEditJob = (id: string) => {
+    navigate(`/post-job/edit/${id}`);
+  };
 
   const typeColors: Record<string, string> = {
     'Part-time': 'bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20',
@@ -206,6 +236,27 @@ export function UserJobs() {
                             Details
                           </Button>
                         </Link>
+
+                        {!profileUserId && (
+                          <div className="ml-auto flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-[#263238]/60 hover:text-[#FF9800] hover:bg-[#FF9800]/10 rounded-xl"
+                              onClick={() => handleEditJob(job.id)}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-[#263238]/60 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                              onClick={() => handleDeleteJob(job.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

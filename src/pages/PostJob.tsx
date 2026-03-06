@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -18,21 +18,40 @@ import {
   DollarSign,
   FileText,
   Zap,
-  Lightbulb,
-  Image as ImageIcon,
-  X,
-  Upload,
   Check,
   ArrowLeft
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useEffect } from 'react';
 import { toast } from 'sonner';
-import demoImage from 'figma:asset/8bae24080ec08eff17f8f121670c17b493985d37.png';
 
 export function PostJob() {
   const navigate = useNavigate();
-  useAuth();
+  const { id } = useParams();
+  const isEditMode = !!id;
+  const token = localStorage.getItem('access_token');
+
+  const parseSalaryInput = (input: string): string => {
+    if (!input) return "";
+    let cleanInput = input.toLowerCase()
+      .replace(/,/g, "")
+      .replace(/vnd|usd|đ/g, "")
+      .trim();
+    let multiplier = 1;
+
+    if (cleanInput.includes("triệu") || cleanInput.includes("million") || cleanInput.includes("milion") || cleanInput.endsWith("tr") || cleanInput.endsWith("m")) {
+      multiplier = 1000000;
+      cleanInput = cleanInput.replace(/triệu|million|milion|tr|m/g, "").trim();
+    } else if (cleanInput.includes("tỷ") || cleanInput.includes("billion") || cleanInput.endsWith("b")) {
+      multiplier = 1000000000;
+      cleanInput = cleanInput.replace(/tỷ|billion|b/g, "").trim();
+    } else if (cleanInput.includes("nghìn") || cleanInput.includes("ngàn") || cleanInput.includes("thousand") || cleanInput.endsWith("k") || cleanInput.endsWith("ng")) {
+      multiplier = 1000;
+      cleanInput = cleanInput.replace(/nghìn|ngàn|thousand|k|ng/g, "").trim();
+    }
+
+    const numericValue = parseFloat(cleanInput);
+    if (isNaN(numericValue)) return input;
+    return (numericValue * multiplier).toString();
+  };
 
   // Removed role-based protection - all logged-in users can access
 
@@ -43,13 +62,15 @@ export function PostJob() {
     jobType: '',
     workTime: '',
     salary: '',
+    minSalary: '',
+    maxSalary: '',
+    salaryCurrency: 'VND',
+    salaryCycle: 'Month',
     description: '',
     requirements: '',
     benefits: '',
   });
 
-  const [jobImages, setJobImages] = useState<string[]>([]);
-  const [jobFiles, setJobFiles] = useState<File[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [jobTypes, setJobTypes] = useState<{ id: number, name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number, name: string }[]>([]);
@@ -81,7 +102,46 @@ export function PostJob() {
       }
     };
     fetchMetadata();
-  }, []);
+  }, [API_URL]);
+
+  useEffect(() => {
+    if (isEditMode && token) {
+      const fetchJobData = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/Job/get-job/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const job = result.data;
+              setFormData({
+                title: job.jobName || '',
+                location: job.location || '',
+                category: job.category || '',
+                jobType: job.jobType || '',
+                workTime: job.workTime || '',
+                salary: '',
+                minSalary: job.minSalary?.toString() || '',
+                maxSalary: job.maxSalary?.toString() || '',
+                salaryCurrency: job.salaryCurrency || 'VND',
+                salaryCycle: job.salaryCycle || 'Month',
+                description: job.description || '',
+                requirements: job.requirements || '',
+                benefits: job.benefits || '',
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching job data:", error);
+          toast.error("Failed to load job data");
+        }
+      };
+      fetchJobData();
+    }
+  }, [isEditMode, id, token, API_URL]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,66 +155,61 @@ export function PostJob() {
       formDataToSend.append("Category", formData.category);
       formDataToSend.append("JobType", formData.jobType);
       formDataToSend.append("WorkTime", formData.workTime);
-      formDataToSend.append("SalaryRange", formData.salary);
+      const minSalaryNumeric = parseSalaryInput(formData.minSalary);
+      const maxSalaryNumeric = formData.maxSalary ? parseSalaryInput(formData.maxSalary) : '';
+
+      formDataToSend.append("SalaryRange", `${formData.minSalary}${formData.maxSalary ? '-' + formData.maxSalary : ''} ${formData.salaryCurrency}/${formData.salaryCycle}`);
+      formDataToSend.append("MinSalary", minSalaryNumeric);
+      if (maxSalaryNumeric) formDataToSend.append("MaxSalary", maxSalaryNumeric);
+      formDataToSend.append("SalaryCurrency", formData.salaryCurrency);
+      formDataToSend.append("SalaryCycle", formData.salaryCycle);
+
       formDataToSend.append("JobDescription", formData.description);
       formDataToSend.append("Requirements", formData.requirements);
       formDataToSend.append("Benefits", formData.benefits);
 
-      jobFiles.forEach((file) => {
-        formDataToSend.append("JobImages", file);
-      });
+      const endpoint = isEditMode
+        ? `${API_URL}/api/Job/update-job/${id}`
+        : `${API_URL}/api/Job/create-job`;
 
-      const res = await fetch(`${API_URL}/api/Job/create-job`, {
-        method: "POST",
+      const method = isEditMode ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formDataToSend
       });
 
+      let result: any = {};
+      try {
+        result = await res.json();
+      } catch (e) {
+        console.error("Failed to parse error response as JSON", e);
+      }
+
       if (res.ok) {
-        const result = await res.json();
         if (result.success) {
-          setShowSuccessMessage(true);
-          setTimeout(() => {
-            navigate('/user-jobs');
-          }, 1500);
+          toast.success(isEditMode ? "Job updated successfully" : "Job posted successfully");
+          setShowSuccessMessage(!isEditMode);
+          setTimeout(() => navigate('/user-jobs'), 1500);
         } else {
-          toast.error(result.message || "Failed to post job");
+          toast.error(result.message || "Failed to submit job");
         }
       } else {
-        toast.error("An error occurred while posting the job");
+        // Handle 400 or other errors with backend message
+        const errorMessage = result.message || result.Message || `Error ${res.status}: ${res.statusText}`;
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error submitting job:", error);
-      toast.error("Failed to submit job");
+      toast.error("Failed to connect to the server. Please try again later.");
     }
   };
 
   const handleCancel = () => {
     navigate('/profile/user');
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      setJobFiles((prev) => [...prev, ...newFiles]);
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setJobImages((prevImages) => [...prevImages, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  };
-
-  const handleImageRemove = (index: number) => {
-    setJobImages((prevImages) => prevImages.filter((_, i) => i !== index));
-    setJobFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
@@ -206,8 +261,12 @@ export function PostJob() {
                 <Briefcase className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-[#263238] text-3xl">Add a New Job</h1>
-                <p className="text-[#263238]/70">Fill in the details to find perfect candidates</p>
+                <h1 className="text-[#263238] text-3xl">{isEditMode ? "Edit Job" : "Add a New Job"}</h1>
+                <p className="text-[#263238]/70">
+                  {isEditMode
+                    ? "Update your job posting to attract the best candidates"
+                    : "Fill in the details to find perfect candidates"}
+                </p>
               </div>
             </div>
           </div>
@@ -290,7 +349,7 @@ export function PostJob() {
                     </SelectTrigger>
                     <SelectContent>
                       {jobTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id.toString()}>
+                        <SelectItem key={type.id} value={type.name}>
                           {type.name}
                         </SelectItem>
                       ))}
@@ -310,19 +369,71 @@ export function PostJob() {
               </div>
 
               {/* Salary */}
-              <div>
-                <Label htmlFor="salary" className="text-[#263238] flex items-center gap-2">
+              <div className="space-y-4">
+                <Label className="text-[#263238] flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-[#4ADE80]" />
-                  Salary Range *
+                  Salary Details *
                 </Label>
-                <Input
-                  id="salary"
-                  placeholder="e.g., $15-20/hr or $500-800/week"
-                  value={formData.salary}
-                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                  className="mt-2 h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
-                  required
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minSalary" className="text-xs text-[#263238]/60">Min Amount</Label>
+                    <Input
+                      id="minSalary"
+                      type="text"
+                      placeholder="e.g., 20000 or 1 triệu"
+                      value={formData.minSalary}
+                      onChange={(e) => setFormData({ ...formData, minSalary: e.target.value })}
+                      className="h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxSalary" className="text-xs text-[#263238]/60">Max Amount (Optional)</Label>
+                    <Input
+                      id="maxSalary"
+                      type="text"
+                      placeholder="e.g., 50000 or 2M"
+                      value={formData.maxSalary}
+                      onChange={(e) => setFormData({ ...formData, maxSalary: e.target.value })}
+                      className="h-12 border-[#263238]/20 rounded-xl focus-visible:ring-[#FF9800]"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-[#263238]/60">Currency</Label>
+                    <Select
+                      value={formData.salaryCurrency}
+                      onValueChange={(value: string) => setFormData({ ...formData, salaryCurrency: value })}
+                    >
+                      <SelectTrigger className="h-12 border-[#263238]/20 rounded-xl">
+                        <SelectValue placeholder="Currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VND">VND (₫)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-[#263238]/60">Payment Cycle</Label>
+                    <Select
+                      value={formData.salaryCycle}
+                      onValueChange={(value: string) => setFormData({ ...formData, salaryCycle: value })}
+                    >
+                      <SelectTrigger className="h-12 border-[#263238]/20 rounded-xl">
+                        <SelectValue placeholder="Cycle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hour">Per Hour</SelectItem>
+                        <SelectItem value="Day">Per Day</SelectItem>
+                        <SelectItem value="Week">Per Week</SelectItem>
+                        <SelectItem value="Month">Per Month</SelectItem>
+                        <SelectItem value="Year">Per Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
               {/* Job Description */}
@@ -386,7 +497,7 @@ export function PostJob() {
                   className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white h-14 rounded-xl shadow-lg shadow-[#FF9800]/30"
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  Add Job
+                  {isEditMode ? "Update Job" : "Add Job"}
                 </Button>
                 <Button
                   type="button"

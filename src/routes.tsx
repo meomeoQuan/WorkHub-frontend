@@ -96,6 +96,10 @@ export const router = createBrowserRouter([
             path: 'create',
             element: <PostJob />,
           },
+          {
+            path: 'edit/:id',
+            element: <PostJob />,
+          },
         ],
       },
       {

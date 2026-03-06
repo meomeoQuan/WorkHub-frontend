@@ -18,7 +18,11 @@ import {
   UserPlus,
   ArrowRight,
   Send,
-  Building2
+  Building2,
+  Edit,
+  Trash2,
+  Loader2,
+  X
 } from 'lucide-react';
 import { SkeletonCommentModal } from '../components/SkeletonCommentModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,8 +39,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-// Removed unused Dialog, Button, and Textarea imports
-import { Edit, Trash2, Loader2, X } from 'lucide-react';
 import { RecruitmentSelectDTO } from '../types/DTOs/ModelDTOs/JobPostDTOs/RecruitmentSelectDTO';
 
 interface JobPost {
@@ -86,6 +88,10 @@ export function UserPosts() {
   const [isCommentModalLoading, setIsCommentModalLoading] = useState(false);
   const [followedUserIds, setFollowedUserIds] = useState<Set<number>>(new Set());
   const lastCommentRef = useRef<HTMLDivElement>(null);
+
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [isCommentSaving, setIsCommentSaving] = useState(false);
 
   const typeColors: Record<string, string> = {
     "Part-time": "bg-[#4FC3F7]/10 text-[#03A9F4] border border-[#4FC3F7]/20",
@@ -252,6 +258,55 @@ export function UserPosts() {
       }
     } catch (error) {
       console.error("Error adding comment:", error);
+      toast.error("An error occurred");
+    }
+  };
+
+  const handleUpdateComment = async (postId: string, commentId: number, content: string) => {
+    if (!content.trim()) return;
+    setIsCommentSaving(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-comment/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({ Content: content })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Comment updated");
+        setEditingCommentId(null);
+        await fetchComments(postId);
+      } else {
+        toast.error(data.message || "Failed to update comment");
+      }
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast.error("An error occurred");
+    } finally {
+      setIsCommentSaving(false);
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-comment/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Comment deleted");
+        await fetchComments(postId);
+      } else {
+        toast.error(data.message || "Failed to delete comment");
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
       toast.error("An error occurred");
     }
   };
@@ -1063,9 +1118,39 @@ export function UserPosts() {
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-2xl px-4 py-2.5">
-                                <div className="font-semibold text-[#263238] text-sm">{node.userName}</div>
-                                <p className="text-[#263238]/90 text-sm leading-relaxed mt-0.5">{node.content}</p>
+                              <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-2xl px-4 py-2.5 relative group/comment-box">
+                                <div className="flex justify-between items-start">
+                                  <div className="font-semibold text-[#263238] text-sm">{node.userName}</div>
+                                </div>
+
+                                {editingCommentId === node.id ? (
+                                  <div className="mt-2 space-y-2">
+                                    <textarea
+                                      value={editCommentText}
+                                      onChange={(e) => setEditCommentText(e.target.value)}
+                                      className="w-full p-2 text-sm bg-white border border-[#263238]/10 rounded-xl focus:ring-2 focus:ring-[#FF9800]/20 outline-none resize-none"
+                                      rows={2}
+                                      autoFocus
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={() => setEditingCommentId(null)}
+                                        className="px-3 py-1 text-xs font-medium text-[#263238]/50 hover:bg-[#263238]/5 rounded-lg transition"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => handleUpdateComment(selectedPostForComment.id, node.id, editCommentText)}
+                                        disabled={isCommentSaving || !editCommentText.trim()}
+                                        className="px-3 py-1 text-xs font-medium bg-[#FF9800] text-white rounded-lg hover:bg-[#F57C00] transition disabled:opacity-50"
+                                      >
+                                        {isCommentSaving ? "Saving..." : "Save"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-[#263238]/90 text-sm leading-relaxed mt-0.5">{node.content}</p>
+                                )}
                               </div>
                               <div className="flex items-center gap-4 mt-1 px-3 text-xs text-[#263238]/50">
                                 <button
@@ -1074,8 +1159,31 @@ export function UserPosts() {
                                 >
                                   Reply
                                 </button>
+
+                                {(Number(node.userId || node.UserId) === Number(user?.id) || user?.userType === "admin") && (
+                                  <>
+                                    <span className="text-[#263238]/20">|</span>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(node.id);
+                                        setEditCommentText(node.content);
+                                      }}
+                                      className="hover:text-[#FF9800] transition font-medium"
+                                    >
+                                      Edit
+                                    </button>
+                                    <span className="text-[#263238]/20">|</span>
+                                    <button
+                                      onClick={() => handleDeleteComment(selectedPostForComment.id, node.id)}
+                                      className="hover:text-red-500 transition font-medium text-red-500/80"
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+
                                 <span className="text-[#263238]/30">
-                                  {node.createdAt ? formatTimeAgo(node.createdAt) : ''}
+                                  {node.createdAt ? formatRelativeTime(node.createdAt) : ''}
                                 </span>
                               </div>
 
@@ -1170,9 +1278,10 @@ export function UserPosts() {
                         }
                       }}
                       disabled={!commentText.trim()}
-                      className="px-5 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium"
+                      className="p-1.5 text-[#4FC3F7] hover:bg-[#4FC3F7]/10 disabled:text-[#263238]/20 rounded-full transition"
+                      title="Post Comment"
                     >
-                      Post
+                      <Send className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

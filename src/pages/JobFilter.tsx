@@ -164,6 +164,10 @@ export default function JobFilter() {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
 
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [isCommentSaving, setIsCommentSaving] = useState(false);
+
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
 
@@ -228,7 +232,32 @@ export default function JobFilter() {
       // Add filters to params
       if (filters.jobType && filters.jobType !== 'all') params.set("jobType", filters.jobType);
       if (filters.location && filters.location !== 'all-cities') params.set("location", filters.location);
-      if (filters.salaryRange && filters.salaryRange !== 'all') params.set("salaryRange", filters.salaryRange);
+
+      if (filters.salaryRange && filters.salaryRange !== 'all') {
+        // Simple mapping for current hardcoded ranges
+        const salaryMapping: Record<string, { min?: number, max?: number, currency?: string, cycle?: string }> = {
+          "$10-20/hr": { min: 10, max: 20, currency: "USD", cycle: "Hour" },
+          "$20-40/hr": { min: 20, max: 40, currency: "USD", cycle: "Hour" },
+          "$40-60/hr": { min: 40, max: 60, currency: "USD", cycle: "Hour" },
+          "$60+/hr": { min: 60, currency: "USD", cycle: "Hour" },
+          "20k-50k VND/h": { min: 20000, max: 50000, currency: "VND", cycle: "Hour" },
+          "50k-100k VND/h": { min: 50000, max: 100000, currency: "VND", cycle: "Hour" },
+          "3M-10M VND/month": { min: 3000000, max: 10000000, currency: "VND", cycle: "Month" },
+          "10M-30M VND/month": { min: 10000000, max: 30000000, currency: "VND", cycle: "Month" },
+          "30M+ VND/month": { min: 30000000, currency: "VND", cycle: "Month" },
+        };
+
+        const map = salaryMapping[filters.salaryRange];
+        if (map) {
+          if (map.min !== undefined) params.set("minSalary", map.min.toString());
+          if (map.max !== undefined) params.set("maxSalary", map.max.toString());
+          if (map.currency) params.set("salaryCurrency", map.currency);
+          if (map.cycle) params.set("salaryCycle", map.cycle);
+        } else {
+          // Fallback to string if not in mapping
+          params.set("salaryRange", filters.salaryRange);
+        }
+      }
       if (filters.postedDate && filters.postedDate !== 'anytime') params.set("postedDate", filters.postedDate);
       if (filters.category && filters.category !== 'all') params.set("category", filters.category);
 
@@ -260,6 +289,10 @@ export default function JobFilter() {
             jobTitle: firstJob?.jobName || p.header || null,
             location: firstJob?.location || null,
             salary: firstJob?.salary || null,
+            salaryMin: firstJob?.minSalary || 0,
+            salaryMax: firstJob?.maxSalary || null,
+            salaryCurrency: firstJob?.salaryCurrency || 'VND',
+            salaryCycle: firstJob?.salaryCycle || 'Month',
             type: firstJob?.jobType || null,
             likes: p.likeCount,
             isLiked: p.isLiked,
@@ -659,6 +692,55 @@ export default function JobFilter() {
     }
   };
 
+  const handleUpdateComment = async (postId: string, commentId: number, content: string) => {
+    if (!content.trim()) return;
+    setIsCommentSaving(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-comment/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({ Content: content })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Comment updated");
+        setEditingCommentId(null);
+        await fetchComments(postId);
+      } else {
+        toast.error(data.message || "Failed to update comment");
+      }
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast.error("An error occurred");
+    } finally {
+      setIsCommentSaving(false);
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-comment/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Comment deleted");
+        await fetchComments(postId);
+      } else {
+        toast.error(data.message || "Failed to delete comment");
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("An error occurred");
+    }
+  };
+
   const handleFollowToggle = async (targetUserId: number) => {
     if (!isLoggedIn) {
       navigate("/login");
@@ -774,15 +856,30 @@ export default function JobFilter() {
     }
 
     // Salary range filter
-    if (selectedSalaryRange) {
-      if (selectedSalaryRange === "$10-20/hr") {
-        if (post.salaryMin < 10 || post.salaryMax > 20) return false;
-      } else if (selectedSalaryRange === "$20-40/hr") {
-        if (post.salaryMin < 20 || post.salaryMax > 40) return false;
-      } else if (selectedSalaryRange === "$40-60/hr") {
-        if (post.salaryMin < 40 || post.salaryMax > 60) return false;
-      } else if (selectedSalaryRange === "$60+/hr") {
-        if (post.salaryMin < 60) return false;
+    if (selectedSalaryRange && selectedSalaryRange !== 'all') {
+      const salaryMapping: Record<string, { min?: number, max?: number, currency?: string, cycle?: string }> = {
+        "$10-20/hr": { min: 10, max: 20, currency: "USD", cycle: "Hour" },
+        "$20-40/hr": { min: 20, max: 40, currency: "USD", cycle: "Hour" },
+        "$40-60/hr": { min: 40, max: 60, currency: "USD", cycle: "Hour" },
+        "$60+/hr": { min: 60, currency: "USD", cycle: "Hour" },
+        "20k-50k VND/h": { min: 20000, max: 50000, currency: "VND", cycle: "Hour" },
+        "50k-100k VND/h": { min: 50000, max: 100000, currency: "VND", cycle: "Hour" },
+        "3M-10M VND/month": { min: 3000000, max: 10000000, currency: "VND", cycle: "Month" },
+        "10M-30M VND/month": { min: 10000000, max: 30000000, currency: "VND", cycle: "Month" },
+        "30M+ VND/month": { min: 30000000, currency: "VND", cycle: "Month" },
+      };
+
+      const map = salaryMapping[selectedSalaryRange];
+      if (map) {
+        // Filter by currency first
+        if (map.currency && post.salaryCurrency !== map.currency) return false;
+        // Filter by cycle
+        if (map.cycle && post.salaryCycle !== map.cycle) return false;
+
+        // Filter by min
+        if (map.min !== undefined && post.salaryMin < map.min) return false;
+        // Filter by max
+        if (map.max !== undefined && post.salaryMax && post.salaryMax > map.max) return false;
       }
     }
 
@@ -1119,10 +1216,21 @@ export default function JobFilter() {
                       className="w-full h-9 px-3 bg-[#FAFAFA] border border-[#263238]/10 rounded-lg text-sm text-[#263238] focus:outline-none focus:border-[#FF9800]"
                     >
                       <option value="">All Salaries</option>
-                      <option value="$10-20/hr">$10-20/hr</option>
-                      <option value="$20-40/hr">$20-40/hr</option>
-                      <option value="$40-60/hr">$40-60/hr</option>
-                      <option value="$60+/hr">$60+/hr</option>
+                      <optgroup label="VND / Hour">
+                        <option value="20k-50k VND/h">20k - 50k VND/h</option>
+                        <option value="50k-100k VND/h">50k - 100k VND/h</option>
+                      </optgroup>
+                      <optgroup label="VND / Month">
+                        <option value="3M-10M VND/month">3M - 10M VND/month</option>
+                        <option value="10M-30M VND/month">10M - 30M VND/month</option>
+                        <option value="30M+ VND/month">30M+ VND/month</option>
+                      </optgroup>
+                      <optgroup label="USD / Hour">
+                        <option value="$10-20/hr">$10 - $20/hr</option>
+                        <option value="$20-40/hr">$20 - $40/hr</option>
+                        <option value="$40-60/hr">$40 - $60/hr</option>
+                        <option value="$60+/hr">$60+/hr</option>
+                      </optgroup>
                     </select>
                   </div>
                 </div>
@@ -1726,9 +1834,39 @@ export default function JobFilter() {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-2xl px-4 py-2.5">
-                                  <div className="font-semibold text-[#263238] text-sm">{node.userName}</div>
-                                  <p className="text-[#263238]/90 text-sm leading-relaxed mt-0.5">{node.content}</p>
+                                <div className="bg-[#FAFAFA] border border-[#263238]/10 rounded-2xl px-4 py-2.5 relative group/comment-box">
+                                  <div className="flex justify-between items-start">
+                                    <div className="font-semibold text-[#263238] text-sm">{node.userName}</div>
+                                  </div>
+
+                                  {editingCommentId === node.id ? (
+                                    <div className="mt-2 space-y-2">
+                                      <textarea
+                                        value={editCommentText}
+                                        onChange={(e) => setEditCommentText(e.target.value)}
+                                        className="w-full p-2 text-sm bg-white border border-[#263238]/10 rounded-xl focus:ring-2 focus:ring-[#FF9800]/20 outline-none resize-none"
+                                        rows={2}
+                                        autoFocus
+                                      />
+                                      <div className="flex justify-end gap-2">
+                                        <button
+                                          onClick={() => setEditingCommentId(null)}
+                                          className="px-3 py-1 text-xs font-medium text-[#263238]/50 hover:bg-[#263238]/5 rounded-lg transition"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={() => handleUpdateComment(selectedPostForComment.id, node.id, editCommentText)}
+                                          disabled={isCommentSaving || !editCommentText.trim()}
+                                          className="px-3 py-1 text-xs font-medium bg-[#FF9800] text-white rounded-lg hover:bg-[#F57C00] transition disabled:opacity-50"
+                                        >
+                                          {isCommentSaving ? "Saving..." : "Save"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-[#263238]/90 text-sm leading-relaxed mt-0.5">{node.content}</p>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4 mt-1 px-3 text-xs text-[#263238]/50">
                                   <button
@@ -1737,6 +1875,29 @@ export default function JobFilter() {
                                   >
                                     Reply
                                   </button>
+
+                                  {(Number(node.userId || node.UserId) === Number(user?.id) || user?.userType === "admin") && (
+                                    <>
+                                      <span className="text-[#263238]/20">|</span>
+                                      <button
+                                        onClick={() => {
+                                          setEditingCommentId(node.id);
+                                          setEditCommentText(node.content);
+                                        }}
+                                        className="hover:text-[#FF9800] transition font-medium"
+                                      >
+                                        Edit
+                                      </button>
+                                      <span className="text-[#263238]/20">|</span>
+                                      <button
+                                        onClick={() => handleDeleteComment(selectedPostForComment.id, node.id)}
+                                        className="hover:text-red-500 transition font-medium text-red-500/80"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+
                                   <span className="text-[#263238]/30">
                                     {node.createdAt ? formatRelativeTime(node.createdAt) : ''}
                                   </span>
@@ -1833,9 +1994,10 @@ export default function JobFilter() {
                           }
                         }}
                         disabled={!commentText.trim()}
-                        className="px-5 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium"
+                        className="p-1.5 text-[#4FC3F7] hover:bg-[#4FC3F7]/10 disabled:text-[#263238]/20 rounded-full transition"
+                        title="Post Comment"
                       >
-                        Post
+                        <Send className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
