@@ -18,7 +18,11 @@ import {
   UserPlus,
   ArrowRight,
   Send,
-  Building2
+  Building2,
+  Edit,
+  Trash2,
+  Loader2,
+  X
 } from 'lucide-react';
 import { SkeletonCommentModal } from '../components/SkeletonCommentModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,8 +39,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-// Removed unused Dialog, Button, and Textarea imports
-import { Edit, Trash2, Loader2, X } from 'lucide-react';
 import { RecruitmentSelectDTO } from '../types/DTOs/ModelDTOs/JobPostDTOs/RecruitmentSelectDTO';
 
 interface JobPost {
@@ -1276,10 +1278,10 @@ export function UserPosts() {
                         }
                       }}
                       disabled={!commentText.trim()}
-                      className="px-5 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium flex items-center gap-2"
+                      className="p-1.5 text-[#4FC3F7] hover:bg-[#4FC3F7]/10 disabled:text-[#263238]/20 rounded-full transition"
+                      title="Post Comment"
                     >
                       <Send className="w-4 h-4" />
-                      Post
                     </button>
                   </div>
                 </div>

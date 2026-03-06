@@ -14,11 +14,13 @@ import {
   MapPin,
   MessageCircle,
   Link as LinkIcon,
+  MoreHorizontal,
   Search,
   ArrowRight,
   Send,
   SlidersHorizontal,
   Star,
+  Trash2,
   UserCheck,
   UserPlus,
   X
@@ -31,12 +33,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
 import { useNavigate, useSearchParams, Link } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { SkeletonFeedPostGrid } from "../components/SkeletonFeedPost";
@@ -1998,10 +1994,10 @@ export default function JobFilter() {
                           }
                         }}
                         disabled={!commentText.trim()}
-                        className="px-5 py-2 bg-[#FF9800] hover:bg-[#F57C00] disabled:bg-[#263238]/10 disabled:text-[#263238]/30 text-white rounded-full transition text-sm font-medium flex items-center gap-2"
+                        className="p-1.5 text-[#4FC3F7] hover:bg-[#4FC3F7]/10 disabled:text-[#263238]/20 rounded-full transition"
+                        title="Post Comment"
                       >
                         <Send className="w-4 h-4" />
-                        Post
                       </button>
                     </div>
                   </div>
