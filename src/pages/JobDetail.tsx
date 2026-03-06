@@ -6,11 +6,7 @@ import {
   DollarSign,
   Clock,
   Zap,
-  Bookmark,
-  Share2,
-  CheckCircle,
   ArrowLeft,
-  Loader2,
   Calendar,
   Briefcase,
   Users,
@@ -244,14 +240,14 @@ export function JobDetail() {
                   <Zap className="w-5 h-5 mr-2" />
                   Quick Apply Now
                 </Button>
-                <Button
+                {/* <Button
                   variant="outline"
                   onClick={() => !isLoggedIn && navigate('/login')}
                   className="w-full mb-6 h-12 border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl"
                 >
                   <Bookmark className="w-4 h-4 mr-2" />
                   Save Job
-                </Button>
+                </Button> */}
 
                 <Separator className="my-6 bg-[#263238]/10" />
 
@@ -302,7 +298,7 @@ export function JobDetail() {
                 <Separator className="my-6 bg-[#263238]/10" />
 
                 {/* Quick Stats */}
-                <div className="p-4 bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 rounded-xl">
+                {/* <div className="p-4 bg-gradient-to-br from-[#FF9800]/10 to-[#4FC3F7]/10 rounded-xl">
                   <p className="text-xs text-[#263238]/60 mb-2">Application Status</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-[#263238]/10 rounded-full h-2 overflow-hidden">
@@ -310,7 +306,7 @@ export function JobDetail() {
                     </div>
                     <span className="text-xs text-[#263238]">45 applied</span>
                   </div>
-                </div>
+                </div> */}
               </Card>
             )}
           </div>
