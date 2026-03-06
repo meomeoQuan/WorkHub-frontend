@@ -155,21 +155,33 @@ export function ApplyJob() {
         body: submitData
       });
 
-      const data: ApiResponse<any> = await response.json();
+      let data: ApiResponse<any> = { success: false, message: '', data: null, statusCode: 0 };
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Failed to parse error response as JSON", e);
+      }
 
-      if (data.success) {
-        setSubmitted(true);
-        toast.success("Application submitted successfully!");
-        setTimeout(() => {
-          navigate('/my-applications');
-        }, 3000);
+      if (response.ok) {
+        if (data.success) {
+          setSubmitted(true);
+          toast.success("Application submitted successfully!");
+          setTimeout(() => {
+            navigate('/my-applications');
+          }, 3000);
+        } else {
+          toast.error(data.message || "Failed to submit application");
+        }
       } else {
-        toast.error(data.message || "Failed to submit application");
+        // Handle 400 or other errors with backend message
+        const errorMessage = data.message || (data as any).Message || `Error ${response.status}: ${response.statusText}`;
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error submitting application:', error);
-      toast.error("An error occurred. Please try again.");
-    } finally {
+      toast.error('Failed to connect to the server. Please try again later.');
+    }
+    finally {
       setIsSubmitting(false);
     }
   };

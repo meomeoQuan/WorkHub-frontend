@@ -182,25 +182,29 @@ export function PostJob() {
         body: formDataToSend
       });
 
+      let result: any = {};
+      try {
+        result = await res.json();
+      } catch (e) {
+        console.error("Failed to parse error response as JSON", e);
+      }
+
       if (res.ok) {
-        const result = await res.json();
         if (result.success) {
           toast.success(isEditMode ? "Job updated successfully" : "Job posted successfully");
-          setShowSuccessMessage(!isEditMode); // Show overlay only for new posts if desired, or always
-          if (isEditMode) {
-            setTimeout(() => navigate('/user-jobs'), 1500);
-          } else {
-            setTimeout(() => navigate('/user-jobs'), 1500);
-          }
+          setShowSuccessMessage(!isEditMode);
+          setTimeout(() => navigate('/user-jobs'), 1500);
         } else {
           toast.error(result.message || "Failed to submit job");
         }
       } else {
-        toast.error("An error occurred while submitting the job");
+        // Handle 400 or other errors with backend message
+        const errorMessage = result.message || result.Message || `Error ${res.status}: ${res.statusText}`;
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error submitting job:", error);
-      toast.error("Failed to submit job");
+      toast.error("Failed to connect to the server. Please try again later.");
     }
   };
 
