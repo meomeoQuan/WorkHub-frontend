@@ -19,11 +19,9 @@ import {
   FileText,
   Zap,
   Check,
-  ArrowLeft,
-  Share2
+  ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Switch } from '../components/ui/switch';
 
 export function PostJob() {
   const navigate = useNavigate();
@@ -73,7 +71,6 @@ export function PostJob() {
     benefits: '',
   });
 
-  const [createPost, setCreatePost] = useState(true);
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [jobTypes, setJobTypes] = useState<{ id: number, name: string }[]>([]);
@@ -171,7 +168,6 @@ export function PostJob() {
       formDataToSend.append("JobDescription", formData.description);
       formDataToSend.append("Requirements", formData.requirements);
       formDataToSend.append("Benefits", formData.benefits);
-      formDataToSend.append("CreatePost", String(createPost));
 
       const endpoint = isEditMode
         ? `${API_URL}/api/Job/update-job/${id}`
@@ -495,29 +491,6 @@ export function PostJob() {
                 </p>
               </div>
 
-              {/* Create Post Toggle */}
-              {!isEditMode && (
-                <div className="flex items-center justify-between p-4 bg-[#4FC3F7]/10 rounded-xl border border-[#4FC3F7]/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#4FC3F7]/20 flex items-center justify-center">
-                      <Share2 className="w-5 h-5 text-[#4FC3F7]" />
-                    </div>
-                    <div>
-                      <Label htmlFor="create-post" className="text-[#263238] font-medium cursor-pointer">
-                        Create social post
-                      </Label>
-                      <p className="text-xs text-[#263238]/60">
-                        Share this job immediately to the main feed
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    id="create-post"
-                    checked={createPost}
-                    onCheckedChange={setCreatePost}
-                  />
-                </div>
-              )}
 
               {/* Form Actions */}
               <div className="flex gap-4 pt-4">
