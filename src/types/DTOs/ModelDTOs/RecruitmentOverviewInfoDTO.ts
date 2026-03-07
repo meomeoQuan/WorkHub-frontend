@@ -11,4 +11,5 @@ export interface RecruitmentOverviewInfoDTO {
     userName: string;
     avatar?: string;
     createdAt: string;
+    postId?: number;
 }
