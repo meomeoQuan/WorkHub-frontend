@@ -232,7 +232,8 @@ export function AdminUserProfile() {
   };
 
   const getPlanBadge = (plan: PaymentPlan) => {
-    const styles: Record<string, string> = {
+    const styles = {
+      diamond: 'bg-cyan-500/20 text-cyan-400 border-cyan-500',
       gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500',
       silver: 'bg-gray-400/20 text-gray-300 border-gray-400',
       free: 'bg-slate-500/20 text-slate-300 border-slate-500',
@@ -241,7 +242,7 @@ export function AdminUserProfile() {
   };
 
   const getPlanIcon = (plan: PaymentPlan) => {
-    if (plan === 'gold') {
+    if (plan === 'diamond' || plan === 'gold') {
       return <Crown className="w-4 h-4" />;
     }
     return null;
