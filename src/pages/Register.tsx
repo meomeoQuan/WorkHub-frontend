@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -43,23 +44,32 @@ export function Register() {
 
     console.log("Register payload:", payload);
 
-    const res = await fetch(`${API}/api/auth/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (!res.ok) {
-      console.error("Register failed:", result);
-      return;
+      if (!res.ok) {
+        // Show error from backend (e.g. "Email already exists")
+        const errorMsg = result.errors || result.message || "Registration failed. Please try again.";
+        toast.error(errorMsg);
+        console.error("Register failed:", result);
+        return;
+      }
+
+      toast.success("Account created! Please check your email to verify.");
+      // success → go confirm email
+      navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
+    } catch (err) {
+      toast.error("Unable to connect to server. Please try again later.");
+      console.error("Register error:", err);
     }
-
-    // success → go confirm email
-    navigate(`/email-confirmation?email=${encodeURIComponent(userEmail)}`);
   };
 
 
