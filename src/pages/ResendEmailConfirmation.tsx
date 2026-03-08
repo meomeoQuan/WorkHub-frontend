@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -14,32 +15,35 @@ export function ResendEmailConfirmation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const response = await fetch(`${API}/api/auth/resend-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-
-    console.log("Resend email response:", response);
-    if (!response.ok) {
-      // Handle error (e.g., show a notification)
-      setIsSubmitting(false);
-      return;
-    }
-
-
     setIsSubmitting(true);
 
-    // TODO: Implement actual email resend logic
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await fetch(`${API}/api/auth/resend-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+      console.log("Resend email response:", result);
+
+      if (!response.ok) {
+        const errorMsg = result.errors || result.message || "Failed to resend email. Please try again.";
+        toast.error(errorMsg);
+        setIsSubmitting(false);
+        return;
+      }
+
+      toast.success("Verification email sent! Check your inbox.");
       // Redirect to email confirmation page with the email parameter
       navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
-    }, 1000);
+    } catch (err) {
+      console.error("Resend email error:", err);
+      toast.error("Unable to connect to server. Please try again later.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
