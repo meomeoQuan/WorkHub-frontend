@@ -71,6 +71,7 @@ export function PostJob() {
     benefits: '',
   });
 
+
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [jobTypes, setJobTypes] = useState<{ id: number, name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: number, name: string }[]>([]);
@@ -489,6 +490,7 @@ export function PostJob() {
                   Enter each benefit on a new line
                 </p>
               </div>
+
 
               {/* Form Actions */}
               <div className="flex gap-4 pt-4">

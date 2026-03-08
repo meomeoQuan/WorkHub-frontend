@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 interface JobCardProps {
   id: string;
+  companyId?: string;
   title: string;
   company: string;
   location: string;
@@ -19,6 +20,7 @@ interface JobCardProps {
 
 export function JobCard({
   id,
+  companyId,
   title,
   company,
   location,
@@ -86,7 +88,13 @@ export function JobCard({
                 {title}
               </h3>
               <p className="text-sm text-[#263238]/70">
-                {company}
+                {companyId ? (
+                  <Link to={`/profile/${companyId}`} className="hover:text-[#FF9800] transition-colors">
+                    {company}
+                  </Link>
+                ) : (
+                  company
+                )}
               </p>
             </div>
             <Badge className={`${typeColors[type as keyof typeof typeColors] || 'bg-[#263238]/10 text-[#263238]'} rounded-xl px-3 py-1 flex items-center gap-1`}>

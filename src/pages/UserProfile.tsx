@@ -66,7 +66,9 @@ export function UserProfile() {
 
   // Determine if this is the logged-in user's own profile
   const isOwnProfile =
-    !profileUserId || (user && Number(profileUserId) === user.id);
+    !profileUserId || (user && profileUserId.toString() === user.id.toString());
+
+  const displayUserId = profileUserId || user?.id;
 
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -623,6 +625,24 @@ export function UserProfile() {
                         Go to Google Maps → Share → Embed a map → Copy the URL inside src="..."
                       </p>
                     </div>
+                    {/* Save/Cancel Buttons for Edit Mode */}
+                    <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-[#263238]/5">
+                      <Button
+                        onClick={handleSave}
+                        className="bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-xl shadow-md hover:shadow-lg transition px-6 h-10 font-medium"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </Button>
+                      <Button
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl px-6 h-10 font-medium"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -631,206 +651,164 @@ export function UserProfile() {
                         <h1 className="text-[#263238] mb-2">
                           {companyData.name}
                         </h1>
-                        {(companyData.industry || credibilityRating > 0) && (
-                          <div className="flex items-center gap-3 mb-2">
-                            {companyData.industry && (
-                              <Badge className="bg-[#4FC3F7]/20 text-[#4FC3F7] border-[#4FC3F7]/30 rounded-xl">
-                                {companyData.industry}
-                              </Badge>
-                            )}
-                            {/* Credibility Rating */}
-                            {credibilityRating > 0 && (
-                              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-xl">
-                                <div className="flex items-center gap-0.5">
-                                  {[...Array(5)].map((_, index) => {
-                                    const starValue = index + 1;
-                                    const isFilled =
-                                      starValue <=
-                                      Math.floor(credibilityRating);
-                                    const isHalf =
-                                      !isFilled &&
-                                      starValue ===
-                                      Math.ceil(
-                                        credibilityRating,
-                                      ) &&
-                                      credibilityRating % 1 !== 0;
 
-                                    return (
-                                      <div
-                                        key={index}
-                                        className="relative"
-                                      >
-                                        {isHalf ? (
-                                          <>
-                                            <Star className="w-4 h-4 text-[#FF9800]" />
-                                            <Star
-                                              className="w-4 h-4 text-[#FF9800] fill-[#FF9800] absolute top-0 left-0"
-                                              style={{
-                                                clipPath:
-                                                  "inset(0 50% 0 0)",
-                                              }}
-                                            />
-                                          </>
-                                        ) : (
-                                          <Star
-                                            className={`w-4 h-4 text-[#FF9800] ${isFilled ? "fill-[#FF9800]" : ""}`}
-                                          />
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <span className="text-sm font-semibold text-[#FF9800] ml-1">
-                                  {credibilityRating.toFixed(1)}
-                                </span>
-                              </div>
-                            )}
+                        {/* Credibility Rating - Moved below name as in image */}
+                        {credibilityRating > 0 && (
+                          <div className="flex items-center gap-1.5 mb-4">
+                            <div className="flex items-center gap-0.5">
+                              {[...Array(5)].map((_, index) => {
+                                const starValue = index + 1;
+                                const isFilled = starValue <= Math.floor(credibilityRating);
+                                const isHalf = !isFilled && starValue === Math.ceil(credibilityRating) && credibilityRating % 1 !== 0;
+
+                                return (
+                                  <div key={index} className="relative">
+                                    {isHalf ? (
+                                      <>
+                                        <Star className="w-4 h-4 text-[#FF9800]" />
+                                        <Star
+                                          className="w-4 h-4 text-[#FF9800] fill-[#FF9800] absolute top-0 left-0"
+                                          style={{ clipPath: "inset(0 50% 0 0)" }}
+                                        />
+                                      </>
+                                    ) : (
+                                      <Star className={`w-4 h-4 text-[#FF9800] ${isFilled ? "fill-[#FF9800]" : ""}`} />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <span className="text-sm font-semibold text-[#FF9800]/60 ml-1">
+                              {credibilityRating.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Email Info - Directly below rating as in image */}
+                        {companyData.email && (
+                          <div className={`flex items-center gap-2 text-[#263238]/70 ${companyData.phone ? "mb-2" : "mb-6"}`}>
+                            <Mail className="w-4 h-4 text-[#FF9800]" />
+                            <span>{companyData.email}</span>
+                          </div>
+                        )}
+
+                        {/* Phone Info - Below Email as in visitor image */}
+                        {companyData.phone && (
+                          <div className="flex items-center gap-2 text-[#263238]/70 mb-6">
+                            <Phone className="w-4 h-4 text-[#FF9800]" />
+                            <span>{companyData.phone}</span>
+                          </div>
+                        )}
+
+                        {/* Actions Row - Moved inside card below info */}
+                        <div className="flex flex-wrap gap-3 mt-4">
+                          {isOwnProfile && (
+                            <Button
+                              onClick={handleEdit}
+                              className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition px-4 h-10"
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Profile
+                            </Button>
+                          )}
+                          <Link to={`/post-job?userId=${displayUserId}`} className="contents">
+                            <Button
+                              className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
+                            >
+                              User Posts
+                            </Button>
+                          </Link>
+                          <Link to={`/user-jobs?userId=${displayUserId}`} className="contents">
+                            <Button
+                              className="bg-white border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] text-[#263238]/70 rounded-xl shadow-sm hover:shadow-md transition px-4 h-10"
+                            >
+                              <Briefcase className="w-4 h-4 mr-2" />
+                              User Jobs
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Follow & Report Dropdown - Only for non-owners */}
+                      {!isOwnProfile && (
+                        <div className="flex flex-col items-end gap-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="rounded-full w-10 h-10 border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] transition-colors"
+                              >
+                                <MoreHorizontal className="w-5 h-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52 rounded-2xl border-[#263238]/10 shadow-2xl p-1.5">
+                              <DropdownMenuItem
+                                onClick={handleFollowToggle}
+                                className={`cursor-pointer mb-1 py-3 px-4 rounded-xl transition-colors ${isFollowing
+                                  ? "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
+                                  : "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
+                                  }`}
+                              >
+                                {isFollowing ? (
+                                  <>
+                                    <UserCheck className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
+                                    Unfollow
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserPlus className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
+                                    Follow
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={handleReport}
+                                className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
+                              >
+                                <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
+                                Report
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isOwnProfile && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mt-4">
+                        {companyData.location && (
+                          <div className="flex items-center gap-2 text-[#263238]/70">
+                            <MapPin className="w-4 h-4 text-[#FF9800]" />
+                            <span>{companyData.location}</span>
+                          </div>
+                        )}
+                        {companyData.website && (
+                          <div className="flex items-center gap-2 text-[#263238]/70">
+                            <Globe className="w-4 h-4 text-[#FF9800]" />
+                            <span>{companyData.website}</span>
+                          </div>
+                        )}
+                        {companyData.employees && (
+                          <div className="flex items-center gap-2 text-[#263238]/70">
+                            <Users className="w-4 h-4 text-[#FF9800]" />
+                            <span>
+                              {companyData.employees} employees
+                            </span>
+                          </div>
+                        )}
+                        {companyData.founded && (
+                          <div className="flex items-center gap-2 text-[#263238]/70">
+                            <Building2 className="w-4 h-4 text-[#FF9800]" />
+                            <span>
+                              Founded {companyData.founded}
+                            </span>
                           </div>
                         )}
                       </div>
-
-                      {/* Follow & Report Dropdown */}
-                      {!isOwnProfile && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="rounded-full w-10 h-10 border-2 border-[#263238]/10 hover:border-[#FF9800] hover:text-[#FF9800] transition-colors"
-                            >
-                              <MoreHorizontal className="w-5 h-5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52 rounded-2xl border-[#263238]/10 shadow-2xl p-1.5">
-                            <DropdownMenuItem
-                              onClick={handleFollowToggle}
-                              className={`cursor-pointer mb-1 py-3 px-4 rounded-xl transition-colors ${isFollowing
-                                  ? "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
-                                  : "text-[#263238] hover:bg-[#FF9800]/10 hover:text-[#FF9800] focus:bg-[#FF9800]/10 focus:text-[#FF9800] group"
-                                }`}
-                            >
-                              {isFollowing ? (
-                                <>
-                                  <UserCheck className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
-                                  Unfollow
-                                </>
-                              ) : (
-                                <>
-                                  <UserPlus className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-[#FF9800] group-focus:text-[#FF9800] transition-colors" />
-                                  Follow
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={handleReport}
-                              className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
-                            >
-                              <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
-                              Report
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mt-4">
-                      {companyData.email && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <Mail className="w-4 h-4 text-[#FF9800]" />
-                          <span>{companyData.email}</span>
-                        </div>
-                      )}
-                      {companyData.phone && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <Phone className="w-4 h-4 text-[#FF9800]" />
-                          <span>{companyData.phone}</span>
-                        </div>
-                      )}
-                      {companyData.location && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <MapPin className="w-4 h-4 text-[#FF9800]" />
-                          <span>{companyData.location}</span>
-                        </div>
-                      )}
-                      {companyData.website && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <Globe className="w-4 h-4 text-[#FF9800]" />
-                          <span>{companyData.website}</span>
-                        </div>
-                      )}
-                      {companyData.employees && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <Users className="w-4 h-4 text-[#FF9800]" />
-                          <span>
-                            {companyData.employees} employees
-                          </span>
-                        </div>
-                      )}
-                      {companyData.founded && (
-                        <div className="flex items-center gap-2 text-[#263238]/70">
-                          <Building2 className="w-4 h-4 text-[#FF9800]" />
-                          <span>
-                            Founded {companyData.founded}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </>
                 )}
-
-                <div className="flex flex-wrap gap-3 mt-6">
-                  {isEditing ? (
-                    <>
-                      <Button
-                        onClick={handleSave}
-                        className="bg-[#4ADE80] hover:bg-[#22C55E] text-white rounded-xl shadow-md hover:shadow-lg transition"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </Button>
-                      <Button
-                        onClick={handleCancel}
-                        variant="outline"
-                        className="border-2 border-[#263238]/20 hover:border-[#FF9800] hover:text-[#FF9800] rounded-xl"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {/* Only show Edit Profile and View Applications for logged-in user's own profile */}
-                      {user && isOwnProfile && (
-                        <>
-                          <Button
-                            onClick={handleEdit}
-                            className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition"
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit Profile
-                          </Button>
-                        </>
-                      )}
-                      {/* Show User Posts and User Jobs navigation for all profiles */}
-                      <Link to={isOwnProfile ? '/post-job' : `/post-job?userId=${profileUserId}`} className="contents">
-                        <Button
-                          className="bg-white border-2 border-[#263238]/20 hover:border-[#4ADE80] hover:text-[#4ADE80] text-[#263238]/70 rounded-xl shadow-md hover:shadow-lg transition"
-                        >
-                          User Posts
-                        </Button>
-                      </Link>
-                      <Link to={isOwnProfile ? '/user-jobs' : `/user-jobs?userId=${profileUserId}`} className="contents">
-                        <Button
-                          variant="outline"
-                          className="border-2 border-[#263238]/20 hover:border-[#4FC3F7] hover:text-[#4FC3F7] text-[#263238]/70 rounded-xl transition"
-                        >
-                          <Briefcase className="w-4 h-4 mr-2" />
-                          User Jobs
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                </div>
               </div>
             </div>
           </Card>

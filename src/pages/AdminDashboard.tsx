@@ -1,893 +1,852 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import $ from 'jquery';
+import 'datatables.net-dt';
+import 'datatables.net-dt/css/dataTables.dataTables.min.css';
 import {
   DollarSign,
   Users,
   Briefcase,
-  TrendingUp,
   Crown,
   Shield,
-  Settings,
-  BarChart3,
-  UserCog,
   FileText,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Ban,
-  Unlock,
+  BarChart3,
   LogOut,
   Home,
   Activity,
-  Database,
-  Zap,
-  Target,
-  Layers,
-  Terminal,
-  Lock,
-  Star,
+  ShoppingCart,
+  FolderOpen,
+  Plus,
+  Trash2,
+  Save,
+  ChevronLeft,
+  AlertTriangle,
+  Edit,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import type { PaymentPlan } from '../contexts/AuthContext';
+import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
-// Mock data for admin analytics
-const revenueData = {
-  total: 45678.50,
-  monthly: 12340.00,
-  growth: 23.5,
-  transactions: 156,
-  daily: [1200, 1900, 1500, 2200, 1800, 2400, 2100],
-  monthly_data: [8500, 9200, 10100, 9800, 11200, 10500, 11800, 12100, 11500, 12800, 11900, 12340],
-};
+// ─── Interfaces ──────────────────────────────────────────────
+interface UserRow {
+  id: number;
+  email: string;
+  fullName: string;
+  userType: 'user' | 'admin';
+  paymentPlan: PaymentPlan;
+  status: 'active' | 'suspended';
+  revenue: number;
+  joinDate: string;
+}
 
-const userStats = {
-  total: 2456,
-  active: 1834,
-  premium: 423,
-  newThisMonth: 145,
-  growth: [1850, 1920, 2010, 2100, 2180, 2250, 2320, 2380, 2420, 2456],
-};
+interface Order {
+  id: number;
+  userId: number;
+  userName: string;
+  plan: string;
+  amount: number;
+  status: 'Completed' | 'Pending' | 'Failed';
+  date: string;
+}
 
-const jobStats = {
-  total: 1234,
-  active: 987,
-  filled: 247,
-  pendingApproval: 15,
-};
+interface Post {
+  id: number;
+  userId: number;
+  userName: string;
+  title: string;
+  category: string;
+  status: 'Published' | 'Pending' | 'Rejected';
+  date: string;
+}
 
-// Mock user accounts data
-const mockUsers = [
-  {
-    id: '1',
-    email: 'jobseeker@gmail.com',
-    fullName: 'John Doe',
-    userType: 'user' as const,
-    paymentPlan: 'free' as PaymentPlan,
-    status: 'active' as const,
-    revenue: 0,
-    joinDate: '2024-01-15',
-    lastActive: '2024-02-08',
-    rating: 4.2,
-  },
-  {
-    id: '2',
-    email: 'employer@gmail.com',
-    fullName: 'Company HR',
-    userType: 'user' as const,
-    paymentPlan: 'gold' as PaymentPlan,
-    status: 'active' as const,
-    revenue: 19.99,
-    joinDate: '2024-01-10',
-    lastActive: '2024-02-09',
-    rating: 4.9,
-  },
-  {
-    id: '3',
-    email: 'sarah.wilson@gmail.com',
-    fullName: 'Sarah Wilson',
-    userType: 'user' as const,
-    paymentPlan: 'silver' as PaymentPlan,
-    status: 'active' as const,
-    revenue: 9.99,
-    joinDate: '2024-01-20',
-    lastActive: '2024-02-07',
-    rating: 4.5,
-  },
-  {
-    id: '4',
-    email: 'mike.tech@gmail.com',
-    fullName: 'Mike Johnson',
-    userType: 'user' as const,
-    paymentPlan: 'gold' as PaymentPlan,
-    status: 'active' as const,
-    revenue: 49.99,
-    joinDate: '2024-01-05',
-    lastActive: '2024-02-09',
-    rating: 4.8,
-  },
-  {
-    id: '5',
-    email: 'lisa.marketing@gmail.com',
-    fullName: 'Lisa Anderson',
-    userType: 'user' as const,
-    paymentPlan: 'gold' as PaymentPlan,
-    status: 'suspended' as const,
-    revenue: 19.99,
-    joinDate: '2024-02-01',
-    lastActive: '2024-02-05',
-    rating: 3.8,
-  },
-  {
-    id: '6',
-    email: 'david.smith@gmail.com',
-    fullName: 'David Smith',
-    userType: 'user' as const,
-    paymentPlan: 'free' as PaymentPlan,
-    status: 'active' as const,
-    revenue: 0,
-    joinDate: '2024-02-03',
-    lastActive: '2024-02-09',
-    rating: 4.3,
-  },
+interface Category {
+  id: number;
+  name: string;
+  count: number;
+}
+
+interface JobType {
+  id: number;
+  name: string;
+  count: number;
+}
+
+interface ReportProblem {
+  id: number;
+  userId: number;
+  userName?: string;
+  userEmail?: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+// ─── Mock Data ───────────────────────────────────────────────
+const mockUsers: UserRow[] = [
+  { id: 1, email: 'john@example.com', fullName: 'John Doe', userType: 'user', paymentPlan: 'free', status: 'active', revenue: 0, joinDate: '2024-01-15' },
+  { id: 2, email: 'jane@example.com', fullName: 'Jane Smith', userType: 'user', paymentPlan: 'gold', status: 'active', revenue: 199.9, joinDate: '2024-02-10' },
+  { id: 3, email: 'admin@workhub.com', fullName: 'System Admin', userType: 'admin', paymentPlan: 'gold', status: 'active', revenue: 0, joinDate: '2023-12-01' },
+  { id: 4, email: 'bob@example.com', fullName: 'Bob Wilson', userType: 'user', paymentPlan: 'silver', status: 'active', revenue: 49.9, joinDate: '2024-01-20' },
+  { id: 5, email: 'alice@example.com', fullName: 'Alice Brown', userType: 'user', paymentPlan: 'diamond', status: 'suspended', revenue: 399.9, joinDate: '2024-03-01' },
 ];
 
+const mockOrders: Order[] = [
+  { id: 101, userId: 2, userName: 'Jane Smith', plan: 'Gold Plan', amount: 19.99, status: 'Completed', date: '2024-03-01' },
+  { id: 102, userId: 1, userName: 'John Doe', plan: 'Silver Plan', amount: 9.99, status: 'Pending', date: '2024-03-05' },
+  { id: 103, userId: 4, userName: 'Bob Wilson', plan: 'Silver Plan', amount: 9.99, status: 'Completed', date: '2024-03-06' },
+  { id: 104, userId: 5, userName: 'Alice Brown', plan: 'Diamond Plan', amount: 49.99, status: 'Failed', date: '2024-03-07' },
+];
+
+const mockPosts: Post[] = [
+  { id: 201, userId: 2, userName: 'Jane Smith', title: 'Senior Developer Needed', category: 'Technology', status: 'Published', date: '2024-03-02' },
+  { id: 202, userId: 1, userName: 'John Doe', title: 'Logo Design Project', category: 'Design', status: 'Pending', date: '2024-03-04' },
+  { id: 203, userId: 4, userName: 'Bob Wilson', title: 'Marketing Campaign Manager', category: 'Marketing', status: 'Published', date: '2024-03-05' },
+];
+
+const mockCategories: Category[] = [
+  { id: 1, name: 'Technology', count: 124 },
+  { id: 2, name: 'Design', count: 85 },
+  { id: 3, name: 'Marketing', count: 67 },
+  { id: 4, name: 'Finance', count: 42 },
+];
+
+const mockJobTypes: JobType[] = [
+  { id: 1, name: 'Full-time', count: 450 },
+  { id: 2, name: 'Part-time', count: 210 },
+  { id: 3, name: 'Freelance', count: 180 },
+  { id: 4, name: 'Internship', count: 95 },
+];
+
+const mockReportProblems: ReportProblem[] = [
+  { id: 1, userId: 1, userName: 'John Doe', userEmail: 'john@example.com', category: 'Technical', subject: 'Không thể tải ảnh đại diện', description: 'Khi tôi tải ảnh JPG, trang bị chuyển hướng đến màn hình lỗi.', status: 'Open', priority: 'Medium', createdAt: '2024-03-05' },
+  { id: 2, userId: 2, userName: 'Jane Smith', userEmail: 'jane@example.com', category: 'Account', subject: 'Liên kết đặt lại mật khẩu không hoạt động', description: 'Tôi đã yêu cầu đặt lại mật khẩu nhưng liên kết dẫn đến trang 404.', status: 'In Progress', priority: 'High', createdAt: '2024-03-04' },
+  { id: 3, userId: 4, userName: 'Bob Wilson', userEmail: 'bob@example.com', category: 'Payment', subject: 'Thanh toán không thành công', description: 'Thẻ tín dụng bị từ chối mặc dù có đủ số dư.', status: 'Open', priority: 'Critical', createdAt: '2024-03-06' },
+];
+
+type MenuKey = 'analytics' | 'users' | 'orders' | 'posts' | 'categories' | 'jobtypes' | 'reports';
+
+// ─── Badge helpers (return HTML strings for DataTables) ──────
+function planBadgeHtml(plan: string) {
+  const map: Record<string, string> = {
+    free: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    silver: 'bg-gray-400/20 text-gray-300 border-gray-400/30',
+    gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    diamond: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  };
+  const cls = map[plan] || map.free;
+  return `<span class="px-2 py-1 rounded-full text-xs font-bold border ${cls}">${plan.toUpperCase()}</span>`;
+}
+
+function statusBadgeHtml(status: string) {
+  const s = status.toLowerCase();
+  let cls = 'bg-purple-500/20 text-purple-400';
+  if (['active', 'completed', 'published', 'resolved'].includes(s)) cls = 'bg-green-500/20 text-green-400';
+  else if (['pending', 'in progress'].includes(s)) cls = 'bg-blue-500/20 text-blue-400';
+  else if (['suspended', 'failed', 'rejected', 'open'].includes(s)) cls = 'bg-red-500/20 text-red-400';
+  else if (s === 'closed') cls = 'bg-gray-500/20 text-gray-400';
+  return `<span class="px-2 py-1 rounded-full text-xs font-bold ${cls}">${status}</span>`;
+}
+
+function priorityBadgeHtml(priority: string) {
+  const map: Record<string, string> = {
+    Critical: 'bg-red-500/20 text-red-300 border-red-500/30',
+    High: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    Medium: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    Low: 'bg-green-500/20 text-green-300 border-green-500/30',
+  };
+  const cls = map[priority] || 'bg-gray-500/20 text-gray-300';
+  return `<span class="px-2 py-1 rounded text-xs font-medium border ${cls}">${priority}</span>`;
+}
+
+function actionBtnsHtml(id: number) {
+  return `<div class="flex gap-1">
+    <button data-action="view" data-id="${id}" class="p-2 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-all" title="Xem chi tiết"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button data-action="edit" data-id="${id}" class="p-2 hover:bg-purple-500/20 rounded-lg text-purple-400 transition-all" title="Chỉnh sửa"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></button>
+    <button data-action="delete" data-id="${id}" class="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-all" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+  </div>`;
+}
+
+// ─── Component ───────────────────────────────────────────────
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [users, setUsers] = useState(mockUsers);
-  const [selectedTab, setSelectedTab] = useState<'dashboard' | 'users' | 'revenue' | 'jobs' | 'settings'>('dashboard');
-  const revenueChartRef = useRef<HTMLCanvasElement>(null);
-  const userGrowthChartRef = useRef<HTMLCanvasElement>(null);
-  const planDistributionRef = useRef<HTMLCanvasElement>(null);
 
-  // Redirect if not admin
+  const [selectedMenu, setSelectedMenu] = useState<MenuKey>('analytics');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const [users, setUsers] = useState<UserRow[]>(mockUsers);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [reports, setReports] = useState<ReportProblem[]>(mockReportProblems);
+  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [jobTypes, setJobTypes] = useState<JobType[]>(mockJobTypes);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('view');
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({});
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+
+  // This ref holds a plain container div. We will imperatively create/destroy
+  // the <table> inside it so React never reconciles DataTables' DOM mutations.
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const dtInstance = useRef<any>(null);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+
+  // Keep latest data in refs so event handlers always read fresh state
+  const usersRef = useRef(users); usersRef.current = users;
+  const ordersRef = useRef(orders); ordersRef.current = orders;
+  const postsRef = useRef(posts); postsRef.current = posts;
+  const reportsRef = useRef(reports); reportsRef.current = reports;
+  const categoriesRef = useRef(categories); categoriesRef.current = categories;
+  const jobTypesRef = useRef(jobTypes); jobTypesRef.current = jobTypes;
+  const selectedMenuRef = useRef(selectedMenu); selectedMenuRef.current = selectedMenu;
+
+  // Redirect non-admins
   useEffect(() => {
-    if (user?.userType !== 'admin') {
-      navigate('/');
-    }
+    if (user?.userType !== 'admin') navigate('/');
   }, [user, navigate]);
 
-  // Initialize Chart.js charts
-  useEffect(() => {
-    const loadCharts = async () => {
-      const Chart = (await import('chart.js/auto')).default;
-
-      // Revenue Chart
-      if (revenueChartRef.current) {
-        const ctx = revenueChartRef.current.getContext('2d');
-        if (ctx) {
-          // Destroy existing chart
-          const existingChart = Chart.getChart(revenueChartRef.current);
-          if (existingChart) existingChart.destroy();
-
-          new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-              datasets: [{
-                label: 'Monthly Revenue',
-                data: revenueData.monthly_data,
-                borderColor: '#A855F7',
-                backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#A855F7',
-                pointBorderColor: '#000',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false,
-                },
-                tooltip: {
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#A855F7',
-                  borderWidth: 2,
-                  titleColor: '#A855F7',
-                  bodyColor: '#fff',
-                  padding: 12,
-                  displayColors: false,
-                  callbacks: {
-                    label: (context) => `$${context.parsed.y.toLocaleString()}`
-                  }
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: 'rgba(168, 85, 247, 0.1)',
-                  },
-                  ticks: {
-                    color: '#A855F7',
-                    callback: (value) => '$' + value
-                  }
-                },
-                x: {
-                  grid: {
-                    color: 'rgba(168, 85, 247, 0.1)',
-                  },
-                  ticks: {
-                    color: '#A855F7',
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
-
-      // User Growth Chart
-      if (userGrowthChartRef.current) {
-        const ctx = userGrowthChartRef.current.getContext('2d');
-        if (ctx) {
-          const existingChart = Chart.getChart(userGrowthChartRef.current);
-          if (existingChart) existingChart.destroy();
-
-          new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8', 'Week 9', 'Week 10'],
-              datasets: [{
-                label: 'Total Users',
-                data: userStats.growth,
-                backgroundColor: 'rgba(168, 85, 247, 0.8)',
-                borderColor: '#A855F7',
-                borderWidth: 2,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: false,
-                },
-                tooltip: {
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#A855F7',
-                  borderWidth: 2,
-                  titleColor: '#A855F7',
-                  bodyColor: '#fff',
-                  padding: 12,
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: 'rgba(168, 85, 247, 0.1)',
-                  },
-                  ticks: {
-                    color: '#A855F7',
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false,
-                  },
-                  ticks: {
-                    color: '#A855F7',
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
-
-      // Plan Distribution Chart
-      if (planDistributionRef.current) {
-        const ctx = planDistributionRef.current.getContext('2d');
-        if (ctx) {
-          const existingChart = Chart.getChart(planDistributionRef.current);
-          if (existingChart) existingChart.destroy();
-
-          new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-              labels: ['Gold', 'Silver', 'Free'],
-              datasets: [{
-                data: [168, 255, 2033],
-                backgroundColor: [
-                  'rgba(234, 179, 8, 0.8)',
-                  'rgba(156, 163, 175, 0.8)',
-                  'rgba(100, 116, 139, 0.8)',
-                ],
-                borderColor: ['#eab308', '#9ca3af', '#64748b'],
-                borderWidth: 2,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    color: '#A855F7',
-                    padding: 15,
-                    font: {
-                      size: 12,
-                    }
-                  }
-                },
-                tooltip: {
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#A855F7',
-                  borderWidth: 2,
-                  titleColor: '#A855F7',
-                  bodyColor: '#fff',
-                  padding: 12,
-                }
-              }
-            }
-          });
-        }
-      }
-    };
-
-    if (selectedTab === 'dashboard' || selectedTab === 'revenue') {
-      loadCharts();
+  // ─── Find item by id across current menu ─────────────────
+  const findItem = useCallback((id: number) => {
+    switch (selectedMenuRef.current) {
+      case 'users': return usersRef.current.find(u => u.id === id);
+      case 'orders': return ordersRef.current.find(o => o.id === id);
+      case 'posts': return postsRef.current.find(p => p.id === id);
+      case 'reports': return reportsRef.current.find(r => r.id === id);
+      case 'categories': return categoriesRef.current.find(c => c.id === id);
+      case 'jobtypes': return jobTypesRef.current.find(j => j.id === id);
+      default: return null;
     }
-  }, [selectedTab]);
+  }, []);
 
-  if (user?.userType !== 'admin') {
-    return null;
-  }
+  // ─── CRUD Handlers ───────────────────────────────────────
+  const handleEdit = useCallback((item: any) => { setDialogMode('edit'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
+  const handleView = useCallback((item: any) => { setDialogMode('view'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
+  const handleCreate = useCallback(() => { setDialogMode('create'); setSelectedItem(null); setFormData({}); setIsDialogOpen(true); }, []);
+  const handleDeletePrompt = useCallback((id: number) => { setItemToDelete(id); setIsDeleteDialogOpen(true); }, []);
 
-  const handleSuspendUser = (userId: string) => {
-    setUsers(users.map(u =>
-      u.id === userId
-        ? { ...u, status: u.status === 'suspended' ? 'active' : 'suspended' as const }
-        : u
-    ));
+  const confirmDelete = () => {
+    switch (selectedMenu) {
+      case 'users': setUsers(prev => prev.filter(u => u.id !== itemToDelete)); break;
+      case 'orders': setOrders(prev => prev.filter(o => o.id !== itemToDelete)); break;
+      case 'posts': setPosts(prev => prev.filter(p => p.id !== itemToDelete)); break;
+      case 'reports': setReports(prev => prev.filter(r => r.id !== itemToDelete)); break;
+      case 'categories': setCategories(prev => prev.filter(c => c.id !== itemToDelete)); break;
+      case 'jobtypes': setJobTypes(prev => prev.filter(j => j.id !== itemToDelete)); break;
+    }
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleSave = () => {
+    const newId = Date.now();
+    if (dialogMode === 'create') {
+      const newItem = { ...formData, id: newId };
+      switch (selectedMenu) {
+        case 'users': setUsers(prev => [...prev, newItem]); break;
+        case 'orders': setOrders(prev => [...prev, newItem]); break;
+        case 'posts': setPosts(prev => [...prev, newItem]); break;
+        case 'reports': setReports(prev => [...prev, newItem]); break;
+        case 'categories': setCategories(prev => [...prev, newItem]); break;
+        case 'jobtypes': setJobTypes(prev => [...prev, newItem]); break;
+      }
+    } else {
+      switch (selectedMenu) {
+        case 'users': setUsers(prev => prev.map(u => u.id === selectedItem.id ? { ...u, ...formData } : u)); break;
+        case 'orders': setOrders(prev => prev.map(o => o.id === selectedItem.id ? { ...o, ...formData } : o)); break;
+        case 'posts': setPosts(prev => prev.map(p => p.id === selectedItem.id ? { ...p, ...formData } : p)); break;
+        case 'reports': setReports(prev => prev.map(r => r.id === selectedItem.id ? { ...r, ...formData } : r)); break;
+        case 'categories': setCategories(prev => prev.map(c => c.id === selectedItem.id ? { ...c, ...formData } : c)); break;
+        case 'jobtypes': setJobTypes(prev => prev.map(j => j.id === selectedItem.id ? { ...j, ...formData } : j)); break;
+      }
+    }
+    setIsDialogOpen(false);
   };
 
-  const getPlanBadge = (plan: PaymentPlan) => {
-    const styles: Record<string, string> = {
-      gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500',
-      silver: 'bg-gray-400/20 text-gray-300 border-gray-400',
-      free: 'bg-slate-500/20 text-slate-300 border-slate-500',
+  // ─── DataTables: fully imperative ────────────────────────
+  // We build the table with DataTables' `columns` + `data` API so React
+  // never renders <tr>/<td> elements that DataTables then wraps/moves.
+  useEffect(() => {
+    if (selectedMenu === 'analytics') return;
+    const container = tableContainerRef.current;
+    if (!container) return;
+
+    // Build columns + data based on menu
+    let columns: { title: string; data?: string; render?: any; orderable?: boolean }[] = [];
+    let data: any[] = [];
+
+    switch (selectedMenu) {
+      case 'users':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Tên', data: 'fullName' },
+          { title: 'Email', data: 'email' },
+          { title: 'Gói', data: 'paymentPlan', render: (d: string) => planBadgeHtml(d) },
+          { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = users;
+        break;
+      case 'orders':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Khách hàng', data: 'userName' },
+          { title: 'Gói', data: 'plan' },
+          { title: 'Số tiền', data: 'amount', render: (d: number) => `$${d}` },
+          { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
+          { title: 'Ngày', data: 'date' },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = orders;
+        break;
+      case 'posts':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Tiêu đề', data: 'title' },
+          { title: 'Tác giả', data: 'userName' },
+          { title: 'Danh mục', data: 'category', render: (d: string) => `<span class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs">${d}</span>` },
+          { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
+          { title: 'Ngày', data: 'date' },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = posts;
+        break;
+      case 'categories':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Tên danh mục', data: 'name' },
+          { title: 'Số bài viết', data: 'count' },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = categories;
+        break;
+      case 'jobtypes':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Loại công việc', data: 'name' },
+          { title: 'Số lượng', data: 'count' },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = jobTypes;
+        break;
+      case 'reports':
+        columns = [
+          { title: 'ID', data: 'id' },
+          { title: 'Người báo cáo', data: 'userName', render: (_d: string, _t: any, row: any) => `<div>${row.userName || ''}</div><div class="text-xs opacity-60">${row.userEmail || ''}</div>` },
+          { title: 'Tiêu đề', data: 'subject' },
+          { title: 'Loại', data: 'category', render: (d: string) => `<span class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs">${d}</span>` },
+          { title: 'Mức độ', data: 'priority', render: (d: string) => priorityBadgeHtml(d) },
+          { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+        ];
+        data = reports;
+        break;
+    }
+
+    // Create a fresh <table> element imperatively
+    const tableEl = document.createElement('table');
+    tableEl.className = 'display w-full';
+    container.innerHTML = '';
+    container.appendChild(tableEl);
+
+    dtInstance.current = $(tableEl).DataTable({
+      columns,
+      data,
+      pageLength: 10,
+      order: [[0, 'asc']],
+      language: {
+        search: 'Tìm kiếm:',
+        lengthMenu: 'Hiển thị _MENU_ mục',
+        info: 'Hiển thị _START_ đến _END_ trong tổng số _TOTAL_ mục',
+        infoEmpty: 'Không có dữ liệu',
+        zeroRecords: 'Không tìm thấy kết quả phù hợp',
+        paginate: { first: 'Đầu', last: 'Cuối', next: 'Tiếp', previous: 'Trước' },
+      },
+    });
+
+    // Delegate click events on the container for action buttons
+    const handleClick = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+      if (!target) return;
+      const action = target.getAttribute('data-action');
+      const id = parseInt(target.getAttribute('data-id') || '0', 10);
+      const item = findItem(id);
+      if (!item) return;
+      if (action === 'view') handleView(item);
+      else if (action === 'edit') handleEdit(item);
+      else if (action === 'delete') handleDeletePrompt(id);
     };
-    return styles[plan] || styles.free;
-  };
+    container.addEventListener('click', handleClick);
 
-  return (
-    <div className="min-h-screen bg-black flex">
-      {/* Cyberpunk Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-fuchsia-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      </div>
+    return () => {
+      container.removeEventListener('click', handleClick);
+      if (dtInstance.current) {
+        dtInstance.current.destroy();
+        dtInstance.current = null;
+      }
+      container.innerHTML = '';
+    };
+  }, [selectedMenu, users, orders, posts, reports, categories, jobTypes, findItem, handleView, handleEdit, handleDeletePrompt]);
 
-      {/* Left Sidebar */}
-      <aside className="w-72 bg-black/50 backdrop-blur-xl border-r border-purple-500/30 relative z-10">
-        <div className="h-full flex flex-col">
-          {/* Logo */}
-          <div className="p-6 border-b border-purple-500/30">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-lg flex items-center justify-center relative">
-                <Shield className="w-7 h-7 text-white" />
-                <div className="absolute inset-0 bg-purple-500 rounded-lg blur-xl opacity-50"></div>
+  // ─── Chart Init ──────────────────────────────────────────
+  useEffect(() => {
+    if (selectedMenu !== 'analytics' || !chartRef.current) return;
+    const loadChart = async () => {
+      const Chart = (await import('chart.js/auto')).default;
+      const existing = Chart.getChart(chartRef.current as HTMLCanvasElement);
+      if (existing) existing.destroy();
+      new Chart(chartRef.current as HTMLCanvasElement, {
+        type: 'line',
+        data: {
+          labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+          datasets: [{
+            label: 'Doanh thu',
+            data: [1200, 1900, 3000, 5000, 2300, 3400, 4500],
+            borderColor: '#A855F7',
+            tension: 0.4,
+            fill: true,
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    };
+    loadChart();
+  }, [selectedMenu]);
+
+  // ─── Menu Items ──────────────────────────────────────────
+  const menuItems = [
+    { key: 'analytics' as const, label: 'Thống kê', icon: BarChart3 },
+    { key: 'users' as const, label: 'Người dùng', icon: Users },
+    { key: 'orders' as const, label: 'Đơn hàng', icon: ShoppingCart },
+    { key: 'posts' as const, label: 'Bài viết', icon: FileText },
+    { key: 'categories' as const, label: 'Danh mục', icon: FolderOpen },
+    { key: 'jobtypes' as const, label: 'Loại công việc', icon: Briefcase },
+    { key: 'reports' as const, label: 'Báo cáo sự cố', icon: AlertTriangle },
+  ];
+
+  // ─── Dialog Fields ───────────────────────────────────────
+  const renderDialogFields = () => {
+    const disabled = dialogMode === 'view';
+    const inputCls = 'bg-purple-900/20 border-purple-500/30 rounded-xl';
+    const disabledCls = 'bg-purple-900/10 border-purple-500/10 opacity-60';
+
+    switch (selectedMenu) {
+      case 'users':
+        return (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-purple-300 mb-2 block">Họ và tên *</Label>
+              <Input value={formData.fullName || ''} onChange={e => setFormData({ ...formData, fullName: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Email *</Label>
+              <Input value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Gói đăng ký</Label>
+              <Select value={formData.paymentPlan || 'free'} onValueChange={(v: string) => setFormData({ ...formData, paymentPlan: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="silver">Silver</SelectItem>
+                  <SelectItem value="gold">Gold</SelectItem>
+                  <SelectItem value="diamond">Diamond</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Loại tài khoản</Label>
+              <Select value={formData.userType || 'user'} onValueChange={(v: string) => setFormData({ ...formData, userType: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Người dùng</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Trạng thái</Label>
+              <Select value={formData.status || 'active'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="suspended">Tạm khóa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+      case 'orders':
+        return (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-purple-300 mb-2 block">Tên khách hàng</Label>
+              <Input value={formData.userName || ''} onChange={e => setFormData({ ...formData, userName: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Gói</Label>
+              <Input value={formData.plan || ''} onChange={e => setFormData({ ...formData, plan: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Số tiền ($)</Label>
+              <Input type="number" value={formData.amount || ''} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Trạng thái</Label>
+              <Select value={formData.status || 'Pending'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Completed">Hoàn tất</SelectItem>
+                  <SelectItem value="Pending">Chờ xử lý</SelectItem>
+                  <SelectItem value="Failed">Thất bại</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Ngày</Label>
+              <Input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+          </div>
+        );
+      case 'posts':
+        return (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-purple-300 mb-2 block">Tiêu đề *</Label>
+              <Input value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Tác giả</Label>
+              <Input value={formData.userName || ''} onChange={e => setFormData({ ...formData, userName: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Danh mục</Label>
+              <Input value={formData.category || ''} onChange={e => setFormData({ ...formData, category: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Trạng thái</Label>
+              <Select value={formData.status || 'Pending'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Published">Đã xuất bản</SelectItem>
+                  <SelectItem value="Pending">Chờ duyệt</SelectItem>
+                  <SelectItem value="Rejected">Từ chối</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Ngày</Label>
+              <Input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+          </div>
+        );
+      case 'categories':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-purple-300 mb-2 block">Tên danh mục *</Label>
+              <Input value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Số bài viết</Label>
+              <Input type="number" value={formData.count || 0} onChange={e => setFormData({ ...formData, count: parseInt(e.target.value) })} disabled={disabled} className={inputCls} />
+            </div>
+          </div>
+        );
+      case 'jobtypes':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-purple-300 mb-2 block">Loại công việc *</Label>
+              <Input value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Số lượng</Label>
+              <Input type="number" value={formData.count || 0} onChange={e => setFormData({ ...formData, count: parseInt(e.target.value) })} disabled={disabled} className={inputCls} />
+            </div>
+          </div>
+        );
+      case 'reports':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-purple-300 mb-2 block">Họ tên người báo cáo</Label>
+                <Input value={formData.userName || ''} disabled className={disabledCls} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400">
-                  ADMIN PANEL
-                </h1>
-                <p className="text-xs text-purple-400/60">System Control v2.0</p>
+                <Label className="text-purple-300 mb-2 block">Email liên hệ</Label>
+                <Input value={formData.userEmail || ''} disabled className={disabledCls} />
               </div>
             </div>
-          </div>
-
-          {/* User Info */}
-          <div className="p-4 border-b border-purple-500/30">
-            <div className="flex items-center gap-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">{user?.fullName.charAt(0)}</span>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Tiêu đề *</Label>
+              <Input value={formData.subject || ''} onChange={e => setFormData({ ...formData, subject: e.target.value })} disabled={disabled} className={inputCls} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-purple-300 mb-2 block">Loại sự cố</Label>
+                <Select value={formData.category || 'Technical'} onValueChange={(v: string) => setFormData({ ...formData, category: v })} disabled={disabled}>
+                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Technical">Lỗi kỹ thuật</SelectItem>
+                    <SelectItem value="Account">Vấn đề tài khoản</SelectItem>
+                    <SelectItem value="Payment">Thanh toán</SelectItem>
+                    <SelectItem value="Other">Khác</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-purple-300 truncate">{user?.fullName}</p>
-                <p className="text-xs text-purple-400/60 truncate">{user?.email}</p>
+              <div>
+                <Label className="text-purple-300 mb-2 block">Mức độ ưu tiên</Label>
+                <Select value={formData.priority || 'Medium'} onValueChange={(v: string) => setFormData({ ...formData, priority: v })} disabled={disabled}>
+                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Thấp</SelectItem>
+                    <SelectItem value="Medium">Trung bình</SelectItem>
+                    <SelectItem value="High">Cao</SelectItem>
+                    <SelectItem value="Critical">Khẩn cấp</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Chi tiết sự cố *</Label>
+              <Textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} disabled={disabled} className={`${inputCls} min-h-[120px]`} />
+            </div>
+            <div>
+              <Label className="text-purple-300 mb-2 block">Trạng thái xử lý</Label>
+              <Select value={formData.status || 'Open'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
+                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">Chưa xử lý</SelectItem>
+                  <SelectItem value="In Progress">Đang xử lý</SelectItem>
+                  <SelectItem value="Resolved">Đã giải quyết</SelectItem>
+                  <SelectItem value="Closed">Đã đóng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            <button
-              onClick={() => setSelectedTab('dashboard')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'dashboard'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                }`}
-            >
-              <BarChart3 className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
+  const dialogTitle = () => {
+    const prefix = dialogMode === 'view' ? 'Chi tiết' : dialogMode === 'edit' ? 'Cập nhật' : 'Thêm mới';
+    const entityMap: Record<MenuKey, string> = {
+      analytics: '', users: 'Người dùng', orders: 'Đơn hàng', posts: 'Bài viết',
+      categories: 'Danh mục', jobtypes: 'Loại công việc', reports: 'Báo cáo sự cố',
+    };
+    return `${prefix} ${entityMap[selectedMenu]}`;
+  };
+
+  if (!user || user.userType !== 'admin') return null;
+
+  return (
+    <div className="min-h-screen bg-black flex text-white overflow-hidden">
+      {/* ─── Sidebar ─────────────────────────────────────── */}
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-black/50 backdrop-blur-xl border-r border-purple-500/30 transition-all duration-300 relative z-20`}>
+        <div className="flex flex-col h-full">
+          <div className="p-6 border-b border-purple-500/30 flex items-center justify-between">
+            {!isSidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <Shield className="w-8 h-8 text-purple-500" />
+                <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-400">ADMIN</span>
+              </div>
+            )}
+            <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-2 hover:bg-purple-500/10 rounded-lg">
+              {isSidebarCollapsed ? <Activity className="w-6 h-6 text-purple-400" /> : <ChevronLeft className="w-6 h-6 text-purple-400" />}
             </button>
-
-            <button
-              onClick={() => setSelectedTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'users'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                }`}
-            >
-              <UserCog className="w-5 h-5" />
-              <span className="font-medium">User Management</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedTab('revenue')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'revenue'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                }`}
-            >
-              <DollarSign className="w-5 h-5" />
-              <span className="font-medium">Revenue Analytics</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedTab('jobs')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'jobs'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                }`}
-            >
-              <Briefcase className="w-5 h-5" />
-              <span className="font-medium">Job Listings</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedTab('settings')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${selectedTab === 'settings'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-500/20'
-                : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
-            </button>
-
-            <div className="border-t border-purple-500/30 my-4"></div>
-
-            <button
-              onClick={() => navigate('/')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300 transition-all"
-            >
-              <Home className="w-5 h-5" />
-              <span className="font-medium">Back to Site</span>
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400/60 hover:bg-red-500/10 hover:text-red-300 transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
+          </div>
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {menuItems.map(item => (
+              <button key={item.key} onClick={() => setSelectedMenu(item.key)}
+                className={`w-full flex items-center gap-4 p-3 rounded-lg transition-all ${selectedMenu === item.key
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-lg'
+                  : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'}`}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!isSidebarCollapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
+              </button>
+            ))}
           </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-purple-500/30">
-            <div className="flex items-center justify-between text-xs text-purple-400/40">
-              <span>© 2024 WorkHub</span>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>Online</span>
-              </div>
-            </div>
+          <div className="p-4 border-t border-purple-500/30 space-y-2">
+            <button onClick={() => navigate('/')} className="w-full flex items-center gap-4 p-3 rounded-lg text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300 transition-all">
+              <Home className="w-5 h-5" />{!isSidebarCollapsed && <span>Trang chủ</span>}
+            </button>
+            <button onClick={logout} className="w-full flex items-center gap-4 p-3 rounded-lg text-red-400/60 hover:bg-red-500/10 hover:text-red-300 transition-all">
+              <LogOut className="w-5 h-5" />{!isSidebarCollapsed && <span>Đăng xuất</span>}
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto relative z-10">
-        {/* Dashboard Tab */}
-        {selectedTab === 'dashboard' && (
-          <div className="p-8">
-            {/* Header */}
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400 mb-2">
-                System Overview
+      {/* ─── Main Content ───────────────────────────────── */}
+      <main className="flex-1 relative overflow-y-auto">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-400">
+                {menuItems.find(m => m.key === selectedMenu)?.label}
               </h2>
-              <p className="text-purple-400/60">Real-time analytics and monitoring</p>
+              <p className="text-purple-400/60 mt-1">Hệ thống quản trị và giám sát WorkHub</p>
             </div>
+            {selectedMenu !== 'analytics' && (
+              <Button onClick={handleCreate} className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg border border-purple-500/50">
+                <Plus className="w-4 h-4 mr-2" />Thêm mới
+              </Button>
+            )}
+          </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {/* Total Revenue */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 transition-all">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all"></div>
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
-                      <DollarSign className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <span className="text-xs text-green-400 flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/30">
-                      <TrendingUp className="w-3 h-3" />
-                      +{revenueData.growth}%
-                    </span>
-                  </div>
-                  <p className="text-purple-400/60 text-sm mb-1">Total Revenue</p>
-                  <p className="text-3xl font-bold text-purple-300">${revenueData.total.toLocaleString()}</p>
-                  <p className="text-xs text-purple-400/40 mt-2">${revenueData.monthly.toLocaleString()} this month</p>
-                </div>
-              </div>
-
-              {/* Total Users */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 transition-all">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-3xl group-hover:bg-fuchsia-500/20 transition-all"></div>
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-fuchsia-500/20 rounded-lg flex items-center justify-center border border-fuchsia-500/30">
-                      <Users className="w-6 h-6 text-fuchsia-400" />
-                    </div>
-                    <span className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-full border border-cyan-500/30">
-                      +{userStats.newThisMonth} new
-                    </span>
-                  </div>
-                  <p className="text-purple-400/60 text-sm mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-purple-300">{userStats.total.toLocaleString()}</p>
-                  <p className="text-xs text-purple-400/40 mt-2">{userStats.active.toLocaleString()} active</p>
-                </div>
-              </div>
-
-              {/* Premium Users */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 transition-all">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl group-hover:bg-yellow-500/20 transition-all"></div>
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center border border-yellow-500/30">
-                      <Crown className="w-6 h-6 text-yellow-400" />
-                    </div>
-                  </div>
-                  <p className="text-purple-400/60 text-sm mb-1">Premium Users</p>
-                  <p className="text-3xl font-bold text-purple-300">{userStats.premium}</p>
-                  <p className="text-xs text-purple-400/40 mt-2">{((userStats.premium / userStats.total) * 100).toFixed(1)}% conversion</p>
-                </div>
-              </div>
-
-              {/* Total Jobs */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 transition-all">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all"></div>
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center border border-cyan-500/30">
-                      <Briefcase className="w-6 h-6 text-cyan-400" />
-                    </div>
-                    <span className="text-xs text-orange-400 bg-orange-500/10 px-2 py-1 rounded-full border border-orange-500/30">
-                      {jobStats.pendingApproval} pending
-                    </span>
-                  </div>
-                  <p className="text-purple-400/60 text-sm mb-1">Total Jobs</p>
-                  <p className="text-3xl font-bold text-purple-300">{jobStats.total.toLocaleString()}</p>
-                  <p className="text-xs text-purple-400/40 mt-2">{jobStats.active.toLocaleString()} active</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Revenue Chart */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-purple-300 mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Revenue Trend
-                </h3>
-                <div className="h-64">
-                  <canvas ref={revenueChartRef}></canvas>
-                </div>
-              </div>
-
-              {/* User Growth Chart */}
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-purple-300 mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  User Growth
-                </h3>
-                <div className="h-64">
-                  <canvas ref={userGrowthChartRef}></canvas>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-2">
-                <Terminal className="w-5 h-5" />
-                System Activity
-              </h3>
-              <div className="space-y-3">
+          {/* ── Analytics View ─────────────────────────── */}
+          {selectedMenu === 'analytics' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { icon: CheckCircle, text: 'New user registration: david.smith@gmail.com', time: '5 min ago', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-                  { icon: DollarSign, text: 'Payment received: $19.99 (Gold Plan)', time: '12 min ago', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
-                  { icon: AlertCircle, text: 'Job post flagged for review', time: '23 min ago', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
-                  { icon: CheckCircle, text: 'User upgraded to Gold Plan', time: '1 hour ago', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
-                  { icon: XCircle, text: 'Account suspended: policy violation', time: '2 hours ago', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
-                ].map((activity, index) => (
-                  <div key={index} className={`flex items-start gap-3 p-4 ${activity.bg} border ${activity.border} rounded-lg hover:scale-[1.02] transition-all`}>
-                    <activity.icon className={`w-5 h-5 ${activity.color} flex-shrink-0 mt-0.5`} />
-                    <div className="flex-1">
-                      <p className="text-sm text-purple-300">{activity.text}</p>
-                      <p className="text-xs text-purple-400/60 mt-1">{activity.time}</p>
+                  { label: 'Doanh thu', val: '$45,678', icon: DollarSign, trend: '+23%' },
+                  { label: 'Người dùng', val: '2,456', icon: Users, trend: '+145' },
+                  { label: 'Công việc', val: '1,234', icon: Briefcase, trend: '+12' },
+                  { label: 'Premium', val: '423', icon: Crown, trend: '17%' },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform" />
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                      <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30"><stat.icon className="w-6 h-6 text-purple-400" /></div>
+                      <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/30">{stat.trend}</span>
                     </div>
+                    <p className="text-purple-400/60 text-sm mb-1">{stat.label}</p>
+                    <p className="text-3xl font-bold text-purple-100">{stat.val}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* User Management Tab */}
-        {selectedTab === 'users' && (
-          <div className="p-8">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400 mb-2">
-                User Management
-              </h2>
-              <p className="text-purple-400/60">Monitor and control user accounts</p>
-            </div>
-
-            <div className="space-y-4">
-              {users.map((userAccount) => (
-                <div key={userAccount.id} className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/50 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center text-white font-bold text-lg relative">
-                        {userAccount.fullName.charAt(0)}
-                        <div className="absolute inset-0 bg-purple-500 rounded-xl blur-xl opacity-30"></div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-semibold text-purple-300 text-lg">{userAccount.fullName}</span>
-                          <span className={`text-xs px-3 py-1 rounded-full border ${getPlanBadge(userAccount.paymentPlan)} font-bold uppercase`}>
-                            {userAccount.paymentPlan}
-                          </span>
-                          {userAccount.status === 'suspended' && (
-                            <span className="text-xs px-3 py-1 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-bold uppercase">
-                              Suspended
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-purple-400/70 mb-2 flex items-center gap-2">
-                          {userAccount.email}
-                          <span className="flex items-center gap-1 text-yellow-400">
-                            <Star className="w-3.5 h-3.5 fill-yellow-400" />
-                            <span className="font-semibold text-sm">{userAccount.rating}</span>
-                          </span>
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-purple-400/50">
-                          <span>Joined: {userAccount.joinDate}</span>
-                          <span>•</span>
-                          <span>Last active: {userAccount.lastActive}</span>
-                          <span>•</span>
-                          <span className="text-green-400 font-semibold">
-                            Revenue: ${userAccount.revenue.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => navigate(`/admin/user-profile?userId=${userAccount.id}`)}
-                        className="px-4 py-2 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/30 transition-all flex items-center gap-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleSuspendUser(userAccount.id)}
-                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${userAccount.status === 'suspended'
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
-                          : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
-                          }`}
-                      >
-                        {userAccount.status === 'suspended' ? (
-                          <>
-                            <Unlock className="w-4 h-4" />
-                            Activate
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="w-4 h-4" />
-                            Suspend
-                          </>
-                        )}
-                      </button>
-                    </div>
+              <div className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 h-96 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-xl text-purple-200">Biểu đồ doanh thu</h3>
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1 bg-purple-500/20 rounded-lg text-xs text-purple-300">7 ngày</button>
+                    <button className="px-3 py-1 bg-purple-500/10 rounded-lg text-xs text-purple-400">30 ngày</button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Revenue Tab */}
-        {selectedTab === 'revenue' && (
-          <div className="p-8">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400 mb-2">
-                Revenue Analytics
-              </h2>
-              <p className="text-purple-400/60">Financial insights and metrics</p>
-            </div>
-
-            {/* Revenue Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-sm text-purple-400/60 mb-2">Monthly Revenue</h3>
-                <p className="text-3xl font-bold text-purple-300 mb-2">
-                  ${revenueData.monthly.toLocaleString()}
-                </p>
-                <div className="flex items-center gap-1 text-green-400 text-sm">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>+{revenueData.growth}% from last month</span>
-                </div>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-sm text-purple-400/60 mb-2">Total Transactions</h3>
-                <p className="text-3xl font-bold text-purple-300 mb-2">
-                  {revenueData.transactions}
-                </p>
-                <p className="text-sm text-purple-400/60">This month</p>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-sm text-purple-400/60 mb-2">Average Transaction</h3>
-                <p className="text-3xl font-bold text-purple-300 mb-2">
-                  ${(revenueData.monthly / revenueData.transactions).toFixed(2)}
-                </p>
-                <p className="text-sm text-purple-400/60">Per transaction</p>
+                <canvas ref={chartRef}></canvas>
               </div>
             </div>
+          )}
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-purple-300 mb-4">Revenue Trend</h3>
-                <div className="h-80">
-                  <canvas ref={revenueChartRef}></canvas>
-                </div>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-purple-300 mb-4">Plan Distribution</h3>
-                <div className="h-80 flex items-center justify-center">
-                  <canvas ref={planDistributionRef}></canvas>
-                </div>
-              </div>
+          {/* ── DataTable Container (imperative) ───────── */}
+          {selectedMenu !== 'analytics' && (
+            <div className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl admin-dt-wrapper">
+              <div ref={tableContainerRef} />
             </div>
-
-            {/* Recent Transactions */}
-            <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-              <h3 className="text-xl font-bold text-purple-300 mb-6">Recent Transactions</h3>
-              <div className="space-y-3">
-                {[
-                  { user: 'Mike Johnson', plan: 'Gold', amount: 19.99, date: '2024-02-09', status: 'completed' },
-                  { user: 'Company HR', plan: 'Gold', amount: 19.99, date: '2024-02-08', status: 'completed' },
-                  { user: 'Sarah Wilson', plan: 'Silver', amount: 9.99, date: '2024-02-08', status: 'completed' },
-                  { user: 'Lisa Anderson', plan: 'Gold', amount: 19.99, date: '2024-02-07', status: 'completed' },
-                  { user: 'Robert Chen', plan: 'Gold', amount: 19.99, date: '2024-02-06', status: 'pending' },
-                ].map((transaction, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg hover:bg-purple-500/10 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        {transaction.user.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-purple-300">{transaction.user}</p>
-                        <p className="text-sm text-purple-400/60">{transaction.plan} Plan • {transaction.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-purple-300 text-lg">${transaction.amount}</span>
-                      <span className={`text-xs px-3 py-1 rounded-full border font-bold uppercase ${transaction.status === 'completed'
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                        }`}>
-                        {transaction.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Jobs Tab */}
-        {selectedTab === 'jobs' && (
-          <div className="p-8">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400 mb-2">
-                Job Listings
-              </h2>
-              <p className="text-purple-400/60">Manage and moderate job posts</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <Database className="w-8 h-8 text-purple-400" />
-                  <span className="text-2xl font-bold text-purple-300">{jobStats.total}</span>
-                </div>
-                <p className="text-sm text-purple-400/60">Total Jobs</p>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-green-500/30 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <CheckCircle className="w-8 h-8 text-green-400" />
-                  <span className="text-2xl font-bold text-green-300">{jobStats.active}</span>
-                </div>
-                <p className="text-sm text-purple-400/60">Active Jobs</p>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <Target className="w-8 h-8 text-cyan-400" />
-                  <span className="text-2xl font-bold text-cyan-300">{jobStats.filled}</span>
-                </div>
-                <p className="text-sm text-purple-400/60">Filled</p>
-              </div>
-
-              <div className="bg-black/50 backdrop-blur-xl border border-orange-500/30 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <AlertCircle className="w-8 h-8 text-orange-400" />
-                  <span className="text-2xl font-bold text-orange-300">{jobStats.pendingApproval}</span>
-                </div>
-                <p className="text-sm text-purple-400/60">Pending Review</p>
-              </div>
-            </div>
-
-            <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <Layers className="w-16 h-16 text-purple-400/40 mx-auto mb-4" />
-                  <p className="text-purple-400/60">Job management interface coming soon</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Settings Tab */}
-        {selectedTab === 'settings' && (
-          <div className="p-8">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400 mb-2">
-                System Settings
-              </h2>
-              <p className="text-purple-400/60">Configure system preferences</p>
-            </div>
-
-            <div className="bg-black/50 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <Lock className="w-16 h-16 text-purple-400/40 mx-auto mb-4" />
-                  <p className="text-purple-400/60">Settings panel under development</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
+
+      {/* ─── CRUD Dialog ─────────────────────────────────── */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl bg-black border border-purple-500/30 text-white shadow-2xl shadow-purple-500/20">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-fuchsia-400">
+              {dialogTitle()}
+            </DialogTitle>
+            <DialogDescription className="text-purple-400/60 font-mono text-xs">
+              ID: {selectedItem?.id || 'MỚI'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 pt-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+            {renderDialogFields()}
+          </div>
+          <DialogFooter className="mt-8 border-t border-purple-500/20 pt-6">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 rounded-xl">Đóng</Button>
+            {dialogMode !== 'view' && (
+              <Button onClick={handleSave} className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg border border-purple-500/50">
+                <Save className="w-4 h-4 mr-2" />Lưu thay đổi
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Confirmation ─────────────────────────── */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-black border border-red-500/30 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-red-500">Xác nhận xóa</DialogTitle>
+            <DialogDescription className="text-purple-400/60 mt-2">
+              Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa mục này khỏi hệ thống?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-8">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl">Hủy</Button>
+            <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg border border-red-500/50">
+              <Trash2 className="w-4 h-4 mr-2" />Xóa vĩnh viễn
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── DataTables Dark Theme Override ──────────────── */}
+      <style>{`
+        .admin-dt-wrapper table.dataTable { color: #d8b4fe !important; border-collapse: collapse !important; }
+        .admin-dt-wrapper table.dataTable thead th { color: #c084fc !important; border-bottom: 1px solid rgba(168,85,247,0.3) !important; padding: 12px 18px !important; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; background: transparent !important; }
+        .admin-dt-wrapper table.dataTable tbody td { border-bottom: 1px solid rgba(168,85,247,0.1) !important; padding: 12px 18px !important; vertical-align: middle; }
+        .admin-dt-wrapper table.dataTable tbody tr:hover { background: rgba(168,85,247,0.05) !important; }
+        .admin-dt-wrapper table.dataTable tbody tr { background: transparent !important; }
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_length,
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_filter,
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_info,
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_paginate { color: #a78bfa !important; margin: 12px 0 !important; }
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_filter input {
+          background: rgba(168,85,247,0.1) !important; border: 1px solid rgba(168,85,247,0.3) !important;
+          border-radius: 8px !important; color: #fff !important; padding: 6px 12px !important; margin-left: 8px !important;
+        }
+        .admin-dt-wrapper .dataTables_wrapper .dataTables_length select {
+          background: rgba(168,85,247,0.1) !important; border: 1px solid rgba(168,85,247,0.3) !important;
+          border-radius: 6px !important; color: #fff !important; padding: 4px 8px !important;
+        }
+        .admin-dt-wrapper .paginate_button { color: #a78bfa !important; padding: 5px 12px !important; margin: 0 2px !important; border-radius: 6px !important; cursor: pointer !important; border: 1px solid transparent !important; background: transparent !important; }
+        .admin-dt-wrapper .paginate_button:hover { background: rgba(168,85,247,0.15) !important; color: #c084fc !important; }
+        .admin-dt-wrapper .paginate_button.current { background: rgba(168,85,247,0.3) !important; border-color: rgba(168,85,247,0.5) !important; color: #e9d5ff !important; }
+        .admin-dt-wrapper .paginate_button.disabled { opacity: 0.3 !important; cursor: default !important; }
+        .admin-dt-wrapper table.dataTable thead .sorting::after,
+        .admin-dt-wrapper table.dataTable thead .sorting_asc::after,
+        .admin-dt-wrapper table.dataTable thead .sorting_desc::after { opacity: 0.5 !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.4); }
+      `}</style>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Job {
   id: string;
@@ -29,8 +30,11 @@ interface Job {
 
 export function UserJobs() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const profileUserId = searchParams.get("userId");
+  const isOwnProfile = !profileUserId || (user && profileUserId.toString() === user.id.toString());
+
   const [loading, setLoading] = useState(true);
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -60,7 +64,7 @@ export function UserJobs() {
               type: j.jobType,
               description: j.description || "No description provided.",
               salary: j.salary,
-              postedDate: new Date(j.createdAt).toLocaleDateString(),
+              postedDate: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : "Just now",
               logo: j.avatarUrl
             }));
             setPostedJobs(mappedJobs);
@@ -77,7 +81,7 @@ export function UserJobs() {
   }, [API_URL, profileUserId]);
 
   const handleDeleteJob = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this job?")) return;
+    if (!window.confirm("Việc xóa công việc này có thể ảnh hưởng đến các bài đăng trước đó của bạn. Bạn có chắc chắn muốn xóa không?")) return;
 
     try {
       const token = localStorage.getItem("access_token");
@@ -89,14 +93,14 @@ export function UserJobs() {
       });
 
       if (res.ok) {
-        toast.success("Job deleted successfully");
+        toast.success("Xóa công việc thành công");
         setPostedJobs(prev => prev.filter(j => j.id !== id));
       } else {
-        toast.error("Failed to delete job");
+        toast.error("Xóa công việc thất bại");
       }
     } catch (error) {
       console.error("Error deleting job:", error);
-      toast.error("An error occurred");
+      toast.error("Đã xảy ra lỗi");
     }
   };
 
@@ -224,7 +228,7 @@ export function UserJobs() {
                         </div>
                       </div>
 
-                      <p className="text-[#263238]/70 mb-4">{job.description}</p>
+
 
                       <div className="flex items-center gap-3">
                         <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
@@ -237,7 +241,7 @@ export function UserJobs() {
                           </Button>
                         </Link>
 
-                        {!profileUserId && (
+                        {isOwnProfile && (
                           <div className="ml-auto flex items-center gap-2">
                             <Button
                               variant="ghost"

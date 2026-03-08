@@ -571,6 +571,7 @@ export function Home() {
                     <JobCard
                       key={job.id}
                       id={job.id.toString()}
+                      companyId={job.userId.toString()}
                       title={job.jobName}
                       company={job.userName} // Placeholder
                       location={job.location || "Remote"}
@@ -617,7 +618,7 @@ export function Home() {
                   {featuredUsers.slice(0, 4).map((user, index) => (
                     <Link
                       key={index}
-                      to="/jobs"
+                      to={`/profile/${user.id}`}
                       className="block p-3 rounded-xl hover:bg-[#FAFAFA] transition group"
                     >
                       <div className="flex items-center justify-between">
