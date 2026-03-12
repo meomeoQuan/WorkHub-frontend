@@ -22,7 +22,8 @@ import {
   Edit,
   Trash2,
   Loader2,
-  X
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
 import { SkeletonCommentModal } from '../components/SkeletonCommentModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,6 +77,9 @@ export function UserPosts() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [editSelectedJobIds, setEditSelectedJobIds] = useState<string[]>([]);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [availableJobs, setAvailableJobs] = useState<RecruitmentSelectDTO[]>([]);
   const [isJobsLoading, setIsJobsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -445,7 +449,9 @@ export function UserPosts() {
   const handleEditClick = (post: JobPost) => {
     setEditingPostId(post.id);
     setEditContent(post.content);
-    setEditSelectedJobIds(post.attachedJobs?.map(j => j.id.toString()) || []);
+    setEditSelectedJobIds(post.attachedJobs?.map((j: { id: number }) => j.id.toString()) || []);
+    setEditImagePreview(post.image);
+    setEditImageFile(null);
     fetchAvailableJobs();
   };
 
@@ -457,18 +463,26 @@ export function UserPosts() {
 
   const handleEditSave = async (postId: string) => {
     setIsSaving(true);
+    const formData = new FormData();
+    formData.append('Content', editContent);
+    if (editImageFile) {
+      formData.append('PostImage', editImageFile);
+    } else if (editImagePreview) {
+      formData.append('PostImageUrl', editImagePreview);
+    }
+
+    editSelectedJobIds.forEach(id => {
+      formData.append('RecruitmentIds', id);
+    });
+
     try {
       const token = localStorage.getItem("access_token");
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/update-post/${postId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          content: editContent,
-          recruitmentIds: editSelectedJobIds.map(id => parseInt(id))
-        })
+        body: formData
       });
 
       if (res.ok) {
@@ -754,6 +768,106 @@ export function UserPosts() {
                                   </div>
                                 )}
                               </div>
+                            </div>
+
+                            {/* Image Preview & Upload Section */}
+                            <div className="space-y-4">
+                              <label className="flex items-center gap-2 text-[13px] font-bold text-[#263238]/60 uppercase tracking-wider">
+                                <ImageIcon className="w-4 h-4" />
+                                Post Media
+                              </label>
+
+                              {editImagePreview ? (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                  {/* Enhanced Image Preview */}
+                                  <div className="relative group rounded-2xl overflow-hidden border border-[#263238]/10 bg-white shadow-sm transition-all duration-300 hover:shadow-md">
+                                    <img 
+                                      src={editImagePreview.startsWith('data:') ? editImagePreview : (editImagePreview.startsWith('http') ? editImagePreview : `${import.meta.env.VITE_API_URL}${editImagePreview}`)} 
+                                      alt="Edit Preview" 
+                                      className="w-full h-64 object-cover"
+                                    />
+                                    
+                                    {/* Glassmorphism Removal Overlay */}
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                      <button
+                                        onClick={() => {
+                                          setEditImagePreview(null);
+                                          setEditImageFile(null);
+                                        }}
+                                        className="p-3 bg-white/90 hover:bg-white text-red-500 rounded-full shadow-xl transform transition-all duration-300 hover:scale-110 active:scale-95"
+                                        title="Remove Image"
+                                      >
+                                        <Trash2 className="w-6 h-6" />
+                                      </button>
+                                    </div>
+
+                                    {/* Action Pills */}
+                                    <div className="absolute bottom-3 right-3 flex gap-2">
+                                      <label
+                                        htmlFor="edit-post-image"
+                                        className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-xs font-semibold text-[#263238] shadow-sm hover:bg-white transition cursor-pointer flex items-center gap-1.5"
+                                      >
+                                        <Edit className="w-3.5 h-3.5" />
+                                        Replace
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Beautified Drag & Drop Zone */
+                                <div
+                                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                  onDragLeave={() => setIsDragging(false)}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    setIsDragging(false);
+                                    const file = e.dataTransfer.files?.[0];
+                                    if (file && file.type.startsWith('image/')) {
+                                      setEditImageFile(file);
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => setEditImagePreview(reader.result as string);
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className={`relative group h-48 rounded-2xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center gap-3 overflow-hidden
+                                    ${isDragging 
+                                      ? 'bg-[#FF9800]/5 border-[#FF9800] scale-[0.99] shadow-inner' 
+                                      : 'bg-[#FAFAFA] border-[#263238]/10 hover:border-[#FF9800]/50 hover:bg-[#FF9800]/[0.02]'}`}
+                                >
+                                  {/* Background Shine Effect */}
+                                  <div className="absolute inset-0 bg-gradient-to-tr from-[#FF9800]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                  
+                                  <div className={`p-4 rounded-2xl bg-white shadow-sm border border-[#263238]/5 transition-all duration-300 group-hover:scale-110
+                                    ${isDragging ? 'scale-110 text-[#FF9800] ring-4 ring-[#FF9800]/10' : 'text-[#263238]/30 group-hover:text-[#FF9800]/60'}`}>
+                                    <ImageIcon className="w-8 h-8" />
+                                  </div>
+
+                                  <div className="text-center px-4 relative">
+                                    <p className="text-sm font-semibold text-[#263238]/70 mb-1">
+                                      {isDragging ? 'Drop it here!' : 'Click or drag image to upload'}
+                                    </p>
+                                    <p className="text-xs text-[#263238]/40">
+                                      Supports: JPG, PNG, GIF (max 10MB)
+                                    </p>
+                                  </div>
+
+                                  <input
+                                    type="file"
+                                    id="edit-post-image"
+                                    accept="image/*"
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setEditImageFile(file);
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => setEditImagePreview(reader.result as string);
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
 
                             {/* Action Buttons */}
