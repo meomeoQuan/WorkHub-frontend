@@ -152,6 +152,7 @@ export default function JobFilter() {
     string[]
   >([]);
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [newPostImageFile, setNewPostImageFile] = useState<File | null>(null);
   const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<{
     id: string;
@@ -2040,6 +2041,7 @@ export default function JobFilter() {
                     setEditingPost(null);
                     setNewPostContent("");
                     setNewPostImage(null);
+                    setNewPostImageFile(null);
                   }}
                   className="text-[#263238] hover:text-[#263238]/70 transition font-medium"
                 >
@@ -2084,6 +2086,7 @@ export default function JobFilter() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            setNewPostImageFile(file);
                             const reader = new FileReader();
                             reader.onloadend = () => {
                               setNewPostImage(reader.result as string);
@@ -2123,7 +2126,10 @@ export default function JobFilter() {
                           className="w-full h-64 object-cover rounded-xl border-2 border-[#263238]/10"
                         />
                         <button
-                          onClick={() => setNewPostImage(null)}
+                          onClick={() => {
+                            setNewPostImage(null);
+                            setNewPostImageFile(null);
+                          }}
                           className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white h-8 w-8 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="w-4 h-4" />
@@ -2252,17 +2258,21 @@ export default function JobFilter() {
                     if (newPostContent.trim()) {
                       setIsSubmitting(true);
                       try {
+                        const formData = new FormData();
+                        formData.append("Content", newPostContent);
+                        if (newPostImageFile) {
+                          formData.append("PostImage", newPostImageFile);
+                        }
+                        selectedJobForPost.forEach(id => {
+                          formData.append("RecruitmentIds", id);
+                        });
+
                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/create-post`, {
                           method: 'POST',
                           headers: {
-                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                           },
-                          body: JSON.stringify({
-                            content: newPostContent,
-                            postImageUrl: newPostImage,
-                            recruitmentIds: selectedJobForPost.map(id => parseInt(id))
-                          })
+                          body: formData
                         });
 
                         const data: ApiResponse<any> = await response.json();
@@ -2272,6 +2282,7 @@ export default function JobFilter() {
                           setNewPostContent("");
                           setSelectedJobForPost([]);
                           setNewPostImage(null);
+                          setNewPostImageFile(null);
                           setShowNewPostModal(false);
                           fetchPosts(1, searchQuery, {
                             jobType: selectedJobType,
