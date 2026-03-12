@@ -144,6 +144,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(parsedUser);
         // Fetch latest plan to sync
         fetchPlan();
+        // Sync avatar from profile
+        const token = localStorage.getItem('access_token');
+        if (token && parsedUser.id) {
+          fetch(`${API}/api/UserProfile/show-profile/${parsedUser.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.ok ? res.json() : null)
+            .then(result => {
+              if (result?.success && result.data?.avatarUrl) {
+                const latestAvatar = result.data.avatarUrl;
+                if (latestAvatar !== parsedUser.avatarUrl) {
+                  const synced = { ...parsedUser, avatarUrl: latestAvatar };
+                  setUser(synced);
+                  localStorage.setItem('workhub_user', JSON.stringify(synced));
+                }
+              }
+            })
+            .catch(() => { /* silently fail */ });
+        }
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('workhub_user');
