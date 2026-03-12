@@ -278,7 +278,7 @@ export default function JobFilter() {
             id: p.postId.toString(),
             userId: p.userId,
             company: p.fullName,
-            avatar: p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`,
+            avatar: (user && p.userId === user.id && user.avatarUrl) ? user.avatarUrl : (p.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${p.fullName}&backgroundColor=FF9800`),
             username: p.fullName.toLowerCase().replace(/\s/g, "_"),
             companyEmployees: "50-200 employees",
             companyRating: p.rating ? `${p.rating} rating` : null,
@@ -1021,10 +1021,13 @@ export default function JobFilter() {
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10 flex-shrink-0">
-                <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
-                <AvatarFallback className="bg-[#FF9800] text-white">
-                  {user?.fullName?.charAt(0) || "U"}
-                </AvatarFallback>
+                {user?.avatarUrl ? (
+                  <AvatarImage src={user.avatarUrl} />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] text-white font-semibold">
+                    {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                )}
               </Avatar>
               <button
                 onClick={handleOpenNewPostModal}
@@ -1396,7 +1399,7 @@ export default function JobFilter() {
                               </span>
                             </Link>
                             {/* Credibility Rating */}
-                            {post.credibilityRating && (
+                            {post.credibilityRating != null && post.credibilityRating > 0 && (
                               <div className="flex items-center gap-1 px-2 py-0.5 bg-[#FF9800]/10 border border-[#FF9800]/20 rounded-lg">
                                 <Star className="w-3 h-3 text-[#FF9800] fill-[#FF9800]" />
                                 <span className="text-xs font-semibold text-[#FF9800]">{post.credibilityRating.toFixed(1)}</span>
@@ -2057,10 +2060,13 @@ export default function JobFilter() {
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="flex gap-3">
                   <Avatar className="w-10 h-10 flex-shrink-0">
-                    <AvatarImage src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`} />
-                    <AvatarFallback className="bg-[#FF9800] text-white">
-                      {user?.fullName?.charAt(0) || "U"}
-                    </AvatarFallback>
+                    {user?.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-to-br from-[#FF9800] to-[#4FC3F7] text-white font-semibold">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
 
                   <div className="flex-1">
