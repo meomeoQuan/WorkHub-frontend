@@ -6,7 +6,6 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Edit,
   Filter,
   Heart,
   Image as ImageIcon,
@@ -14,13 +13,11 @@ import {
   MapPin,
   MessageCircle,
   Link as LinkIcon,
-  MoreHorizontal,
   Search,
   ArrowRight,
   Send,
   SlidersHorizontal,
   Star,
-  Trash2,
   UserCheck,
   UserPlus,
   X
@@ -45,8 +42,6 @@ import type { ApiResponse } from "../types/ApiResponse";
 import { formatRelativeTime } from "../utils/dateUtils";
 import { toast } from "sonner";
 
-// Mock job posts data - removed
-const jobPosts: any[] = [];
 
 // Map category names from home page to JobFilter categories
 const mapCategoryName = (category: string): string => {
@@ -153,12 +148,6 @@ export default function JobFilter() {
   >([]);
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [newPostImageFile, setNewPostImageFile] = useState<File | null>(null);
-  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{
-    id: string;
-    content: string;
-    image: string | null;
-  } | null>(null);
 
   // Comments storage - maps post ID to tree of comments from API
   const [userComments, setUserComments] = useState<Record<string, any[]>>({});
@@ -172,16 +161,7 @@ export default function JobFilter() {
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (selectedPostForComment || showNewPostModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedPostForComment, showNewPostModal]);
+  // No need for separate body scroll management, consolidated below
 
   // Infinite scroll states
   const [apiPosts, setApiPosts] = useState<any[]>([]);
@@ -459,11 +439,8 @@ export default function JobFilter() {
       fetchFollowingCount();
       fetchFollowedUsers();
     }
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    // Artificial delay removed
+    setIsInitialLoading(false);
   }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, fetchJobTypes, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
@@ -501,34 +478,10 @@ export default function JobFilter() {
   // Handle new post modal loading
   useEffect(() => {
     if (showNewPostModal) {
-      setIsNewPostModalLoading(true);
-      const timer = setTimeout(() => {
-        setIsNewPostModalLoading(false);
-      }, 800);
-
-      return () => clearTimeout(timer);
+      setIsNewPostModalLoading(false);
     }
   }, [showNewPostModal]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.post-menu-dropdown')) {
-        setOpenMenuPostId(null);
-      }
-    };
-
-    if (openMenuPostId) {
-      document.addEventListener('click', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [openMenuPostId]);
-
-  // Close dropdown when clicking outside
 
   // Auto-open filters when category is selected from URL
   useEffect(() => {
@@ -781,46 +734,6 @@ export default function JobFilter() {
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-post/${postId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      const data: ApiResponse<any> = await response.json();
-
-      if (data.success) {
-        toast.success("Post deleted successfully");
-        setApiPosts((prev) => prev.filter((p) => p.id !== postId));
-        setOpenMenuPostId(null);
-      } else {
-        toast.error(data.message || "Failed to delete post");
-      }
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      toast.error("An error occurred while deleting the post");
-    }
-  };
-
-  const handleEditPost = (post: typeof jobPosts[0]) => {
-    setEditingPost({
-      id: post.id,
-      content: post.content,
-      image: post.image || null,
-    });
-    setNewPostContent(post.content);
-    setNewPostImage(post.image || null);
-    // Preserve attached jobs
-    setSelectedJobForPost(post.attachedJobs || []);
-    setShowNewPostModal(true);
-    setOpenMenuPostId(null);
-  };
 
   // Combine user-posted jobs and API posts
   const allJobPosts = apiPosts;
@@ -890,12 +803,14 @@ export default function JobFilter() {
       const now = new Date();
       const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
 
-      if (selectedPostedDate === "24h") {
+      if (selectedPostedDate === "1d") {
         if (hoursDiff > 24) return false;
-      } else if (selectedPostedDate === "7d") {
+      } else if (selectedPostedDate === "1w") {
         if (hoursDiff > 24 * 7) return false;
-      } else if (selectedPostedDate === "30d") {
+      } else if (selectedPostedDate === "1m") {
         if (hoursDiff > 24 * 30) return false;
+      } else if (selectedPostedDate === "1y") {
+        if (hoursDiff > 24 * 365) return false;
       }
     }
 
@@ -1126,10 +1041,10 @@ export default function JobFilter() {
                   <div className="flex items-center gap-1 px-2.5 py-1 bg-[#4FC3F7]/10 border border-[#4FC3F7]/30 text-[#4FC3F7] rounded-full text-xs">
                     <Calendar className="w-3 h-3" />
                     <span>
-                      {selectedPostedDate === "1d" && "Recently"}
-                      {selectedPostedDate === "1w" && "Weeks"}
-                      {selectedPostedDate === "1m" && "Months"}
-                      {selectedPostedDate === "1y" && "Years"}
+                      {selectedPostedDate === "1d" && "Past 24h"}
+                      {selectedPostedDate === "1w" && "Past Week"}
+                      {selectedPostedDate === "1m" && "Past Month"}
+                      {selectedPostedDate === "1y" && "Past Year"}
                     </span>
                     <button
                       onClick={() => setSelectedPostedDate(null)}
@@ -1380,7 +1295,7 @@ export default function JobFilter() {
                   {/* Post Header */}
                   <div className="flex gap-3">
                     <Link to={`/profile/${post.userId}`}>
-                      <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
+                      <Avatar className="w-9 h-9 flex-shrink-0 cursor-pointer aspect-square">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
                           {post.company.charAt(0)}
@@ -1438,73 +1353,6 @@ export default function JobFilter() {
                               )}
                             </button>
                           )}
-                          {/* 
-                          <div className="relative post-menu-dropdown">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuPostId(openMenuPostId === post.id ? null : post.id);
-                              }}
-                              className="p-1.5 hover:bg-[#263238]/5 rounded-full transition"
-                            >
-                              <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
-                            </button>
-
-                            {openMenuPostId === post.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#263238]/10 py-1 min-w-[160px] z-50">
-                                {post.username === (user?.email?.split('@')[0] || 'user') && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditPost(post);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#4FC3F7]/10 flex items-center gap-2 transition"
-                                    >
-                                      <Edit className="w-4 h-4 text-[#4FC3F7]" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeletePost(post.id);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2 transition"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </button>
-                                  </>
-                                )}
-
-                                {post.username !== (user?.email?.split('@')[0] || 'user') && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        alert('Report functionality coming soon!');
-                                        setOpenMenuPostId(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#FAFAFA] flex items-center gap-2 transition"
-                                    >
-                                      Report
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        alert('Hide functionality coming soon!');
-                                        setOpenMenuPostId(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#FAFAFA] flex items-center gap-2 transition"
-                                    >
-                                      Hide
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          */}
                         </div>
                       </div>
 
@@ -1831,8 +1679,11 @@ export default function JobFilter() {
                             <div className="flex gap-3">
                               {/* Connector line for nested comments handled by parent border */}
 
-                              <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0 relative z-10`}>
-                                <AvatarImage src={node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`} />
+                              <Avatar className={`${depth === 0 ? 'w-7 h-7' : 'w-6 h-6'} flex-shrink-0 relative z-10 aspect-square`}>
+                                <AvatarImage src={(user && Number(node.userId || node.UserId) === Number(user.id) && user.avatarUrl) 
+                                  ? user.avatarUrl 
+                                  : (node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`)} 
+                                />
                                 <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-[10px]`}>
                                   {node.userName?.charAt(0) || "U"}
                                 </AvatarFallback>
@@ -1880,7 +1731,7 @@ export default function JobFilter() {
                                     Reply
                                   </button>
 
-                                  {(Number(node.userId || node.UserId) === Number(user?.id) || user?.userType === "admin") && (
+                                  {user && Number(node.userId || node.UserId) === Number(user.id) && (
                                     <>
                                       <span className="text-[#263238]/20">|</span>
                                       <button
@@ -1970,8 +1821,12 @@ export default function JobFilter() {
                 {/* Comment Input */}
                 <div className="border-t border-[#263238]/10 p-4 bg-white">
                   <div className="flex gap-3 items-center">
-                    <Avatar className="w-9 h-9 flex-shrink-0">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
+                    <Avatar className="w-8 h-8 flex-shrink-0 aspect-square">
+                      {user?.avatarUrl ? (
+                        <AvatarImage src={user.avatarUrl} />
+                      ) : (
+                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.fullName || "User"}&backgroundColor=FF9800`} />
+                      )}
                       <AvatarFallback className="bg-[#FF9800] text-white">
                         {user?.fullName?.charAt(0) || "U"}
                       </AvatarFallback>
@@ -2041,7 +1896,6 @@ export default function JobFilter() {
                 <button
                   onClick={() => {
                     setShowNewPostModal(false);
-                    setEditingPost(null);
                     setNewPostContent("");
                     setNewPostImage(null);
                     setNewPostImageFile(null);
@@ -2051,7 +1905,7 @@ export default function JobFilter() {
                   Cancel
                 </button>
                 <h2 className="font-semibold text-[#263238]">
-                  {editingPost ? 'Edit post' : 'New thread'}
+                  New thread
                 </h2>
                 <div className="w-16"></div>
               </div>
@@ -2059,7 +1913,7 @@ export default function JobFilter() {
               {/* Modal Content - Scrollable */}
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="flex gap-3">
-                  <Avatar className="w-10 h-10 flex-shrink-0">
+                  <Avatar className="w-9 h-9 flex-shrink-0 aspect-square">
                     {user?.avatarUrl ? (
                       <AvatarImage src={user.avatarUrl} />
                     ) : (
@@ -2317,7 +2171,7 @@ export default function JobFilter() {
                       Posting...
                     </span>
                   ) : (
-                    editingPost ? 'Update' : 'Post'
+                    'Post'
                   )}
                 </Button>
               </div>

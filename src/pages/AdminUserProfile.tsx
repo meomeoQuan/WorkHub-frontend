@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, GraduationCap, Briefcase, FileText, Calendar, ArrowLeft, Edit, Save, X, Upload, Eye, Ban, Unlock, Crown, Shield, CheckCircle, XCircle, AlertTriangle, Star, TrendingUp, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, GraduationCap, Briefcase, FileText, ArrowLeft, Edit, Save, X, Upload, Eye, Ban, Unlock, Crown, Shield, CheckCircle, XCircle, AlertTriangle, Star, TrendingUp, Send } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -7,7 +7,7 @@ import { Separator } from '../components/ui/separator';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import type { PaymentPlan } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -181,7 +181,7 @@ export function AdminUserProfile() {
   };
 
   const removeSkill = (index: number) => {
-    const newSkills = editedData.skills.filter((_, i) => i !== index);
+    const newSkills = editedData.skills.filter((_: string, i: number) => i !== index);
     setEditedData({ ...editedData, skills: newSkills });
   };
 
@@ -199,17 +199,14 @@ export function AdminUserProfile() {
 
     setIsSendingEmail(true);
 
-    // Simulate sending email
-    setTimeout(() => {
-      const attachmentInfo = emailAttachments.length > 0
-        ? ` with ${emailAttachments.length} attachment${emailAttachments.length > 1 ? 's' : ''}`
-        : '';
-      toast.success(`Email sent to ${userData.name} (${userData.email})${attachmentInfo}`);
-      setEmailSubject('');
-      setEmailMessage('');
-      setEmailAttachments([]);
-      setIsSendingEmail(false);
-    }, 1000);
+    const attachmentInfo = emailAttachments.length > 0
+      ? ` with ${emailAttachments.length} attachment${emailAttachments.length > 1 ? 's' : ''}`
+      : '';
+    toast.success(`Email sent to ${userData.name} (${userData.email})${attachmentInfo}`);
+    setEmailSubject('');
+    setEmailMessage('');
+    setEmailAttachments([]);
+    setIsSendingEmail(false);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

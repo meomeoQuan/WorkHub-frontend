@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '../components/ui/button';
-import { Zap, Mail, Send, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Mail, Send, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
 
 export function EmailConfirmation() {
   const navigate = useNavigate();
@@ -11,23 +11,17 @@ export function EmailConfirmation() {
   const [resent, setResent] = useState(false);
   const [showVerifyButton, setShowVerifyButton] = useState(false);
 
-  // Simulate 2 second delay before showing verify button (emulating email arrival)
+  // Ensure verify button shows immediately (real base)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowVerifyButton(true);
-    }, 2000);
-
-    return () => clearTimeout(timer);
+    setShowVerifyButton(true);
   }, []);
 
   const handleResendEmail = () => {
     setIsResending(true);
     // TODO: Implement actual email resend logic
-    setTimeout(() => {
-      setIsResending(false);
-      setResent(true);
-      setTimeout(() => setResent(false), 3000);
-    }, 1500);
+    setIsResending(false);
+    setResent(true);
+    setTimeout(() => setResent(false), 3000); // Keep toast-like duration for feedback
   };
 
   return (
