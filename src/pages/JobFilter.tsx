@@ -439,11 +439,8 @@ export default function JobFilter() {
       fetchFollowingCount();
       fetchFollowedUsers();
     }
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    // Artificial delay removed
+    setIsInitialLoading(false);
   }, [fetchFollowingCount, fetchFollowedUsers, fetchCities, fetchCategories, fetchJobTypes, isLoggedIn]);
 
   // Track scroll position for scroll-to-top button
@@ -481,12 +478,7 @@ export default function JobFilter() {
   // Handle new post modal loading
   useEffect(() => {
     if (showNewPostModal) {
-      setIsNewPostModalLoading(true);
-      const timer = setTimeout(() => {
-        setIsNewPostModalLoading(false);
-      }, 800);
-
-      return () => clearTimeout(timer);
+      setIsNewPostModalLoading(false);
     }
   }, [showNewPostModal]);
 

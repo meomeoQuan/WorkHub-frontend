@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Zap, Mail, ArrowLeft, Send } from 'lucide-react';
+import { Mail, ArrowLeft, Send } from 'lucide-react';
 
 export function ResendEmailConfirmation() {
   const navigate = useNavigate();
@@ -15,11 +15,9 @@ export function ResendEmailConfirmation() {
     setIsSubmitting(true);
     
     // TODO: Implement actual email resend logic
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Redirect to email confirmation page with the email parameter
-      navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
-    }, 1000);
+    setIsSubmitting(false);
+    // Redirect to email confirmation page with the email parameter
+    navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
   };
 
   return (

@@ -168,7 +168,7 @@ export function ApplyJob() {
           toast.success("Application submitted successfully!");
           setTimeout(() => {
             navigate('/my-applications');
-          }, 3000);
+          }, 500);
         } else {
           toast.error(data.message || "Failed to submit application");
         }
