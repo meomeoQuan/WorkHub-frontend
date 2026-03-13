@@ -6,7 +6,6 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Edit,
   Filter,
   Heart,
   Image as ImageIcon,
@@ -14,13 +13,11 @@ import {
   MapPin,
   MessageCircle,
   Link as LinkIcon,
-  MoreHorizontal,
   Search,
   ArrowRight,
   Send,
   SlidersHorizontal,
   Star,
-  Trash2,
   UserCheck,
   UserPlus,
   X
@@ -45,8 +42,6 @@ import type { ApiResponse } from "../types/ApiResponse";
 import { formatRelativeTime } from "../utils/dateUtils";
 import { toast } from "sonner";
 
-// Mock job posts data - removed
-const jobPosts: any[] = [];
 
 // Map category names from home page to JobFilter categories
 const mapCategoryName = (category: string): string => {
@@ -153,12 +148,6 @@ export default function JobFilter() {
   >([]);
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [newPostImageFile, setNewPostImageFile] = useState<File | null>(null);
-  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{
-    id: string;
-    content: string;
-    image: string | null;
-  } | null>(null);
 
   // Comments storage - maps post ID to tree of comments from API
   const [userComments, setUserComments] = useState<Record<string, any[]>>({});
@@ -501,23 +490,6 @@ export default function JobFilter() {
     }
   }, [showNewPostModal]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.post-menu-dropdown') && !target.closest('.post-menu-trigger')) {
-        setOpenMenuPostId(null);
-      }
-    };
-
-    if (openMenuPostId) {
-      document.addEventListener('click', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [openMenuPostId]);
 
   // Auto-open filters when category is selected from URL
   useEffect(() => {
@@ -770,46 +742,6 @@ export default function JobFilter() {
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/JobPost/delete-post/${postId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      const data: ApiResponse<any> = await response.json();
-
-      if (data.success) {
-        toast.success("Post deleted successfully");
-        setApiPosts((prev) => prev.filter((p) => p.id !== postId));
-        setOpenMenuPostId(null);
-      } else {
-        toast.error(data.message || "Failed to delete post");
-      }
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      toast.error("An error occurred while deleting the post");
-    }
-  };
-
-  const handleEditPost = (post: typeof jobPosts[0]) => {
-    setEditingPost({
-      id: post.id,
-      content: post.content,
-      image: post.image || null,
-    });
-    setNewPostContent(post.content);
-    setNewPostImage(post.image || null);
-    // Preserve attached jobs
-    setSelectedJobForPost(post.attachedJobs || []);
-    setShowNewPostModal(true);
-    setOpenMenuPostId(null);
-  };
 
   // Combine user-posted jobs and API posts
   const allJobPosts = apiPosts;
@@ -1429,71 +1361,6 @@ export default function JobFilter() {
                               )}
                             </button>
                           )}
-                          <div className="relative post-menu-dropdown">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuPostId(openMenuPostId === post.id ? null : post.id);
-                              }}
-                              className="p-1.5 hover:bg-[#263238]/5 rounded-full transition post-menu-trigger"
-                            >
-                              <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
-                            </button>
-
-                            {openMenuPostId === post.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#263238]/10 py-1 min-w-[160px] z-50">
-                                {post.userId === Number(user?.id) && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditPost(post);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#4FC3F7]/10 flex items-center gap-2 transition"
-                                    >
-                                      <Edit className="w-4 h-4 text-[#4FC3F7]" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeletePost(post.id);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2 transition"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </button>
-                                  </>
-                                )}
-
-                                {post.userId !== Number(user?.id) && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        alert('Report functionality coming soon!');
-                                        setOpenMenuPostId(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#FAFAFA] flex items-center gap-2 transition"
-                                    >
-                                      Report
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        alert('Hide functionality coming soon!');
-                                        setOpenMenuPostId(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-[#263238] hover:bg-[#FAFAFA] flex items-center gap-2 transition"
-                                    >
-                                      Hide
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </div>
 
@@ -1872,7 +1739,7 @@ export default function JobFilter() {
                                     Reply
                                   </button>
 
-                                  {(Number(node.userId || node.UserId) === Number(user?.id) || user?.userType === "admin") && (
+                                  {user && Number(node.userId || node.UserId) === Number(user.id) && (
                                     <>
                                       <span className="text-[#263238]/20">|</span>
                                       <button
@@ -2037,7 +1904,6 @@ export default function JobFilter() {
                 <button
                   onClick={() => {
                     setShowNewPostModal(false);
-                    setEditingPost(null);
                     setNewPostContent("");
                     setNewPostImage(null);
                     setNewPostImageFile(null);
@@ -2047,7 +1913,7 @@ export default function JobFilter() {
                   Cancel
                 </button>
                 <h2 className="font-semibold text-[#263238]">
-                  {editingPost ? 'Edit post' : 'New thread'}
+                  New thread
                 </h2>
                 <div className="w-16"></div>
               </div>
@@ -2313,7 +2179,7 @@ export default function JobFilter() {
                       Posting...
                     </span>
                   ) : (
-                    editingPost ? 'Update' : 'Post'
+                    'Post'
                   )}
                 </Button>
               </div>

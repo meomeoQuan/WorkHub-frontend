@@ -1277,7 +1277,7 @@ export function UserPosts() {
                                   Reply
                                 </button>
 
-                                {(Number(node.userId || node.UserId) === Number(user?.id) || user?.userType === "admin") && (
+                                {user && Number(node.userId || node.UserId) === Number(user.id) && (
                                   <>
                                     <span className="text-[#263238]/20">|</span>
                                     <button
