@@ -601,12 +601,12 @@ export function UserPosts() {
                     {/* Post Header */}
                     <div className="flex gap-3">
                       <Link to={`/profile/${post.userId || profileUserId}`}>
-                        <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
-                          <AvatarImage src={post.avatar} />
-                          <AvatarFallback className="bg-[#FF9800] text-white">
-                            {post.company.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+                      <Avatar className="w-9 h-9 flex-shrink-0 cursor-pointer aspect-square">
+                        <AvatarImage src={(user && Number(post.userId) === Number(user.id) && user.avatarUrl) ? user.avatarUrl : post.avatar} />
+                        <AvatarFallback className="bg-[#FF9800] text-white">
+                          {post.company.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       </Link>
 
                       <div className="flex-1 min-w-0">
@@ -1121,8 +1121,8 @@ export function UserPosts() {
                 <div className="p-4 border-b border-[#263238]/10">
                   <div className="flex gap-3">
                     <Link to={`/profile/${selectedPostForComment.userId}`} onClick={() => setSelectedPostForComment(null)}>
-                      <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
-                        <AvatarImage src={selectedPostForComment.avatar} />
+                      <Avatar className="w-9 h-9 flex-shrink-0 cursor-pointer aspect-square">
+                        <AvatarImage src={(user && Number(selectedPostForComment.userId) === Number(user.id) && user.avatarUrl) ? user.avatarUrl : selectedPostForComment.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
                           {selectedPostForComment.company.charAt(0)}
                         </AvatarFallback>
@@ -1225,8 +1225,11 @@ export function UserPosts() {
                       const renderComment = (node: any, depth: number = 0) => (
                         <div key={`comment-${node.id}`} className="space-y-2 mt-3" ref={lastCommentRef}>
                           <div className="flex gap-3">
-                            <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0 relative z-10`}>
-                              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`} />
+                            <Avatar className={`${depth === 0 ? 'w-7 h-7' : 'w-6 h-6'} flex-shrink-0 relative z-10 aspect-square`}>
+                              <AvatarImage src={(user && Number(node.userId || node.UserId) === Number(user.id) && user.avatarUrl) 
+                                ? user.avatarUrl 
+                                : (node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`)} 
+                              />
                               <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-[10px]`}>
                                 {node.userName?.charAt(0) || "U"}
                               </AvatarFallback>
@@ -1364,8 +1367,12 @@ export function UserPosts() {
               {/* Comment Input */}
               <div className="border-t border-[#263238]/10 p-4 bg-white">
                 <div className="flex gap-3 items-center">
-                  <Avatar className="w-9 h-9 flex-shrink-0">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
+                  <Avatar className="w-8 h-8 flex-shrink-0 aspect-square">
+                    {user?.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} />
+                    ) : (
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
+                    )}
                     <AvatarFallback className="bg-[#FF9800] text-white">
                       {user?.fullName?.charAt(0) || "U"}
                     </AvatarFallback>

@@ -7,15 +7,17 @@ import { cn } from "./utils";
 
 function Avatar({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
       className={cn(
-        "relative flex size-10 shrink-0 overflow-hidden rounded-full",
+        "relative flex shrink-0 overflow-hidden rounded-full aspect-square",
         className,
       )}
+      style={{ borderRadius: '50%', ...style }}
       {...props}
     />
   );
@@ -28,7 +30,7 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
+      className={cn("aspect-square size-full object-cover rounded-full", className)}
       {...props}
     />
   );

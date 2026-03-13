@@ -172,16 +172,7 @@ export default function JobFilter() {
   // Ref for auto-scrolling to new comments/replies
   const lastCommentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (selectedPostForComment || showNewPostModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedPostForComment, showNewPostModal]);
+  // No need for separate body scroll management, consolidated below
 
   // Infinite scroll states
   const [apiPosts, setApiPosts] = useState<any[]>([]);
@@ -514,7 +505,7 @@ export default function JobFilter() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.post-menu-dropdown')) {
+      if (!target.closest('.post-menu-dropdown') && !target.closest('.post-menu-trigger')) {
         setOpenMenuPostId(null);
       }
     };
@@ -527,8 +518,6 @@ export default function JobFilter() {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [openMenuPostId]);
-
-  // Close dropdown when clicking outside
 
   // Auto-open filters when category is selected from URL
   useEffect(() => {
@@ -890,12 +879,14 @@ export default function JobFilter() {
       const now = new Date();
       const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
 
-      if (selectedPostedDate === "24h") {
+      if (selectedPostedDate === "1d") {
         if (hoursDiff > 24) return false;
-      } else if (selectedPostedDate === "7d") {
+      } else if (selectedPostedDate === "1w") {
         if (hoursDiff > 24 * 7) return false;
-      } else if (selectedPostedDate === "30d") {
+      } else if (selectedPostedDate === "1m") {
         if (hoursDiff > 24 * 30) return false;
+      } else if (selectedPostedDate === "1y") {
+        if (hoursDiff > 24 * 365) return false;
       }
     }
 
@@ -1126,10 +1117,10 @@ export default function JobFilter() {
                   <div className="flex items-center gap-1 px-2.5 py-1 bg-[#4FC3F7]/10 border border-[#4FC3F7]/30 text-[#4FC3F7] rounded-full text-xs">
                     <Calendar className="w-3 h-3" />
                     <span>
-                      {selectedPostedDate === "1d" && "Recently"}
-                      {selectedPostedDate === "1w" && "Weeks"}
-                      {selectedPostedDate === "1m" && "Months"}
-                      {selectedPostedDate === "1y" && "Years"}
+                      {selectedPostedDate === "1d" && "Past 24h"}
+                      {selectedPostedDate === "1w" && "Past Week"}
+                      {selectedPostedDate === "1m" && "Past Month"}
+                      {selectedPostedDate === "1y" && "Past Year"}
                     </span>
                     <button
                       onClick={() => setSelectedPostedDate(null)}
@@ -1380,7 +1371,7 @@ export default function JobFilter() {
                   {/* Post Header */}
                   <div className="flex gap-3">
                     <Link to={`/profile/${post.userId}`}>
-                      <Avatar className="w-10 h-10 flex-shrink-0 cursor-pointer">
+                      <Avatar className="w-9 h-9 flex-shrink-0 cursor-pointer aspect-square">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback className="bg-[#FF9800] text-white">
                           {post.company.charAt(0)}
@@ -1438,21 +1429,20 @@ export default function JobFilter() {
                               )}
                             </button>
                           )}
-                          {/* 
                           <div className="relative post-menu-dropdown">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOpenMenuPostId(openMenuPostId === post.id ? null : post.id);
                               }}
-                              className="p-1.5 hover:bg-[#263238]/5 rounded-full transition"
+                              className="p-1.5 hover:bg-[#263238]/5 rounded-full transition post-menu-trigger"
                             >
                               <MoreHorizontal className="w-5 h-5 text-[#263238]/50" />
                             </button>
 
                             {openMenuPostId === post.id && (
                               <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#263238]/10 py-1 min-w-[160px] z-50">
-                                {post.username === (user?.email?.split('@')[0] || 'user') && (
+                                {post.userId === Number(user?.id) && (
                                   <>
                                     <button
                                       onClick={(e) => {
@@ -1477,7 +1467,7 @@ export default function JobFilter() {
                                   </>
                                 )}
 
-                                {post.username !== (user?.email?.split('@')[0] || 'user') && (
+                                {post.userId !== Number(user?.id) && (
                                   <>
                                     <button
                                       onClick={(e) => {
@@ -1504,7 +1494,6 @@ export default function JobFilter() {
                               </div>
                             )}
                           </div>
-                          */}
                         </div>
                       </div>
 
@@ -1831,8 +1820,11 @@ export default function JobFilter() {
                             <div className="flex gap-3">
                               {/* Connector line for nested comments handled by parent border */}
 
-                              <Avatar className={`${depth === 0 ? 'w-8 h-8' : 'w-7 h-7'} flex-shrink-0 relative z-10`}>
-                                <AvatarImage src={node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`} />
+                              <Avatar className={`${depth === 0 ? 'w-7 h-7' : 'w-6 h-6'} flex-shrink-0 relative z-10 aspect-square`}>
+                                <AvatarImage src={(user && Number(node.userId || node.UserId) === Number(user.id) && user.avatarUrl) 
+                                  ? user.avatarUrl 
+                                  : (node.userUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${node.userName || 'U'}&backgroundColor=4FC3F7`)} 
+                                />
                                 <AvatarFallback className={`${depth === 0 ? 'bg-[#4FC3F7]' : 'bg-[#FF9800]'} text-white text-[10px]`}>
                                   {node.userName?.charAt(0) || "U"}
                                 </AvatarFallback>
@@ -1970,8 +1962,12 @@ export default function JobFilter() {
                 {/* Comment Input */}
                 <div className="border-t border-[#263238]/10 p-4 bg-white">
                   <div className="flex gap-3 items-center">
-                    <Avatar className="w-9 h-9 flex-shrink-0">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || "User"}`} />
+                    <Avatar className="w-8 h-8 flex-shrink-0 aspect-square">
+                      {user?.avatarUrl ? (
+                        <AvatarImage src={user.avatarUrl} />
+                      ) : (
+                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.fullName || "User"}&backgroundColor=FF9800`} />
+                      )}
                       <AvatarFallback className="bg-[#FF9800] text-white">
                         {user?.fullName?.charAt(0) || "U"}
                       </AvatarFallback>
@@ -2059,7 +2055,7 @@ export default function JobFilter() {
               {/* Modal Content - Scrollable */}
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="flex gap-3">
-                  <Avatar className="w-10 h-10 flex-shrink-0">
+                  <Avatar className="w-9 h-9 flex-shrink-0 aspect-square">
                     {user?.avatarUrl ? (
                       <AvatarImage src={user.avatarUrl} />
                     ) : (
