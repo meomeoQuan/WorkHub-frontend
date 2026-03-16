@@ -80,7 +80,22 @@ export function Login() {
     try {
       var role = await login(email, password);
 
-      toast.success('Welcome back, Admin! Login successful.', {
+      if (role === 'admin') {
+        toast.success('Welcome back, Admin! Login successful.', {
+          style: {
+            background: '#4ADE80',
+            color: '#FFFFFF',
+            border: '2px solid #22C55E',
+            fontSize: '14px',
+            fontWeight: '600',
+          },
+          duration: 3000,
+        });
+        navigate('/admin');
+        return;
+      }
+
+      toast.success('Welcome back! Login successful.', {
         style: {
           background: '#4ADE80',
           color: '#FFFFFF',
@@ -90,13 +105,6 @@ export function Login() {
         },
         duration: 3000,
       });
-
-      if (role === 'admin') {
-
-        navigate('/admin');
-        return;
-
-      }
       navigate('/');
 
     } catch (error: any) {

@@ -54,6 +54,7 @@ interface UserRow {
   status: 'active' | 'suspended';
   revenue: number;
   joinDate: string;
+  isVerified: boolean;
 }
 
 interface Order {
@@ -162,6 +163,13 @@ function statusBadgeHtml(status: string) {
   return `<span class="px-2 py-1 rounded-full text-xs font-bold ${cls}">${status}</span>`;
 }
 
+function verifiedBadgeHtml(isVerified: boolean) {
+  if (isVerified) {
+    return `<span class="px-2 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400">Đã xác minh</span>`;
+  }
+  return `<span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-500/20 text-gray-400">Chưa xác minh</span>`;
+}
+
 function priorityBadgeHtml(priority: string) {
   const map: Record<string, string> = {
     Critical: 'bg-red-500/20 text-red-300 border-red-500/30',
@@ -224,7 +232,8 @@ export function AdminDashboard() {
             paymentPlan: u.paymentPlan || 'free',
             status: u.status === 'suspended' ? 'suspended' : 'active',
             revenue: u.revenue || 0,
-            joinDate: u.joinDate || new Date().toISOString().split('T')[0]
+            joinDate: u.joinDate || new Date().toISOString().split('T')[0],
+            isVerified: u.isVerified || false
           }));
           setUsers(mappedUsers);
         }
@@ -368,6 +377,7 @@ export function AdminDashboard() {
           { title: 'ID', data: 'id' },
           { title: 'Tên', data: 'fullName' },
           { title: 'Email', data: 'email' },
+          { title: 'Đã xác minh', data: 'isVerified', render: (d: boolean) => verifiedBadgeHtml(d) },
           { title: 'Gói', data: 'paymentPlan', render: (d: string) => planBadgeHtml(d) },
           { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
           { title: 'Hành động', data: 'id', orderable: false, render: (_d: number, _t: any, row: any) => actionBtnsHtml(row.id, row.status) },
