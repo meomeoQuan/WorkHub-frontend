@@ -21,7 +21,6 @@ import {
   Save,
   ChevronLeft,
   AlertTriangle,
-  Edit,
 } from 'lucide-react';
 import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -43,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+const API = import.meta.env.VITE_API_URL;
 
 // ─── Interfaces ──────────────────────────────────────────────
 interface UserRow {
@@ -103,13 +103,7 @@ interface ReportProblem {
 }
 
 // ─── Mock Data ───────────────────────────────────────────────
-const mockUsers: UserRow[] = [
-  { id: 1, email: 'john@example.com', fullName: 'John Doe', userType: 'user', paymentPlan: 'free', status: 'active', revenue: 0, joinDate: '2024-01-15' },
-  { id: 2, email: 'jane@example.com', fullName: 'Jane Smith', userType: 'user', paymentPlan: 'gold', status: 'active', revenue: 199.9, joinDate: '2024-02-10' },
-  { id: 3, email: 'admin@workhub.com', fullName: 'System Admin', userType: 'admin', paymentPlan: 'gold', status: 'active', revenue: 0, joinDate: '2023-12-01' },
-  { id: 4, email: 'bob@example.com', fullName: 'Bob Wilson', userType: 'user', paymentPlan: 'silver', status: 'active', revenue: 49.9, joinDate: '2024-01-20' },
-  { id: 5, email: 'alice@example.com', fullName: 'Alice Brown', userType: 'user', paymentPlan: 'diamond', status: 'suspended', revenue: 399.9, joinDate: '2024-03-01' },
-];
+const mockUsers: UserRow[] = [];
 
 const mockOrders: Order[] = [
   { id: 101, userId: 2, userName: 'Jane Smith', plan: 'Gold Plan', amount: 19.99, status: 'Completed', date: '2024-03-01' },
@@ -179,11 +173,20 @@ function priorityBadgeHtml(priority: string) {
   return `<span class="px-2 py-1 rounded text-xs font-medium border ${cls}">${priority}</span>`;
 }
 
-function actionBtnsHtml(id: number) {
+function actionBtnsHtml(id: number, status?: string) {
+  const isSuspended = status === 'suspended';
+  const toggleIcon = isSuspended ? 
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unlock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>` :
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ban"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>`;
+  
+  const toggleTitle = isSuspended ? "Mở khóa" : "Khóa người dùng";
+  const toggleAction = "toggle-ban";
+  const toggleCls = isSuspended ? "text-green-400 hover:bg-green-500/20" : "text-red-400 hover:bg-red-500/20";
+
   return `<div class="flex gap-1">
     <button data-action="view" data-id="${id}" class="p-2 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-all" title="Xem chi tiết"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></button>
     <button data-action="edit" data-id="${id}" class="p-2 hover:bg-purple-500/20 rounded-lg text-purple-400 transition-all" title="Chỉnh sửa"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></button>
-    <button data-action="delete" data-id="${id}" class="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-all" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+    <button data-action="${toggleAction}" data-id="${id}" class="p-2 ${toggleCls} rounded-lg transition-all" title="${toggleTitle}">${toggleIcon}</button>
   </div>`;
 }
 
@@ -198,9 +201,40 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<UserRow[]>(mockUsers);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [posts, setPosts] = useState<Post[]>(mockPosts);
-  const [reports, setReports] = useState<ReportProblem[]>(mockReportProblems);
   const [categories, setCategories] = useState<Category[]>(mockCategories);
   const [jobTypes, setJobTypes] = useState<JobType[]>(mockJobTypes);
+  const [reports, setReports] = useState<ReportProblem[]>(mockReportProblems);
+
+  // Fetch real users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${API}/api/Admin/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          // Map backend UserDTO to frontend UserRow
+          const mappedUsers = result.data.map((u: any) => ({
+            id: u.id,
+            email: u.email,
+            fullName: u.fullName || 'N/A',
+            userType: u.role === 0 ? 'admin' : 'user',
+            paymentPlan: u.paymentPlan || 'free',
+            status: u.status === 'suspended' ? 'suspended' : 'active',
+            revenue: u.revenue || 0,
+            joinDate: u.joinDate || new Date().toISOString().split('T')[0]
+          }));
+          setUsers(mappedUsers);
+        }
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, [selectedMenu]); // Refetch when menu changes or once on mount
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('view');
@@ -248,6 +282,35 @@ export function AdminDashboard() {
   const handleView = useCallback((item: any) => { setDialogMode('view'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
   const handleCreate = useCallback(() => { setDialogMode('create'); setSelectedItem(null); setFormData({}); setIsDialogOpen(true); }, []);
   const handleDeletePrompt = useCallback((id: number) => { setItemToDelete(id); setIsDeleteDialogOpen(true); }, []);
+
+  const handleToggleBan = useCallback(async (userId: number) => {
+    const userToToggle = usersRef.current.find(u => u.id === userId);
+    if (!userToToggle) return;
+
+    const newStatus = userToToggle.status === 'active' ? 'suspended' : 'active';
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API}/api/Admin/users/${userId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        setUsers(prevUsers =>
+          prevUsers.map(u => (u.id === userId ? { ...u, status: newStatus } : u))
+        );
+      } else {
+        console.error("Failed to toggle user status:", res.status, await res.text());
+        // Optionally, show an error message to the user
+      }
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      // Optionally, show an error message to the user
+    }
+  }, []);
 
   const confirmDelete = () => {
     switch (selectedMenu) {
@@ -307,7 +370,7 @@ export function AdminDashboard() {
           { title: 'Email', data: 'email' },
           { title: 'Gói', data: 'paymentPlan', render: (d: string) => planBadgeHtml(d) },
           { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
-          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+          { title: 'Hành động', data: 'id', orderable: false, render: (_d: number, _t: any, row: any) => actionBtnsHtml(row.id, row.status) },
         ];
         data = users;
         break;
@@ -399,6 +462,7 @@ export function AdminDashboard() {
       if (action === 'view') handleView(item);
       else if (action === 'edit') handleEdit(item);
       else if (action === 'delete') handleDeletePrompt(id);
+      else if (action === 'toggle-ban') handleToggleBan(id);
     };
     container.addEventListener('click', handleClick);
 
@@ -410,7 +474,9 @@ export function AdminDashboard() {
       }
       container.innerHTML = '';
     };
-  }, [selectedMenu, users, orders, posts, reports, categories, jobTypes, findItem, handleView, handleEdit, handleDeletePrompt]);
+  }, [selectedMenu, users, orders, posts, reports, categories, jobTypes, findItem, handleView, handleEdit,      handleDeletePrompt,
+    handleToggleBan,
+  ]);
 
   // ─── Chart Init ──────────────────────────────────────────
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, GraduationCap, Briefcase, FileText, ArrowLeft, Edit, Save, X, Upload, Eye, Ban, Unlock, Crown, Shield, CheckCircle, XCircle, AlertTriangle, Star, TrendingUp, Send } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -10,6 +10,7 @@ import { Label } from '../components/ui/label';
 import { useNavigate } from 'react-router';
 import type { PaymentPlan } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+const API = import.meta.env.VITE_API_URL;
 
 // Helper to get query params
 const useQuery = () => {
@@ -140,6 +141,46 @@ export function AdminUserProfile() {
     uploadDate: 'Last updated 1 week ago'
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${API}/api/Admin/users/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          const u = result.data;
+          // Merge backend data with local structure (using mock structure as fallback)
+          const mergedData = {
+            ...initialData, // keep some local UI state/structure
+            id: u.id.toString(),
+            name: u.fullName || 'N/A',
+            email: u.email,
+            phone: u.phone || initialData.phone,
+            location: u.location || initialData.location,
+            paymentPlan: u.paymentPlan || 'free',
+            status: u.status === 'suspended' ? 'suspended' : 'active',
+            revenue: u.revenue || 0,
+            // You might want to map other fields too
+          };
+          setUserData(mergedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+        toast.error("Failed to load user profile");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [userId]);
+
   // Email notification state
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
@@ -162,10 +203,27 @@ export function AdminUserProfile() {
     setIsEditing(false);
   };
 
-  const handleSuspendUser = () => {
-    const newStatus = userData.status === 'suspended' ? 'active' : 'suspended';
-    setUserData({ ...userData, status: newStatus });
-    toast.success(`User ${newStatus === 'suspended' ? 'suspended' : 'activated'} successfully!`);
+  const handleSuspendUser = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API}/api/Admin/users/${userId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const newStatus = userData.status === 'suspended' ? 'active' : 'suspended';
+        setUserData({ ...userData, status: newStatus });
+        toast.success(`User ${newStatus === 'suspended' ? 'suspended' : 'activated'} successfully!`);
+      } else {
+        toast.error('Failed to update user status');
+      }
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      toast.error('An error occurred while updating user status');
+    }
   };
 
   const updateExperience = (index: number, field: string, value: string) => {
@@ -244,6 +302,14 @@ export function AdminUserProfile() {
     }
     return null;
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-purple-500 animate-pulse text-xl font-bold">LOADING SYSTEM DATA...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black">

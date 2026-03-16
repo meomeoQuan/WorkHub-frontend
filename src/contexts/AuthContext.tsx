@@ -180,9 +180,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: 'include' // Receive HttpOnly refresh cookie
     });
 
+    if (!res.ok) {
+      if (res.headers.get('content-type')?.includes('application/json')) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "An error occurred during login");
+      }
+      throw new Error("An error occurred during login");
+    }
+
     const result: ApiResponse<LoginResponseDTO> = await res.json();
 
-    if (!res.ok || !result.success) {
+    if (!result.success) {
       throw new Error(result.message || "Login failed");
     }
 

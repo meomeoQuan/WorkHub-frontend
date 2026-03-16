@@ -14,4 +14,5 @@ export interface UserModel {
     startAt: string;
     endAt: string;
   } | null;
+  status: 'active' | 'suspended';
 }
