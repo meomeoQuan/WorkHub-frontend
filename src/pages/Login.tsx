@@ -99,8 +99,14 @@ export function Login() {
       }
       navigate('/');
 
-    } catch (error) {
-      toast.error('Invalid credentials. Please try again.', {
+    } catch (error: any) {
+      let errorMessage = error.message || 'Invalid credentials. Please try again.';
+      
+      if (errorMessage.includes('suspended')) {
+        errorMessage = 'tài khoản này đã bị ban';
+      }
+
+      toast.error(errorMessage, {
         style: {
           background: '#EF4444',
           color: '#FFFFFF',

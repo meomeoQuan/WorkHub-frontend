@@ -16,5 +16,6 @@ export function mapUserDTOToUser(dto: UserDTO): UserModel {
     userType: roleMap[dto.role] ?? "jobseeker", // safe fallback
     avatarUrl: dto.avatarUrl ?? null,
     paymentPlan: (dto as any).paymentPlan || (dto as any).PaymentPlan || 'free',
+    status: (dto as any).status || (dto as any).Status || 'active',
   };
 }
