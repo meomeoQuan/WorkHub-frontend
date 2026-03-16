@@ -324,11 +324,14 @@ export function UserProfile() {
               description: e.description || ""
             })));
 
-            // Schedule map (simplified)
-            // Need to parse data.schedules to weeklyAvailability object
-            // Assuming data.schedules contains entries for days
-            // This part is complex because backend returns list, frontend wants object.
-            // For now, keeping existing schedule to avoid breaking UI until backend returns compatible structure or we implement full parser
+            // Resume
+            if (data.cvUrl) {
+              setResume({
+                fileName: 'Resume.pdf',
+                fileUrl: data.cvUrl,
+                uploadedDate: ''
+              });
+            }
           }
         }
       } catch (err) {
@@ -818,7 +821,7 @@ export function UserProfile() {
             education.length === 0 &&
             experience.length === 0 &&
             scheduleSlots.length === 0 &&
-            (!resume || !resume.fileName) &&
+            (!resume || !resume.fileUrl) &&
             !companyData.location &&
             !companyData.googleMapsEmbedUrl &&
             industryFocus.length === 0) ? (
@@ -1110,11 +1113,12 @@ export function UserProfile() {
                   isOwnProfile={isOwnProfile}
                 />
 
-                {/* Resume - Only show if exists */}
+                {/* Resume */}
                 <ResumeSection
                   resume={resume}
                   isEditing={isEditing}
                   setResume={setResume}
+                  isOwnProfile={isOwnProfile}
                 />
 
                 {/* Posted Jobs section removed */}

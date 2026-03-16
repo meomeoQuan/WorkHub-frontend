@@ -52,6 +52,7 @@ export function ApplyJob() {
   const [isLoadingJob, setIsLoadingJob] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [profileCvUrl, setProfileCvUrl] = useState<string | null>(null);
 
   // Fetch job details
   const fetchJobDetails = useCallback(async () => {
@@ -98,6 +99,11 @@ export function ApplyJob() {
               ? profileData.educations[profileData.educations.length - 1].school
               : '')
           }));
+
+          // Auto-fill profile resume
+          if (profileData.cvUrl) {
+            setProfileCvUrl(profileData.cvUrl);
+          }
         }
       }
     } catch (error) {
@@ -145,6 +151,8 @@ export function ApplyJob() {
       submitData.append('CoverLetter', formData.coverLetter);
       if (formData.resume) {
         submitData.append('CvFile', formData.resume);
+      } else if (profileCvUrl) {
+        submitData.append('ProfileCvUrl', profileCvUrl);
       }
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/MyApplication/apply`, {
@@ -321,24 +329,51 @@ export function ApplyJob() {
                   Resume/CV
                 </h2>
                 <div className="border-2 border-dashed border-[#263238]/20 rounded-xl p-8 text-center hover:border-[#FF9800] transition">
-                  <Upload className="w-12 h-12 text-[#263238]/40 mx-auto mb-4" />
-                  <div className="text-center">
-                    <label htmlFor="resume" className="cursor-pointer block">
-                      <span className="text-[#FF9800] hover:text-[#F57C00] font-medium">Click to upload</span>
-                      <span className="text-[#263238]/60"> or drag and drop</span>
-                    </label>
-                  </div>
-                  <Input
-                    id="resume"
-                    name="resume"
-                    type="file"
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                  />
-                  <p className="text-sm text-[#263238]/60 mt-2">PDF, DOC, or DOCX (max 10MB)</p>
-                  {formData.resume && (
-                    <p className="text-sm text-[#4ADE80] mt-2 font-medium">✓ {formData.resume.name}</p>
+                  {!formData.resume && profileCvUrl ? (
+                    <div>
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-[#4ADE80]/20 rounded-lg flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-[#4ADE80]" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-[#263238]">Profile Resume attached</p>
+                          <p className="text-xs text-[#263238]/50">From your profile</p>
+                        </div>
+                      </div>
+                      <label htmlFor="resume" className="cursor-pointer block">
+                        <span className="text-[#FF9800] hover:text-[#F57C00] font-medium text-sm">Upload a different resume</span>
+                      </label>
+                      <Input
+                        id="resume"
+                        name="resume"
+                        type="file"
+                        onChange={handleFileChange}
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-12 h-12 text-[#263238]/40 mx-auto mb-4" />
+                      <div className="text-center">
+                        <label htmlFor="resume" className="cursor-pointer block">
+                          <span className="text-[#FF9800] hover:text-[#F57C00] font-medium">Click to upload</span>
+                          <span className="text-[#263238]/60"> or drag and drop</span>
+                        </label>
+                      </div>
+                      <Input
+                        id="resume"
+                        name="resume"
+                        type="file"
+                        onChange={handleFileChange}
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                      />
+                      <p className="text-sm text-[#263238]/60 mt-2">PDF, DOC, or DOCX (max 10MB)</p>
+                      {formData.resume && (
+                        <p className="text-sm text-[#4ADE80] mt-2 font-medium">✓ {formData.resume.name}</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
