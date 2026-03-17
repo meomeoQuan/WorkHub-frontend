@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale } from 'lucide-react';
+import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale, Bell } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -127,6 +127,14 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative rounded-full w-10 h-10 text-[#263238]/60 hover:text-[#FF9800] hover:bg-[#FF9800]/10 transition"
+                >
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                </Button>
                 <Link to="/post-job/create">
                   <Button className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-xl shadow-md hover:shadow-lg transition">
                     Add New Job

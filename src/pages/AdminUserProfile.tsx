@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, GraduationCap, Briefcase, FileText, ArrowLeft, Edit, Save, X, Upload, Eye, Ban, Unlock, Crown, Shield, CheckCircle, XCircle, AlertTriangle, Star, TrendingUp, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, GraduationCap, FileText, ArrowLeft, Edit, Save, X, Upload, Crown, Star, Send, Ban, Unlock } from 'lucide-react';
 import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Separator } from '../components/ui/separator';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { useNavigate } from 'react-router';
 import type { PaymentPlan } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 const API = import.meta.env.VITE_API_URL;
 
 // Helper to get query params
@@ -136,11 +142,6 @@ export function AdminUserProfile() {
   const [userData, setUserData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(userData);
-  const [resumeFile] = useState<{ name: string, uploadDate: string }>({
-    name: 'resume.pdf',
-    uploadDate: 'Last updated 1 week ago'
-  });
-
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch real user data
@@ -149,26 +150,61 @@ export function AdminUserProfile() {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch(`${API}/api/Admin/users/${userId}`, {
+        const res = await fetch(`${API}/api/Admin/users/${userId}/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
         if (result.success && result.data) {
-          const u = result.data;
-          // Merge backend data with local structure (using mock structure as fallback)
-          const mergedData = {
-            ...initialData, // keep some local UI state/structure
-            id: u.id.toString(),
-            name: u.fullName || 'N/A',
-            email: u.email,
-            phone: u.phone || initialData.phone,
-            location: u.location || initialData.location,
-            paymentPlan: u.paymentPlan || 'free',
-            status: u.status === 'suspended' ? 'suspended' : 'active',
-            revenue: u.revenue || 0,
-            // You might want to map other fields too
-          };
-          setUserData(mergedData);
+          const data = result.data;
+          
+          setUserData({
+            id: data.id.toString(),
+            name: data.fullName || 'N/A',
+            email: data.email,
+            phone: data.phone || 'N/A',
+            location: data.location || 'N/A',
+            paymentPlan: (data.paymentPlan || 'free') as PaymentPlan,
+            status: data.status === 'suspended' ? 'suspended' : 'active',
+            role: data.role || 1,
+            revenue: data.revenue || 0,
+            joinDate: data.joinDate || 'N/A',
+            lastActive: data.lastActive || 'N/A',
+            bio: data.bio || data.description || 'No bio provided.',
+            totalJobs: data.totalJobs || 0,
+            totalPosts: data.totalPosts || 0,
+            rating: data.rating || 0,
+            school: data.educations && data.educations.length > 0 ? data.educations[0].school : 'N/A',
+            major: data.educations && data.educations.length > 0 ? data.educations[0].fieldOfStudy : 'N/A',
+            graduationYear: data.educations && data.educations.length > 0 ? data.educations[0].endYear : 'N/A',
+            skills: data.skills || [],
+            experience: (data.experiences || []).map((e: any) => ({
+              title: e.title,
+              company: e.company,
+              period: `${new Date(e.startDate).getFullYear()} - ${e.endDate ? new Date(e.endDate).getFullYear() : 'Present'}`,
+              description: e.description || ''
+            })),
+            jobTypes: data.jobTypes || [],
+            desiredRate: data.desiredRate || 'N/A',
+            credibility: {
+              score: (data.rating || 0) * 20, // Example mapping
+              trustLevel: data.rating >= 4.5 ? 'Verified' : data.rating >= 4 ? 'High' : 'Medium',
+              verifications: {
+                email: true,
+                phone: !!data.phone,
+                identity: false,
+                backgroundCheck: false,
+              },
+              performance: {
+                responseRate: 90,
+                completionRate: 95,
+                reliabilityScore: 88,
+                totalJobs: data.totalJobs || 0,
+                rating: data.rating || 0,
+              },
+              adminNotes: '',
+              flags: [],
+            }
+          });
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
@@ -187,19 +223,48 @@ export function AdminUserProfile() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailAttachments, setEmailAttachments] = useState<File[]>([]);
 
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        fullName: editedData.name,
+        email: editedData.email,
+        role: editedData.role,
+        status: editedData.status === 'suspended' ? 'suspended' : 'active',
+        totalJobs: editedData.totalJobs,
+        totalPosts: editedData.totalPosts,
+        rating: editedData.rating,
+      };
+
+      const res = await fetch(`${API}/api/Admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setUserData(editedData);
+        toast.success('User profile updated successfully!');
+        setIsEditing(false);
+      } else {
+        toast.error(result.message || 'Failed to update user profile');
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error('An error occurred while updating user profile');
+    }
+  };
+
   const handleEdit = () => {
     setEditedData(userData);
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setUserData(editedData);
-    toast.success('User profile updated successfully!');
-    setIsEditing(false);
-  };
-
   const handleCancel = () => {
-    setEditedData(userData);
     setIsEditing(false);
   };
 
@@ -224,29 +289,6 @@ export function AdminUserProfile() {
       console.error("Error toggling user status:", error);
       toast.error('An error occurred while updating user status');
     }
-  };
-
-  const updateExperience = (index: number, field: string, value: string) => {
-    const newExperience = [...editedData.experience];
-    newExperience[index] = { ...newExperience[index], [field]: value };
-    setEditedData({ ...editedData, experience: newExperience });
-  };
-
-  const addSkill = (skill: string) => {
-    if (skill && !editedData.skills.includes(skill)) {
-      setEditedData({ ...editedData, skills: [...editedData.skills, skill] });
-    }
-  };
-
-  const removeSkill = (index: number) => {
-    const newSkills = editedData.skills.filter((_: string, i: number) => i !== index);
-    setEditedData({ ...editedData, skills: newSkills });
-  };
-
-  const handleViewResume = () => {
-    const resumeUrl = '/sample-resume.pdf';
-    window.open(resumeUrl, '_blank');
-    toast.info('Opening resume in new tab...');
   };
 
   const handleSendEmail = () => {
@@ -341,170 +383,109 @@ export function AdminUserProfile() {
 
               {/* Info */}
               <div className="flex-1">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-purple-300 text-sm">Full Name</Label>
-                      <Input
-                        value={editedData.name}
-                        onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                      />
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-purple-300 text-3xl">{userData.name}</h1>
+                      <span className={`text-xs px-3 py-1 rounded-full border ${getPlanBadge(userData.paymentPlan)} font-bold uppercase flex items-center gap-1`}>
+                        {getPlanIcon(userData.paymentPlan)}
+                        {userData.paymentPlan}
+                      </span>
+                      {userData.status === 'suspended' && (
+                        <span className="text-xs px-3 py-1 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-bold uppercase">
+                          Suspended
+                        </span>
+                      )}
                     </div>
+                    <p className="text-purple-400/70 flex items-center gap-2">
+                      {userData.email}
+                      <span className="flex items-center gap-1 text-yellow-400 ml-2">
+                        <Star className="w-4 h-4 fill-yellow-400" />
+                        <span className="font-semibold">{userData.rating}</span>
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-purple-400/70 mb-4">{userData.bio}</p>
+
+                {/* Admin Info Bar */}
+                <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-[10px]">
                     <div>
-                      <Label className="text-purple-300 text-sm">Bio</Label>
-                      <Textarea
-                        value={editedData.bio}
-                        onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
-                        className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1 min-h-[80px]"
-                      />
+                      <span className="text-purple-400/60 font-medium">JOINED:</span>
+                      <p className="text-purple-300 font-bold truncate">{userData.joinDate}</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-purple-300 text-sm">Email</Label>
-                        <Input
-                          value={editedData.email}
-                          onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
-                          className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-purple-300 text-sm">Phone</Label>
-                        <Input
-                          value={editedData.phone}
-                          onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
-                          className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-purple-300 text-sm">Location</Label>
-                        <Input
-                          value={editedData.location}
-                          onChange={(e) => setEditedData({ ...editedData, location: e.target.value })}
-                          className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-purple-300 text-sm">School</Label>
-                        <Input
-                          value={editedData.school}
-                          onChange={(e) => setEditedData({ ...editedData, school: e.target.value })}
-                          className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                        />
-                      </div>
+                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                      <span className="text-purple-400/60 block">TOTAL JOBS</span>
+                      <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalJobs || 0}</p>
+                    </div>
+                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                      <span className="text-purple-400/60 block">TOTAL POSTS</span>
+                      <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalPosts || 0}</p>
+                    </div>
+                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                      <span className="text-purple-400/60 block">RATING</span>
+                      <p className="text-yellow-400 font-bold text-sm flex items-center justify-center gap-1">
+                        <Star className="w-3 h-3 fill-yellow-400" />
+                        {userData.rating || 0}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-purple-400/60">REVENUE:</span>
+                      <p className="text-green-400 font-bold text-xs">${userData.revenue.toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-purple-400/60">STATUS:</span>
+                      <p className={`font-bold ${userData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                        {userData.status.toUpperCase()}
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h1 className="text-purple-300 text-3xl">{userData.name}</h1>
-                          <span className={`text-xs px-3 py-1 rounded-full border ${getPlanBadge(userData.paymentPlan)} font-bold uppercase flex items-center gap-1`}>
-                            {getPlanIcon(userData.paymentPlan)}
-                            {userData.paymentPlan}
-                          </span>
-                          {userData.status === 'suspended' && (
-                            <span className="text-xs px-3 py-1 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-bold uppercase">
-                              Suspended
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-purple-400/70 flex items-center gap-2">
-                          {userData.email}
-                          <span className="flex items-center gap-1 text-yellow-400 ml-2">
-                            <Star className="w-4 h-4 fill-yellow-400" />
-                            <span className="font-semibold">{userData.credibility.performance.rating}</span>
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-purple-400/70 mb-4">{userData.bio}</p>
+                </div>
 
-                    {/* Admin Info Bar */}
-                    <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                        <div>
-                          <span className="text-purple-400/60">Joined:</span>
-                          <p className="text-purple-300 font-semibold">{userData.joinDate}</p>
-                        </div>
-                        <div>
-                          <span className="text-purple-400/60">Last Active:</span>
-                          <p className="text-purple-300 font-semibold">{userData.lastActive}</p>
-                        </div>
-                        <div>
-                          <span className="text-purple-400/60">Revenue:</span>
-                          <p className="text-green-400 font-semibold">${userData.revenue.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <span className="text-purple-400/60">Status:</span>
-                          <p className={`font-semibold ${userData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                            {userData.status.toUpperCase()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <Mail className="w-4 h-4 text-purple-400" />
-                        <span>{userData.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <Phone className="w-4 h-4 text-purple-400" />
-                        <span>{userData.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <MapPin className="w-4 h-4 text-purple-400" />
-                        <span>{userData.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <GraduationCap className="w-4 h-4 text-purple-400" />
-                        <span>{userData.school}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-purple-400/70">
+                    <Mail className="w-4 h-4 text-purple-400" />
+                    <span>{userData.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-purple-400/70">
+                    <Phone className="w-4 h-4 text-purple-400" />
+                    <span>{userData.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-purple-400/70">
+                    <MapPin className="w-4 h-4 text-purple-400" />
+                    <span>{userData.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-purple-400/70">
+                    <GraduationCap className="w-4 h-4 text-purple-400" />
+                    <span>{userData.school}</span>
+                  </div>
+                </div>
 
                 <div className="flex gap-3 mt-6">
-                  {isEditing ? (
-                    <>
-                      <Button onClick={handleSave} className="bg-green-500/80 hover:bg-green-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-green-500/50">
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </Button>
-                      <Button onClick={handleCancel} className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/50 rounded-xl">
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button onClick={handleEdit} className="bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-cyan-500/50">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                      <Button
-                        onClick={handleSuspendUser}
-                        className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
-                            ? 'bg-green-500/80 hover:bg-green-500 text-white border border-green-500/50'
-                            : 'bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50'
-                          }`}
-                      >
-                        {userData.status === 'suspended' ? (
-                          <>
-                            <Unlock className="w-4 h-4 mr-2" />
-                            Activate User
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="w-4 h-4 mr-2" />
-                            Suspend User
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
+                  <Button onClick={handleEdit} className="bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-cyan-500/50">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                  <Button
+                    onClick={handleSuspendUser}
+                    className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
+                        ? 'bg-green-500/80 hover:bg-green-500 text-white border border-green-500/50'
+                        : 'bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50'
+                      }`}
+                  >
+                    {userData.status === 'suspended' ? (
+                      <>
+                        <Unlock className="w-4 h-4 mr-2" />
+                        Activate User
+                      </>
+                    ) : (
+                      <>
+                        <Ban className="w-4 h-4 mr-2" />
+                        Suspend User
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -619,461 +600,152 @@ export function AdminUserProfile() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Education */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-purple-300 text-xl">Education</h2>
-                </div>
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-purple-300 text-sm">School/University</Label>
-                      <Input
-                        value={editedData.school}
-                        onChange={(e) => setEditedData({ ...editedData, school: e.target.value })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-purple-300 text-sm">Major/Field of Study</Label>
-                      <Input
-                        value={editedData.major}
-                        onChange={(e) => setEditedData({ ...editedData, major: e.target.value })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-purple-300 text-sm">Expected Graduation Year</Label>
-                      <Input
-                        value={editedData.graduationYear}
-                        onChange={(e) => setEditedData({ ...editedData, graduationYear: e.target.value })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="text-purple-300">{userData.school}</h3>
-                    <p className="text-sm text-purple-400/70">{userData.major}</p>
-                    <p className="text-sm text-purple-400/60">Expected Graduation: {userData.graduationYear}</p>
-                  </div>
-                )}
-              </Card>
-
-              {/* Experience */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <Briefcase className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-purple-300 text-xl">Experience</h2>
-                </div>
-                <div className="space-y-6">
-                  {(isEditing ? editedData.experience : userData.experience).map((exp: any, index: number) => (
-                    <div key={index}>
-                      {index > 0 && <Separator className="my-6 bg-purple-500/30" />}
-                      {isEditing ? (
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-purple-300 text-sm">Job Title</Label>
-                            <Input
-                              value={exp.title}
-                              onChange={(e) => updateExperience(index, 'title', e.target.value)}
-                              className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-purple-300 text-sm">Company</Label>
-                            <Input
-                              value={exp.company}
-                              onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                              className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-purple-300 text-sm">Period</Label>
-                            <Input
-                              value={exp.period}
-                              onChange={(e) => updateExperience(index, 'period', e.target.value)}
-                              className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-purple-300 text-sm">Description</Label>
-                            <Textarea
-                              value={exp.description}
-                              onChange={(e) => updateExperience(index, 'description', e.target.value)}
-                              className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl mt-1 min-h-[60px]"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="text-purple-300">{exp.title}</h3>
-                          <p className="text-sm text-purple-400/70">{exp.company}</p>
-                          <p className="text-sm text-purple-400/60 mb-2">{exp.period}</p>
-                          <p className="text-sm text-purple-400/70">{exp.description}</p>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Resume */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-purple-300 text-xl">Resume</h2>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                      <FileText className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-purple-300">{resumeFile.name}</p>
-                      <p className="text-xs text-purple-400/60">{resumeFile.uploadDate}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl"
-                      onClick={handleViewResume}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      View Resume
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* User Credibility */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-purple-300">User Credibility</h3>
-                </div>
-
-                {/* Trust Level Badge */}
-                <div className="mb-4">
-                  <span className="text-sm text-purple-400/60 block mb-2">Trust Level</span>
-                  <Badge className={`text-sm px-3 py-1 ${userData.credibility.trustLevel === 'Verified' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                      userData.credibility.trustLevel === 'High' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' :
-                        userData.credibility.trustLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
-                          'bg-orange-500/20 text-orange-400 border-orange-500/50'
-                    }`}>
-                    <Star className="w-3 h-3 mr-1 inline" />
-                    {userData.credibility.trustLevel}
-                  </Badge>
-                </div>
-
-                <Separator className="my-4 bg-purple-500/30" />
-
-                {/* Verifications */}
-                <div className="mb-4">
-                  <h4 className="text-sm text-purple-300 mb-3">Verifications</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-purple-400/70 flex items-center gap-2">
-                        <Mail className="w-3 h-3" />
-                        Email
-                      </span>
-                      {userData.credibility.verifications.email ? (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400/50" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-purple-400/70 flex items-center gap-2">
-                        <Phone className="w-3 h-3" />
-                        Phone
-                      </span>
-                      {userData.credibility.verifications.phone ? (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400/50" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-purple-400/70 flex items-center gap-2">
-                        <Shield className="w-3 h-3" />
-                        Identity
-                      </span>
-                      {userData.credibility.verifications.identity ? (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400/50" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-purple-400/70 flex items-center gap-2">
-                        <CheckCircle className="w-3 h-3" />
-                        Background
-                      </span>
-                      {userData.credibility.verifications.backgroundCheck ? (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400/50" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-4 bg-purple-500/30" />
-
-                {/* Performance Metrics */}
-                <div className="mb-4">
-                  <h4 className="text-sm text-purple-300 mb-3 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Performance
-                  </h4>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-purple-400/60">Response Rate</span>
-                        <span className="text-purple-300 font-semibold">{userData.credibility.performance.responseRate}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
-                          style={{ width: `${userData.credibility.performance.responseRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-purple-400/60">Completion Rate</span>
-                        <span className="text-purple-300 font-semibold">{userData.credibility.performance.completionRate}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-500 to-cyan-500 rounded-full"
-                          style={{ width: `${userData.credibility.performance.completionRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-purple-400/60">Reliability</span>
-                        <span className="text-purple-300 font-semibold">{userData.credibility.performance.reliabilityScore}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full"
-                          style={{ width: `${userData.credibility.performance.reliabilityScore}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-4 bg-purple-500/30" />
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
-                    <p className="text-xs text-purple-400/60">Total Jobs</p>
-                    <p className="text-lg font-bold text-purple-300">{userData.credibility.performance.totalJobs}</p>
-                  </div>
-                  <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
-                    <p className="text-xs text-purple-400/60">Rating</p>
-                    {isEditing ? (
-                      <div className="mt-1">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="5"
-                          step="0.1"
-                          value={editedData.credibility.performance.rating}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            if (value >= 0 && value <= 5) {
-                              setEditedData({
-                                ...editedData,
-                                credibility: {
-                                  ...editedData.credibility,
-                                  performance: {
-                                    ...editedData.credibility.performance,
-                                    rating: value
-                                  }
-                                }
-                              });
-                            }
-                          }}
-                          className="h-8 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl text-sm"
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-lg font-bold text-yellow-400 flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400" />
-                        {userData.credibility.performance.rating}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Admin Notes */}
-                {isEditing ? (
-                  <div>
-                    <Label className="text-purple-300 text-sm mb-2 block">Admin Notes</Label>
-                    <Textarea
-                      value={editedData.credibility?.adminNotes || ''}
-                      onChange={(e) => setEditedData({
-                        ...editedData,
-                        credibility: { ...editedData.credibility, adminNotes: e.target.value }
-                      })}
-                      placeholder="Add internal notes about this user..."
-                      className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl min-h-[60px] text-xs"
-                    />
-                  </div>
-                ) : userData.credibility.adminNotes && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs text-yellow-400/80 font-semibold mb-1">Admin Notes</p>
-                        <p className="text-xs text-purple-300">{userData.credibility.adminNotes}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </Card>
-
-              {/* Skills */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <h3 className="text-purple-300 mb-4">Skills</h3>
-                {isEditing ? (
-                  <>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {editedData.skills.map((skill: string, index: number) => (
-                        <Badge
-                          key={index}
-                          className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 rounded-xl cursor-pointer hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition"
-                          onClick={() => removeSkill(index)}
-                        >
-                          {skill} ×
-                        </Badge>
-                      ))}
-                    </div>
-                    <Input
-                      placeholder="Type a skill and press Enter"
-                      className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const input = e.currentTarget;
-                          addSkill(input.value);
-                          input.value = '';
-                        }
-                      }}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      {userData.skills.map((skill: string, index: number) => (
-                        <Badge key={index} className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 rounded-xl">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </Card>
-
-              {/* Availability */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <h3 className="text-purple-300 mb-4">Weekly Availability</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Monday</span>
-                    <span className="text-purple-300">Afternoon, Evening</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Tuesday</span>
-                    <span className="text-purple-300">Evening</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Wednesday</span>
-                    <span className="text-purple-300">Afternoon, Evening</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Thursday</span>
-                    <span className="text-purple-300">Evening</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Friday</span>
-                    <span className="text-purple-300">Afternoon</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Saturday</span>
-                    <span className="text-purple-300">All day</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-purple-400/60">Sunday</span>
-                    <span className="text-purple-300">Morning, Afternoon</span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Job Preferences */}
-              <Card className="p-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-md">
-                <h3 className="text-purple-300 mb-4">Job Preferences</h3>
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-purple-300 text-sm mb-2 block">Preferred Job Types</Label>
-                      <Input
-                        placeholder="e.g., Part-time, Freelance (comma separated)"
-                        value={editedData.jobTypes.join(', ')}
-                        onChange={(e) => setEditedData({
-                          ...editedData,
-                          jobTypes: e.target.value.split(',').map((t: string) => t.trim()).filter((t: string) => t)
-                        })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-purple-300 text-sm mb-2 block">Desired Hourly Rate</Label>
-                      <Input
-                        placeholder="e.g., $18 - $25/hr"
-                        value={editedData.desiredRate}
-                        onChange={(e) => setEditedData({ ...editedData, desiredRate: e.target.value })}
-                        className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <p className="text-purple-400/60 mb-1">Preferred Job Types</p>
-                      <div className="flex flex-wrap gap-2">
-                        {userData.jobTypes.map((type: string, index: number) => (
-                          <Badge key={index} className="bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30 rounded-xl">
-                            {type}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-purple-400/60 mb-1">Desired Hourly Rate</p>
-                      <p className="text-purple-300">{userData.desiredRate}</p>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="bg-black/90 border border-purple-500/50 text-purple-100 backdrop-blur-2xl rounded-2xl max-w-2xl overflow-hidden shadow-2xl shadow-purple-500/20">
+          <DialogHeader className="border-b border-purple-500/20 pb-4 mb-4">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+              Edit Admin User Profile
+            </DialogTitle>
+            <DialogDescription className="text-purple-400">
+              Modify key metrics and administrative details for {userData.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name" className="text-purple-300 text-sm flex items-center gap-2">
+                  Full Name
+                </Label>
+                <Input
+                  id="edit-name"
+                  value={editedData.name}
+                  onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-email" className="text-purple-300 text-sm flex items-center gap-2">
+                  Email
+                </Label>
+                <Input
+                  id="edit-email"
+                  value={editedData.email}
+                  onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone" className="text-purple-300 text-sm flex items-center gap-2">
+                  Phone
+                </Label>
+                <Input
+                  id="edit-phone"
+                  value={editedData.phone}
+                  onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-bio" className="text-purple-300 text-sm flex items-center gap-2">
+                  Bio / Description
+                </Label>
+                <Textarea
+                  id="edit-bio"
+                  value={editedData.bio}
+                  onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl min-h-[100px] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl space-y-4">
+                <h3 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Star className="w-3 h-3" /> Administrative Metrics
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-xs">Total Jobs</Label>
+                    <Input
+                      type="number"
+                      value={editedData.totalJobs}
+                      onChange={(e) => setEditedData({ ...editedData, totalJobs: parseInt(e.target.value) || 0 })}
+                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-xs">Total Posts</Label>
+                    <Input
+                      type="number"
+                      value={editedData.totalPosts}
+                      onChange={(e) => setEditedData({ ...editedData, totalPosts: parseInt(e.target.value) || 0 })}
+                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-xs">Rating (0 - 5.0)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      value={editedData.rating}
+                      onChange={(e) => setEditedData({ ...editedData, rating: parseFloat(e.target.value) || 0 })}
+                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm font-bold text-yellow-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-purple-300 text-sm">Location</Label>
+                <Input
+                  value={editedData.location}
+                  onChange={(e) => setEditedData({ ...editedData, location: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 rounded-xl h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-purple-300 text-sm">School</Label>
+                <Input
+                  value={editedData.school}
+                  onChange={(e) => setEditedData({ ...editedData, school: e.target.value })}
+                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 rounded-xl h-11"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6 gap-3">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              className="bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 rounded-xl px-6 h-11"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 text-white border-0 rounded-xl px-8 h-11 shadow-lg shadow-purple-500/40 font-bold"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Synchronization
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

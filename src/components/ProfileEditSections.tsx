@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -222,95 +223,174 @@ export function WeeklyAvailabilitySection({ scheduleSlots, isEditing, isOwnProfi
 }
 
 // Resume Section  
-export function ResumeSection({ resume, isEditing, setResume }: any) {
-  const handleFileUpload = () => {
-    // Simulate file upload
-    toast.success('Resume uploaded successfully!');
-    setResume({
-      fileName: 'Updated_Resume.pdf',
-      fileUrl: '#',
-      uploadedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    });
+export function ResumeSection({ resume, isEditing, setResume, isOwnProfile }: any) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a PDF, DOC, or DOCX file');
+      return;
+    }
+
+    // Validate size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/upload-resume`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setResume({
+          fileName: result.data.fileName || file.name,
+          fileUrl: result.data.cvUrl,
+          uploadedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        });
+        toast.success('Resume uploaded successfully!');
+      } else {
+        toast.error(result.message || 'Failed to upload resume');
+      }
+    } catch (err) {
+      console.error('Resume upload error', err);
+      toast.error('An error occurred during upload');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  const handleRemoveResume = () => {
-    setResume({
-      fileName: '',
-      fileUrl: '',
-      uploadedDate: ''
-    });
-    toast.success('Resume removed');
+  const handleRemoveResume = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/UserProfile/delete-resume`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setResume(null);
+        toast.success('Resume removed');
+      } else {
+        toast.error(result.message || 'Failed to remove resume');
+      }
+    } catch (err) {
+      console.error('Resume delete error', err);
+      toast.error('An error occurred while removing resume');
+    }
   };
+
+  // Always show for own profile (so they can upload even when not editing)
+  if (!isOwnProfile && !resume?.fileUrl) return null;
 
   return (
-    (resume?.fileName || isEditing) && (
-      <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
-        <div className="flex items-center gap-2 mb-4">
-          <FileText className="w-5 h-5 text-[#FF9800]" />
-          <h2 className="text-[#263238]">Resume</h2>
-        </div>
-        {resume?.fileName ? (
-          <div className="flex items-center justify-between p-4 bg-[#FAFAFA] rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#FF9800]/20 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-[#FF9800]" />
-              </div>
-              <div>
-                <p className="font-medium text-[#263238]">{resume.fileName}</p>
-                <p className="text-xs text-[#263238]/60">Uploaded {resume.uploadedDate}</p>
-              </div>
+    <Card className="p-6 border-[#263238]/10 shadow-md overflow-hidden min-w-0">
+      <div className="flex items-center gap-2 mb-4">
+        <FileText className="w-5 h-5 text-[#FF9800]" />
+        <h2 className="text-[#263238]">Resume</h2>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+      />
+
+      {resume?.fileUrl ? (
+        <div className="flex items-center justify-between p-4 bg-[#FAFAFA] rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#FF9800]/20 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-[#FF9800]" />
             </div>
-            <div className="flex items-center gap-2">
-              {!isEditing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800] hover:text-white rounded-xl"
-                >
-                  Download
-                </Button>
-              )}
-              {isEditing && (
-                <>
-                  <Button
-                    onClick={handleFileUpload}
-                    variant="outline"
-                    size="sm"
-                    className="border-[#4FC3F7] text-[#4FC3F7] hover:bg-[#4FC3F7] hover:text-white rounded-xl"
-                  >
-                    <Upload className="w-4 h-4 mr-1" />
-                    Replace
-                  </Button>
-                  <Button
-                    onClick={handleRemoveResume}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-500 text-red-600 hover:bg-red-50 rounded-xl"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Remove
-                  </Button>
-                </>
+            <div>
+              <p className="font-medium text-[#263238]">{resume.fileName || 'Resume.pdf'}</p>
+              {resume.uploadedDate && (
+                <p className="text-xs text-[#263238]/60">Uploaded {resume.uploadedDate}</p>
               )}
             </div>
           </div>
-        ) : (
-          isEditing && (
-            <div className="text-center py-8 border-2 border-dashed border-[#263238]/20 rounded-lg">
-              <FileText className="w-12 h-12 text-[#263238]/20 mx-auto mb-3" />
-              <p className="text-[#263238]/50 text-sm mb-3">No resume uploaded yet</p>
+          <div className="flex items-center gap-2">
+            <a href={resume.fileUrl} target="_blank" rel="noopener noreferrer">
               <Button
-                onClick={handleFileUpload}
-                className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-lg"
+                variant="outline"
+                size="sm"
+                className="border-[#FF9800] text-[#FF9800] hover:bg-[#FF9800] hover:text-white rounded-xl"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Resume
+                View
               </Button>
-            </div>
-          )
-        )}
-      </Card>
-    )
+            </a>
+            {isOwnProfile && (
+              <>
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploading}
+                  className="border-[#4FC3F7] text-[#4FC3F7] hover:bg-[#4FC3F7] hover:text-white rounded-xl"
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  Replace
+                </Button>
+                <Button
+                  onClick={handleRemoveResume}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-500 text-red-600 hover:bg-red-50 rounded-xl"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Remove
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        isOwnProfile && (
+          <div className="text-center py-8 border-2 border-dashed border-[#263238]/20 rounded-lg">
+            <FileText className="w-12 h-12 text-[#263238]/20 mx-auto mb-3" />
+            <p className="text-[#263238]/50 text-sm mb-3">No resume uploaded yet</p>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="bg-[#FF9800] hover:bg-[#F57C00] text-white rounded-lg"
+            >
+              {isUploading ? (
+                <span className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </span>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Resume
+                </>
+              )}
+            </Button>
+          </div>
+        )
+      )}
+    </Card>
   );
 }
 
