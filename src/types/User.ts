@@ -6,6 +6,7 @@ export interface UserModel {
   email: string;
   fullName: string;
   userType: UserRole;
+  role: number; // Preserve integer role for mapping recovery
   avatarUrl?: string | null;
   paymentPlan: string | null;
   subscription?: {

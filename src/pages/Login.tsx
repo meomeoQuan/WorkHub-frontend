@@ -48,7 +48,7 @@ export function Login() {
           scope: "openid email profile",
           ux_mode: "popup",
           callback: async (response: any) => {
-            await googleLogin(response.code);
+            const role = await googleLogin(response.code);
 
             toast.success('Welcome back! Login successful.', {
               style: {
@@ -61,7 +61,11 @@ export function Login() {
               duration: 3000,
             });
 
-            navigate('/');
+            if (role === 'admin') {
+              navigate('/admin');
+            } else {
+              navigate('/');
+            }
           },
         });
 
@@ -215,8 +219,8 @@ export function Login() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
-              Sign In
+            <Button type="submit" disabled={isLoading} className="w-full bg-[#FF9800] hover:bg-[#F57C00] text-white h-12 rounded-xl shadow-lg shadow-[#FF9800]/30">
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
 
             <div className="relative my-6">

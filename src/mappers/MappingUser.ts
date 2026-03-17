@@ -9,11 +9,13 @@ const roleMap: Record<number, UserRole> = {
 };
 
 export function mapUserDTOToUser(dto: UserDTO): UserModel {
+  const roleValue = (dto as any).role !== undefined ? (dto as any).role : (dto as any).Role;
   return {
     id: dto.id,
     email: dto.email,
     fullName: dto.fullName,
-    userType: roleMap[dto.role] ?? "jobseeker", // safe fallback
+    userType: roleMap[roleValue] ?? "jobseeker", // safe fallback
+    role: roleValue,
     avatarUrl: dto.avatarUrl ?? null,
     paymentPlan: (dto as any).paymentPlan || (dto as any).PaymentPlan || 'free',
     status: (dto as any).status || (dto as any).Status || 'active',

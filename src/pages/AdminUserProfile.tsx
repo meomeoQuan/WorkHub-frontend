@@ -5,23 +5,17 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
-import { useNavigate } from 'react-router';
-import type { PaymentPlan } from '../contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router';
+import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
 const API = import.meta.env.VITE_API_URL;
 
-// Helper to get query params
-const useQuery = () => {
-  return new URLSearchParams(window.location.search);
-};
 
 // Mock user data (in real app, this would be fetched based on userId from params)
 const mockUserData: Record<string, any> = {
@@ -135,14 +129,32 @@ const mockUserData: Record<string, any> = {
 
 export function AdminUserProfile() {
   const navigate = useNavigate();
-  const query = useQuery();
-  const userId = query.get('userId') || '1';
-
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get('userId') || '1';
+  const { user, isAuthLoading } = useAuth();
   const initialData = mockUserData[userId] || mockUserData['1'];
   const [userData, setUserData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(userData);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!isAuthLoading && user?.userType !== 'admin') {
+      navigate('/');
+    }
+  }, [user, navigate, isAuthLoading]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+          <p className="text-purple-400 font-mono text-sm animate-pulse">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch real user data
   useEffect(() => {
@@ -170,6 +182,11 @@ export function AdminUserProfile() {
             joinDate: data.joinDate || 'N/A',
             lastActive: data.lastActive || 'N/A',
             bio: data.bio || data.description || 'No bio provided.',
+            industryFocus: data.industry,
+            website: data.website,
+            companySize: data.companySize,
+            foundedYear: data.foundedYear,
+            googleMapsEmbedUrl: data.googleMapsEmbedUrl,
             totalJobs: data.totalJobs || 0,
             totalPosts: data.totalPosts || 0,
             rating: data.rating || 0,
@@ -226,15 +243,24 @@ export function AdminUserProfile() {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const payload = {
-        fullName: editedData.name,
-        email: editedData.email,
-        role: editedData.role,
-        status: editedData.status === 'suspended' ? 'suspended' : 'active',
-        totalJobs: editedData.totalJobs,
-        totalPosts: editedData.totalPosts,
-        rating: editedData.rating,
-      };
+        const payload = {
+          fullName: editedData.fullName || editedData.name,
+          email: editedData.email,
+          phoneNumber: editedData.phone || editedData.phoneNumber,
+          role: editedData.role,
+          status: editedData.status === 'suspended' ? 'suspended' : 'active',
+          bio: editedData.bio,
+          location: editedData.location,
+          school: editedData.school,
+          totalJobs: editedData.totalJobs,
+          totalPosts: editedData.totalPosts,
+          rating: editedData.rating,
+          industryFocus: editedData.industryFocus,
+          website: editedData.website,
+          companySize: editedData.companySize,
+          foundedYear: editedData.foundedYear,
+          googleMapsEmbedUrl: editedData.googleMapsEmbedUrl,
+        };
 
       const res = await fetch(`${API}/api/Admin/users/${userId}`, {
         method: 'PUT',
@@ -247,7 +273,10 @@ export function AdminUserProfile() {
 
       const result = await res.json();
       if (result.success) {
-        setUserData(editedData);
+        setUserData({
+          ...editedData,
+          name: editedData.fullName || editedData.name
+        });
         toast.success('User profile updated successfully!');
         setIsEditing(false);
       } else {
@@ -372,380 +401,370 @@ export function AdminUserProfile() {
             <span className="text-sm">Back to Admin Dashboard</span>
           </button>
 
-          {/* Profile Header */}
-          <Card className="p-8 mb-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-lg shadow-purple-500/20">
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Avatar */}
-              <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 shadow-md relative">
-                <span className="text-white text-5xl font-bold">{userData.name.charAt(0)}</span>
-                <div className="absolute inset-0 bg-purple-500 rounded-2xl blur-xl opacity-30"></div>
-              </div>
+          {isEditing ? (
+            /* REDESIGNED EDIT FORM (On-page) - DARK THEME */
+            <Card className="p-8 mb-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+               <div className="mb-8 pb-4 border-b border-purple-500/30 flex justify-between items-center">
+                 <div>
+                   <h2 className="text-2xl font-bold text-purple-100">Edit Admin User Profile</h2>
+                   <p className="text-purple-400/60 text-sm">Modify user information and platform metrics.</p>
+                 </div>
+                 <div className="flex gap-3">
+                    <Button
+                      onClick={handleSave}
+                      className="bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-8 h-12 flex items-center gap-2 font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95"
+                    >
+                      <Save className="w-5 h-5" /> Save Changes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancel}
+                      className="bg-transparent border-2 border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:text-white rounded-xl px-8 h-12 flex items-center gap-2 font-bold transition-all"
+                    >
+                      <X className="w-5 h-5" /> Cancel
+                    </Button>
+                 </div>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">User Name</Label>
+                    <Input
+                      value={editedData.fullName || editedData.name || ''}
+                      onChange={(e) => setEditedData({ ...editedData, fullName: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
 
-              {/* Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-purple-300 text-3xl">{userData.name}</h1>
-                      <span className={`text-xs px-3 py-1 rounded-full border ${getPlanBadge(userData.paymentPlan)} font-bold uppercase flex items-center gap-1`}>
-                        {getPlanIcon(userData.paymentPlan)}
-                        {userData.paymentPlan}
-                      </span>
-                      {userData.status === 'suspended' && (
-                        <span className="text-xs px-3 py-1 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-bold uppercase">
-                          Suspended
-                        </span>
-                      )}
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Industry Focus</Label>
+                    <Input
+                      value={editedData.industryFocus || ''}
+                      onChange={(e) => setEditedData({ ...editedData, industryFocus: e.target.value })}
+                      placeholder="e.g. Software Development"
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500 placeholder:text-purple-400/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Email Address</Label>
+                    <Input
+                      value={editedData.email || ''}
+                      onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Phone Number</Label>
+                    <Input
+                      value={editedData.phone || editedData.phoneNumber || ''}
+                      onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Website</Label>
+                    <Input
+                      value={editedData.website || ''}
+                      onChange={(e) => setEditedData({ ...editedData, website: e.target.value })}
+                      placeholder="https://example.com"
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500 placeholder:text-purple-400/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Company Size</Label>
+                    <Input
+                      value={editedData.companySize || ''}
+                      onChange={(e) => setEditedData({ ...editedData, companySize: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Founded Year</Label>
+                    <Input
+                      value={editedData.foundedYear || ''}
+                      onChange={(e) => setEditedData({ ...editedData, foundedYear: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Google Maps Embed URL</Label>
+                    <Input
+                      value={editedData.googleMapsEmbedUrl || ''}
+                      onChange={(e) => setEditedData({ ...editedData, googleMapsEmbedUrl: e.target.value })}
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-purple-400/50 text-[10px]">Paste the 'src' value from Google Maps embed code</p>
+                  </div>
+
+                  <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-purple-500/30">
+                    <div className="space-y-2">
+                      <Label className="text-purple-400 text-xs font-semibold uppercase">Total Jobs</Label>
+                      <Input type="number" value={editedData.totalJobs || 0} onChange={e => setEditedData({...editedData, totalJobs: parseInt(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
                     </div>
-                    <p className="text-purple-400/70 flex items-center gap-2">
-                      {userData.email}
-                      <span className="flex items-center gap-1 text-yellow-400 ml-2">
-                        <Star className="w-4 h-4 fill-yellow-400" />
-                        <span className="font-semibold">{userData.rating}</span>
-                      </span>
+                    <div className="space-y-2">
+                      <Label className="text-purple-400 text-xs font-semibold uppercase">Total Posts</Label>
+                      <Input type="number" value={editedData.totalPosts || 0} onChange={e => setEditedData({...editedData, totalPosts: parseInt(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-purple-400 text-xs font-semibold uppercase">Revenue ($)</Label>
+                      <Input type="number" step="0.01" value={editedData.revenue || 0} onChange={e => setEditedData({...editedData, revenue: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-purple-400 text-xs font-semibold uppercase">Rating</Label>
+                      <Input type="number" step="0.1" value={editedData.rating || 0} onChange={e => setEditedData({...editedData, rating: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Office Location</Label>
+                    <Input value={editedData.location || ''} onChange={e => setEditedData({...editedData, location: e.target.value})} className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">School (if individual)</Label>
+                    <Input value={editedData.school || ''} onChange={e => setEditedData({...editedData, school: e.target.value})} className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100" />
+                  </div>
+               </div>
+            </Card>
+          ) : (
+            <>
+              {/* Profile Header (View Mode) */}
+              <Card className="p-8 mb-6 bg-black/50 backdrop-blur-xl border-purple-500/30 shadow-lg shadow-purple-500/20">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Avatar */}
+                  <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 shadow-md relative">
+                    <span className="text-white text-5xl font-bold">{userData.name.charAt(0)}</span>
+                    <div className="absolute inset-0 bg-purple-500 rounded-2xl blur-xl opacity-30"></div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h1 className="text-purple-300 text-3xl">{userData.name}</h1>
+                          <span className={`text-xs px-3 py-1 rounded-full border ${getPlanBadge(userData.paymentPlan)} font-bold uppercase flex items-center gap-1`}>
+                            {getPlanIcon(userData.paymentPlan)}
+                            {userData.paymentPlan}
+                          </span>
+                          {userData.status === 'suspended' && (
+                            <span className="text-xs px-3 py-1 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-bold uppercase">
+                              Suspended
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-purple-400/70 flex items-center gap-2">
+                          {userData.email}
+                          <span className="flex items-center gap-1 text-yellow-400 ml-2">
+                            <Star className="w-4 h-4 fill-yellow-400" />
+                            <span className="font-semibold">{userData.rating}</span>
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-purple-400/70 mb-4">{userData.bio}</p>
+
+                    {/* Admin Info Bar */}
+                    <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg group relative">
+                      <button 
+                         onClick={handleEdit}
+                         className="absolute -top-3 -right-3 p-1.5 bg-purple-600 rounded-full shadow-lg border border-purple-400/50 hover:bg-purple-500 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center z-20"
+                         title="Edit Metrics"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-white" />
+                      </button>
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-[10px]">
+                        <div>
+                          <span className="text-purple-400/60 font-medium">JOINED:</span>
+                          <p className="text-purple-300 font-bold truncate">{userData.joinDate}</p>
+                        </div>
+                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                          <span className="text-purple-400/60 block">TOTAL JOBS</span>
+                          <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalJobs || 0}</p>
+                        </div>
+                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                          <span className="text-purple-400/60 block">TOTAL POSTS</span>
+                          <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalPosts || 0}</p>
+                        </div>
+                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
+                          <span className="text-purple-400/60 block">RATING</span>
+                          <p className="text-yellow-400 font-bold text-sm flex items-center justify-center gap-1">
+                            <Star className="w-3 h-3 fill-yellow-400" />
+                            {userData.rating || 0}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-purple-400/60">REVENUE:</span>
+                          <p className="text-green-400 font-bold text-xs">${userData.revenue?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-purple-400/60">STATUS:</span>
+                          <p className={`font-bold ${userData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                            {userData.status?.toUpperCase() || 'ACTIVE'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2 text-purple-400/70">
+                        <Mail className="w-4 h-4 text-purple-400" />
+                        <span>{userData.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-purple-400/70">
+                        <Phone className="w-4 h-4 text-purple-400" />
+                        <span>{userData.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-purple-400/70">
+                        <MapPin className="w-4 h-4 text-purple-400" />
+                        <span>{userData.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-purple-400/70">
+                        <GraduationCap className="w-4 h-4 text-purple-400" />
+                        <span>{userData.school}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                      <Button onClick={handleEdit} className="bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-cyan-500/50">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                      <Button
+                        onClick={handleSuspendUser}
+                        className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
+                            ? 'bg-green-500/80 hover:bg-green-500 text-white border border-green-500/50'
+                            : 'bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50'
+                          }`}
+                      >
+                        {userData.status === 'suspended' ? (
+                          <>
+                            <Unlock className="w-4 h-4 mr-2" />
+                            Activate User
+                          </>
+                        ) : (
+                          <>
+                            <Ban className="w-4 h-4 mr-2" />
+                            Suspend User
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Send Email Notification Card */}
+              <Card className="p-6 mb-6 bg-black/50 backdrop-blur-xl border-orange-500/30 shadow-lg shadow-orange-500/10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Send className="w-5 h-5 text-orange-400" />
+                  <h2 className="text-orange-300 text-xl">Send Email Notification</h2>
+                </div>
+                <p className="text-purple-400/70 text-sm mb-4">Send important announcements, policy updates, or notifications to this user.</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-purple-300 text-sm mb-2 block">Email Subject</Label>
+                    <Input
+                      placeholder="e.g., Important: Policy Update on WorkHub"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-purple-300 text-sm mb-2 block">Message</Label>
+                    <Textarea
+                      placeholder="Dear {userData.name},..."
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl min-h-[120px] resize-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail || !emailSubject.trim() || !emailMessage.trim()}
+                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl shadow-md hover:shadow-lg transition border border-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {isSendingEmail ? 'Sending...' : 'Send Email'}
+                    </Button>
+
+                    {(emailSubject || emailMessage) && (
+                      <Button
+                        onClick={() => {
+                          setEmailSubject('');
+                          setEmailMessage('');
+                        }}
+                        variant="outline"
+                        className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <Mail className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-300">
+                      <strong>Recipient:</strong> {userData.name} ({userData.email})
                     </p>
                   </div>
-                </div>
-                <p className="text-purple-400/70 mb-4">{userData.bio}</p>
 
-                {/* Admin Info Bar */}
-                <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-[10px]">
-                    <div>
-                      <span className="text-purple-400/60 font-medium">JOINED:</span>
-                      <p className="text-purple-300 font-bold truncate">{userData.joinDate}</p>
-                    </div>
-                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                      <span className="text-purple-400/60 block">TOTAL JOBS</span>
-                      <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalJobs || 0}</p>
-                    </div>
-                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                      <span className="text-purple-400/60 block">TOTAL POSTS</span>
-                      <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalPosts || 0}</p>
-                    </div>
-                    <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                      <span className="text-purple-400/60 block">RATING</span>
-                      <p className="text-yellow-400 font-bold text-sm flex items-center justify-center gap-1">
-                        <Star className="w-3 h-3 fill-yellow-400" />
-                        {userData.rating || 0}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-purple-400/60">REVENUE:</span>
-                      <p className="text-green-400 font-bold text-xs">${userData.revenue.toFixed(2)}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-purple-400/60">STATUS:</span>
-                      <p className={`font-bold ${userData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                        {userData.status.toUpperCase()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-purple-400/70">
-                    <Mail className="w-4 h-4 text-purple-400" />
-                    <span>{userData.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-purple-400/70">
-                    <Phone className="w-4 h-4 text-purple-400" />
-                    <span>{userData.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-purple-400/70">
-                    <MapPin className="w-4 h-4 text-purple-400" />
-                    <span>{userData.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-purple-400/70">
-                    <GraduationCap className="w-4 h-4 text-purple-400" />
-                    <span>{userData.school}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <Button onClick={handleEdit} className="bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-cyan-500/50">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Button
-                    onClick={handleSuspendUser}
-                    className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
-                        ? 'bg-green-500/80 hover:bg-green-500 text-white border border-green-500/50'
-                        : 'bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50'
-                      }`}
-                  >
-                    {userData.status === 'suspended' ? (
-                      <>
-                        <Unlock className="w-4 h-4 mr-2" />
-                        Activate User
-                      </>
-                    ) : (
-                      <>
-                        <Ban className="w-4 h-4 mr-2" />
-                        Suspend User
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Send Email Notification Card */}
-          <Card className="p-6 mb-6 bg-black/50 backdrop-blur-xl border-orange-500/30 shadow-lg shadow-orange-500/10">
-            <div className="flex items-center gap-2 mb-4">
-              <Send className="w-5 h-5 text-orange-400" />
-              <h2 className="text-orange-300 text-xl">Send Email Notification</h2>
-            </div>
-            <p className="text-purple-400/70 text-sm mb-4">Send important announcements, policy updates, or notifications to this user.</p>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-purple-300 text-sm mb-2 block">Email Subject</Label>
-                <Input
-                  placeholder="e.g., Important: Policy Update on WorkHub"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="h-10 bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <Label className="text-purple-300 text-sm mb-2 block">Message</Label>
-                <Textarea
-                  placeholder="Dear {userData.name},\n\nWe're writing to inform you about important updates to our platform policies..."
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                  className="bg-purple-500/10 border-purple-500/30 text-purple-300 rounded-xl min-h-[120px] resize-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail || !emailSubject.trim() || !emailMessage.trim()}
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl shadow-md hover:shadow-lg transition border border-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  {isSendingEmail ? 'Sending...' : 'Send Email'}
-                </Button>
-
-                {(emailSubject || emailMessage) && (
-                  <Button
-                    onClick={() => {
-                      setEmailSubject('');
-                      setEmailMessage('');
-                    }}
-                    variant="outline"
-                    className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl"
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <Mail className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-blue-300">
-                  <strong>Recipient:</strong> {userData.name} ({userData.email})
-                </p>
-              </div>
-
-              <div className="mt-4">
-                <Label className="text-purple-300 text-sm mb-2 block">Attachments (Optional)</Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="file"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="email-attachments"
-                  />
-                  <label htmlFor="email-attachments">
-                    <Button
-                      type="button"
-                      className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl flex items-center gap-2 cursor-pointer"
-                      onClick={() => document.getElementById('email-attachments')?.click()}
-                    >
-                      <Upload className="w-4 h-4" />
-                      Add Files
-                    </Button>
-                  </label>
-                </div>
-                {emailAttachments.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs text-purple-400/70 mb-2">Attached Files:</p>
-                    {emailAttachments.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-purple-400" />
-                          <div>
-                            <p className="text-sm text-purple-300">{file.name}</p>
-                            <p className="text-xs text-purple-400/60">{formatFileSize(file.size)}</p>
-                          </div>
-                        </div>
+                  <div className="mt-4">
+                    <Label className="text-purple-300 text-sm mb-2 block">Attachments (Optional)</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="file"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        id="email-attachments"
+                      />
+                      <label htmlFor="email-attachments">
                         <Button
-                          onClick={() => removeAttachment(index)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-xl"
+                          type="button"
+                          className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 rounded-xl flex items-center gap-2 cursor-pointer"
+                          onClick={() => document.getElementById('email-attachments')?.click()}
                         >
-                          <X className="w-4 h-4" />
+                          <Upload className="w-4 h-4" />
+                          Add Files
                         </Button>
+                      </label>
+                    </div>
+                    {emailAttachments.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-purple-400/70 mb-2">Attached Files:</p>
+                        {emailAttachments.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-purple-400" />
+                              <div>
+                                <p className="text-sm text-purple-300">{file.name}</p>
+                                <p className="text-xs text-purple-400/60">{formatFileSize(file.size)}</p>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => removeAttachment(index)}
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-xl"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          </Card>
-
+                </div>
+              </Card>
+            </>
+          )}
         </div>
       </div>
-
-      {/* Edit User Modal */}
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="bg-black/90 border border-purple-500/50 text-purple-100 backdrop-blur-2xl rounded-2xl max-w-2xl overflow-hidden shadow-2xl shadow-purple-500/20">
-          <DialogHeader className="border-b border-purple-500/20 pb-4 mb-4">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-              Edit Admin User Profile
-            </DialogTitle>
-            <DialogDescription className="text-purple-400">
-              Modify key metrics and administrative details for {userData.name}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name" className="text-purple-300 text-sm flex items-center gap-2">
-                  Full Name
-                </Label>
-                <Input
-                  id="edit-name"
-                  value={editedData.name}
-                  onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-email" className="text-purple-300 text-sm flex items-center gap-2">
-                  Email
-                </Label>
-                <Input
-                  id="edit-email"
-                  value={editedData.email}
-                  onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-phone" className="text-purple-300 text-sm flex items-center gap-2">
-                  Phone
-                </Label>
-                <Input
-                  id="edit-phone"
-                  value={editedData.phone}
-                  onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-bio" className="text-purple-300 text-sm flex items-center gap-2">
-                  Bio / Description
-                </Label>
-                <Textarea
-                  id="edit-bio"
-                  value={editedData.bio}
-                  onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 focus:border-purple-500 focus:ring-purple-500/50 rounded-xl min-h-[100px] resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl space-y-4">
-                <h3 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Star className="w-3 h-3" /> Administrative Metrics
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-xs">Total Jobs</Label>
-                    <Input
-                      type="number"
-                      value={editedData.totalJobs}
-                      onChange={(e) => setEditedData({ ...editedData, totalJobs: parseInt(e.target.value) || 0 })}
-                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-xs">Total Posts</Label>
-                    <Input
-                      type="number"
-                      value={editedData.totalPosts}
-                      onChange={(e) => setEditedData({ ...editedData, totalPosts: parseInt(e.target.value) || 0 })}
-                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-xs">Rating (0 - 5.0)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="5"
-                      value={editedData.rating}
-                      onChange={(e) => setEditedData({ ...editedData, rating: parseFloat(e.target.value) || 0 })}
-                      className="bg-purple-900/40 border-purple-500/30 text-purple-100 rounded-lg h-9 text-sm font-bold text-yellow-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-purple-300 text-sm">Location</Label>
-                <Input
-                  value={editedData.location}
-                  onChange={(e) => setEditedData({ ...editedData, location: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 rounded-xl h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-purple-300 text-sm">School</Label>
-                <Input
-                  value={editedData.school}
-                  onChange={(e) => setEditedData({ ...editedData, school: e.target.value })}
-                  className="bg-purple-900/20 border-purple-500/30 text-purple-100 rounded-xl h-11"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 gap-3">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              className="bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 rounded-xl px-6 h-11"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 text-white border-0 rounded-xl px-8 h-11 shadow-lg shadow-purple-500/40 font-bold"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save Synchronization
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

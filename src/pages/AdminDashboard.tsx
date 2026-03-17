@@ -23,6 +23,9 @@ import {
   AlertTriangle,
   Mail,
   Star,
+  Phone,
+  MapPin,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -61,6 +64,10 @@ interface UserRow {
   totalJobs?: number;
   totalPosts?: number;
   rating?: number;
+  phoneNumber?: string;
+  bio?: string;
+  location?: string;
+  school?: string;
 }
 
 interface Order {
@@ -109,41 +116,7 @@ interface ReportProblem {
   resolvedAt?: string;
 }
 
-// ─── Mock Data ───────────────────────────────────────────────
-const mockUsers: UserRow[] = [];
-
-const mockOrders: Order[] = [
-  { id: 101, userId: 2, userName: 'Jane Smith', plan: 'Gold Plan', amount: 19.99, status: 'Completed', date: '2024-03-01' },
-  { id: 102, userId: 1, userName: 'John Doe', plan: 'Silver Plan', amount: 9.99, status: 'Pending', date: '2024-03-05' },
-  { id: 103, userId: 4, userName: 'Bob Wilson', plan: 'Silver Plan', amount: 9.99, status: 'Completed', date: '2024-03-06' },
-  { id: 104, userId: 5, userName: 'Alice Brown', plan: 'Diamond Plan', amount: 49.99, status: 'Failed', date: '2024-03-07' },
-];
-
-const mockPosts: Post[] = [
-  { id: 201, userId: 2, userName: 'Jane Smith', title: 'Senior Developer Needed', category: 'Technology', status: 'Published', date: '2024-03-02' },
-  { id: 202, userId: 1, userName: 'John Doe', title: 'Logo Design Project', category: 'Design', status: 'Pending', date: '2024-03-04' },
-  { id: 203, userId: 4, userName: 'Bob Wilson', title: 'Marketing Campaign Manager', category: 'Marketing', status: 'Published', date: '2024-03-05' },
-];
-
-const mockCategories: Category[] = [
-  { id: 1, name: 'Technology', count: 124 },
-  { id: 2, name: 'Design', count: 85 },
-  { id: 3, name: 'Marketing', count: 67 },
-  { id: 4, name: 'Finance', count: 42 },
-];
-
-const mockJobTypes: JobType[] = [
-  { id: 1, name: 'Full-time', count: 450 },
-  { id: 2, name: 'Part-time', count: 210 },
-  { id: 3, name: 'Freelance', count: 180 },
-  { id: 4, name: 'Internship', count: 95 },
-];
-
-const mockReportProblems: ReportProblem[] = [
-  { id: 1, userId: 1, userName: 'John Doe', userEmail: 'john@example.com', category: 'Technical', subject: 'Không thể tải ảnh đại diện', description: 'Khi tôi tải ảnh JPG, trang bị chuyển hướng đến màn hình lỗi.', status: 'Open', priority: 'Medium', createdAt: '2024-03-05' },
-  { id: 2, userId: 2, userName: 'Jane Smith', userEmail: 'jane@example.com', category: 'Account', subject: 'Liên kết đặt lại mật khẩu không hoạt động', description: 'Tôi đã yêu cầu đặt lại mật khẩu nhưng liên kết dẫn đến trang 404.', status: 'In Progress', priority: 'High', createdAt: '2024-03-04' },
-  { id: 3, userId: 4, userName: 'Bob Wilson', userEmail: 'bob@example.com', category: 'Payment', subject: 'Thanh toán không thành công', description: 'Thẻ tín dụng bị từ chối mặc dù có đủ số dư.', status: 'Open', priority: 'Critical', createdAt: '2024-03-06' },
-];
+const mockReportProblems: ReportProblem[] = [];
 
 type MenuKey = 'analytics' | 'users' | 'orders' | 'posts' | 'categories' | 'jobtypes' | 'reports';
 
@@ -197,62 +170,110 @@ function actionBtnsHtml(id: number, status?: string) {
   const toggleAction = "toggle-ban";
   const toggleCls = isSuspended ? "text-green-400 hover:bg-green-500/20" : "text-red-400 hover:bg-red-500/20";
 
-  return `<div class="flex gap-1">
-    <button data-action="view" data-id="${id}" class="p-2 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-all" title="Xem chi tiết"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></button>
-    <button data-action="edit" data-id="${id}" class="p-2 hover:bg-purple-500/20 rounded-lg text-purple-400 transition-all" title="Chỉnh sửa"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></button>
-    <button data-action="${toggleAction}" data-id="${id}" class="p-2 ${toggleCls} rounded-lg transition-all" title="${toggleTitle}">${toggleIcon}</button>
+  return `<div class="flex gap-2">
+    <button data-action="view" data-id="${id}" class="p-2 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl text-purple-400 border border-purple-500/20 transition-all active:scale-95" title="Xem chi tiết">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button data-action="edit" data-id="${id}" class="p-2 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl text-purple-400 border border-purple-500/20 transition-all active:scale-95" title="Chỉnh sửa">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+    </button>
+    <button data-action="${toggleAction}" data-id="${id}" class="p-2 bg-purple-500/10 ${toggleCls} rounded-xl border border-purple-500/20 transition-all active:scale-95" title="${toggleTitle}">${toggleIcon}</button>
   </div>`;
 }
 
 // ─── Component ───────────────────────────────────────────────
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthLoading } = useAuth();
 
   const [selectedMenu, setSelectedMenu] = useState<MenuKey>('analytics');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [users, setUsers] = useState<UserRow[]>(mockUsers);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
-  const [jobTypes, setJobTypes] = useState<JobType[]>(mockJobTypes);
-  const [reports, setReports] = useState<ReportProblem[]>(mockReportProblems);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [jobTypes, setJobTypes] = useState<JobType[]>([]);
+  const [reports, setReports] = useState<ReportProblem[]>([]);
+  const [stats, setStats] = useState<any>(null);
 
-  // Fetch real users
+  // Fetch data
   useEffect(() => {
-    const fetchUsers = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    const fetchData = async () => {
       try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch(`${API}/api/Admin/users`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const result = await res.json();
-        if (result.success && result.data) {
-          // Map backend UserDTO to frontend UserRow
-          const mappedUsers = result.data.map((u: any) => ({
-            id: u.id,
-            email: u.email,
-            fullName: u.fullName || 'N/A',
-            userType: u.role === 0 ? 'admin' : 'user',
-            paymentPlan: u.paymentPlan || 'free',
-            status: u.status === 'suspended' ? 'suspended' : 'active',
-            revenue: u.revenue || 0,
-            joinDate: u.joinDate || new Date().toISOString().split('T')[0],
-            isVerified: u.isVerified || false,
-            totalJobs: u.totalJobs || 0,
-            totalPosts: u.totalPosts || 0,
-            rating: u.rating || 0
-          }));
-          setUsers(mappedUsers);
+        if (selectedMenu === 'analytics') {
+          const res = await fetch(`${API}/api/Admin/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setStats(result.data);
+        } else if (selectedMenu === 'users') {
+          const res = await fetch(`${API}/api/Admin/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success && result.data) {
+            setUsers(result.data.map((u: any) => ({
+              id: u.id,
+              email: u.email,
+              fullName: u.fullName || 'N/A',
+              userType: u.role === 0 ? 'admin' : 'user',
+              paymentPlan: u.paymentPlan || 'free',
+              status: u.status === 'suspended' ? 'suspended' : 'active',
+              revenue: u.revenue || 0,
+              joinDate: u.joinDate || new Date().toISOString().split('T')[0],
+              isVerified: u.isVerified || false,
+              totalJobs: u.totalJobs || 0,
+              totalPosts: u.totalPosts || 0,
+              rating: u.rating || 0,
+              phoneNumber: u.phone || u.phoneNumber || '',
+              bio: u.bio || '',
+              location: u.location || '',
+              school: u.school || ''
+            })));
+          }
+        } else if (selectedMenu === 'orders') {
+          const res = await fetch(`${API}/api/Admin/orders`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setOrders(result.data);
+        } else if (selectedMenu === 'posts') {
+          const res = await fetch(`${API}/api/Admin/posts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setPosts(result.data);
+        } else if (selectedMenu === 'categories') {
+          const res = await fetch(`${API}/api/Admin/categories`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setCategories(result.data);
+        } else if (selectedMenu === 'jobtypes') {
+          const res = await fetch(`${API}/api/Admin/jobtypes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setJobTypes(result.data);
+        } else if (selectedMenu === 'reports') {
+          const res = await fetch(`${API}/api/Admin/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const result = await res.json();
+          if (result.success) setReports(result.data);
         }
       } catch (error) {
-        console.error("Failed to fetch users:", error);
+        console.error(`Failed to fetch ${selectedMenu}:`, error);
+        toast.error(`Không thể tải dữ liệu ${selectedMenu}`);
       }
     };
 
-    fetchUsers();
-  }, [selectedMenu]); // Refetch when menu changes or once on mount
+    fetchData();
+  }, [selectedMenu]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('view');
@@ -279,8 +300,21 @@ export function AdminDashboard() {
 
   // Redirect non-admins
   useEffect(() => {
-    if (user?.userType !== 'admin') navigate('/');
-  }, [user, navigate]);
+    if (!isAuthLoading && user?.userType !== 'admin') {
+      navigate('/');
+    }
+  }, [user, navigate, isAuthLoading]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+          <p className="text-purple-400 font-mono text-sm animate-pulse">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Find item by id across current menu ─────────────────
   const findItem = useCallback((id: number) => {
@@ -296,7 +330,43 @@ export function AdminDashboard() {
   }, []);
 
   // ─── CRUD Handlers ───────────────────────────────────────
-  const handleEdit = useCallback((item: any) => { setDialogMode('edit'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
+  const handleEdit = useCallback(async (item: any) => { 
+    setDialogMode('edit'); 
+    setSelectedItem(item); 
+    
+    if (selectedMenuRef.current === 'users') {
+      try {
+        console.log("Fetching full profile for user:", item.id);
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${API}/api/Admin/users/${item.id}/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          const u = result.data;
+          setFormData({ 
+            ...item, 
+            phoneNumber: u.phoneNumber || '',
+            bio: u.userDetail?.bio || '',
+            location: u.userDetail?.location || '',
+            school: u.userDetail?.school || '',
+            totalJobs: u.userDetail?.totalJobs || 0,
+            totalPosts: u.userDetail?.totalPosts || 0,
+            rating: u.userDetail?.rating || 0
+          });
+        } else {
+          setFormData({ ...item });
+        }
+      } catch (error) {
+        console.error("Failed to fetch full user profile for edit:", error);
+        setFormData({ ...item });
+      }
+    } else {
+      setFormData({ ...item });
+    }
+    
+    setIsDialogOpen(true); 
+  }, []);
   const handleView = useCallback((item: any) => { 
     if (selectedMenuRef.current === 'users') {
       navigate(`/admin/user-profile?userId=${item.id}`);
@@ -401,6 +471,10 @@ export function AdminDashboard() {
             email: formData.email,
             role: formData.userType === 'admin' ? 0 : 1,
             status: formData.status || 'active',
+            phoneNumber: formData.phoneNumber,
+            bio: formData.bio,
+            location: formData.location,
+            school: formData.school,
             totalJobs: formData.totalJobs,
             totalPosts: formData.totalPosts,
             rating: formData.rating
@@ -601,7 +675,7 @@ export function AdminDashboard() {
 
   // ─── Chart Init ──────────────────────────────────────────
   useEffect(() => {
-    if (selectedMenu !== 'analytics' || !chartRef.current) return;
+    if (selectedMenu !== 'analytics' || !chartRef.current || !stats?.revenueChartData) return;
     const loadChart = async () => {
       const Chart = (await import('chart.js/auto')).default;
       const existing = Chart.getChart(chartRef.current as HTMLCanvasElement);
@@ -609,10 +683,10 @@ export function AdminDashboard() {
       new Chart(chartRef.current as HTMLCanvasElement, {
         type: 'line',
         data: {
-          labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+          labels: stats.revenueChartData.map((d: any) => d.day),
           datasets: [{
             label: 'Doanh thu',
-            data: [1200, 1900, 3000, 5000, 2300, 3400, 4500],
+            data: stats.revenueChartData.map((d: any) => d.revenue),
             borderColor: '#A855F7',
             tension: 0.4,
             fill: true,
@@ -628,7 +702,7 @@ export function AdminDashboard() {
       });
     };
     loadChart();
-  }, [selectedMenu]);
+  }, [selectedMenu, stats]);
 
   // ─── Menu Items ──────────────────────────────────────────
   const menuItems = [
@@ -664,6 +738,31 @@ export function AdminDashboard() {
                 <div className="relative">
                   <Input value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
                   <Mail className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-purple-300 mb-2 block font-medium">Số điện thoại</Label>
+                <div className="relative">
+                  <Input value={formData.phoneNumber || ''} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
+                  <Phone className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-purple-300 mb-2 block font-medium">Bio / Mô tả</Label>
+                <Textarea value={formData.bio || ''} onChange={e => setFormData({ ...formData, bio: e.target.value })} disabled={disabled} className={`${inputCls} min-h-[80px]`} />
+              </div>
+              <div>
+                <Label className="text-purple-300 mb-2 block font-medium">Địa điểm</Label>
+                <div className="relative">
+                  <Input value={formData.location || ''} onChange={e => setFormData({ ...formData, location: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
+                  <MapPin className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-purple-300 mb-2 block font-medium">Trường học</Label>
+                <div className="relative">
+                  <Input value={formData.school || ''} onChange={e => setFormData({ ...formData, school: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
+                  <GraduationCap className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
                 </div>
               </div>
               <div>
@@ -872,7 +971,8 @@ export function AdminDashboard() {
           </div>
         );
       default:
-        return null;
+        console.warn("renderDialogFields: unknown menu", selectedMenu);
+        return <div className="p-4 text-purple-400">Không có dữ liệu hiển thị cho menu này.</div>;
     }
   };
 
@@ -949,10 +1049,10 @@ export function AdminDashboard() {
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { label: 'Doanh thu', val: '$45,678', icon: DollarSign, trend: '+23%' },
-                  { label: 'Người dùng', val: '2,456', icon: Users, trend: '+145' },
-                  { label: 'Công việc', val: '1,234', icon: Briefcase, trend: '+12' },
-                  { label: 'Premium', val: '423', icon: Crown, trend: '17%' },
+                  { label: 'Doanh thu', val: stats ? `$${stats.totalRevenue.toLocaleString()}` : '$0', icon: DollarSign, trend: stats ? `+${stats.revenueGrowthPercentage}%` : '0%' },
+                  { label: 'Người dùng', val: stats ? stats.totalUsers.toLocaleString() : '0', icon: Users, trend: stats ? `+${stats.userGrowthCount}` : '+0' },
+                  { label: 'Công việc', val: stats ? stats.totalJobs.toLocaleString() : '0', icon: Briefcase, trend: stats ? `+${stats.jobGrowthCount}` : '+0' },
+                  { label: 'Premium', val: stats ? stats.totalPremiumUsers.toLocaleString() : '0', icon: Crown, trend: stats ? `${stats.premiumGrowthPercentage}%` : '0%' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform" />
@@ -995,7 +1095,7 @@ export function AdminDashboard() {
               {dialogTitle()}
             </DialogTitle>
             <DialogDescription className="text-purple-400/60 font-mono text-xs">
-              ID: {selectedItem?.id || 'MỚI'}
+              ID: {selectedItem?.id || 'MỚI'} | Menu: {selectedMenu}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 pt-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
