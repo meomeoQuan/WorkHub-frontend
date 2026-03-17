@@ -21,8 +21,11 @@ import {
   Save,
   ChevronLeft,
   AlertTriangle,
+  Mail,
+  Star,
 } from 'lucide-react';
 import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -55,6 +58,9 @@ interface UserRow {
   revenue: number;
   joinDate: string;
   isVerified: boolean;
+  totalJobs?: number;
+  totalPosts?: number;
+  rating?: number;
 }
 
 interface Order {
@@ -233,7 +239,10 @@ export function AdminDashboard() {
             status: u.status === 'suspended' ? 'suspended' : 'active',
             revenue: u.revenue || 0,
             joinDate: u.joinDate || new Date().toISOString().split('T')[0],
-            isVerified: u.isVerified || false
+            isVerified: u.isVerified || false,
+            totalJobs: u.totalJobs || 0,
+            totalPosts: u.totalPosts || 0,
+            rating: u.rating || 0
           }));
           setUsers(mappedUsers);
         }
@@ -288,7 +297,13 @@ export function AdminDashboard() {
 
   // ─── CRUD Handlers ───────────────────────────────────────
   const handleEdit = useCallback((item: any) => { setDialogMode('edit'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
-  const handleView = useCallback((item: any) => { setDialogMode('view'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); }, []);
+  const handleView = useCallback((item: any) => { 
+    if (selectedMenuRef.current === 'users') {
+      navigate(`/admin/user-profile?userId=${item.id}`);
+    } else {
+      setDialogMode('view'); setSelectedItem(item); setFormData({ ...item }); setIsDialogOpen(true); 
+    }
+  }, [navigate]);
   const handleCreate = useCallback(() => { setDialogMode('create'); setSelectedItem(null); setFormData({}); setIsDialogOpen(true); }, []);
   const handleDeletePrompt = useCallback((id: number) => { setItemToDelete(id); setIsDeleteDialogOpen(true); }, []);
 
@@ -334,29 +349,125 @@ export function AdminDashboard() {
     setItemToDelete(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const token = localStorage.getItem('access_token');
+    
+    if (selectedMenu === 'users') {
+      try {
+        if (dialogMode === 'create') {
+          const createData = {
+            fullName: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            role: formData.userType === 'admin' ? 0 : 1
+          };
+
+          const res = await fetch(`${API}/api/Admin/users`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(createData)
+          });
+
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const u = result.data;
+              const mappedUser = {
+                id: u.id,
+                email: u.email,
+                fullName: u.fullName || 'N/A',
+                userType: (u.role === 0 ? 'admin' : 'user') as 'user' | 'admin',
+                paymentPlan: (u.paymentPlan || 'free') as PaymentPlan,
+                status: (u.status === 'suspended' ? 'suspended' : 'active') as 'active' | 'suspended',
+                revenue: u.revenue || 0,
+                joinDate: u.joinDate || new Date().toISOString().split('T')[0],
+                isVerified: u.isVerified || false
+              };
+              setUsers(prev => [...prev, mappedUser]);
+              setIsDialogOpen(false);
+              toast.success('User created successfully');
+            }
+          } else {
+            const errorText = await res.text();
+            console.error("Failed to create user:", errorText);
+            toast.error('Failed to create user: ' + errorText);
+          }
+        } else {
+          const updateData = {
+            fullName: formData.fullName,
+            email: formData.email,
+            role: formData.userType === 'admin' ? 0 : 1,
+            status: formData.status || 'active',
+            totalJobs: formData.totalJobs,
+            totalPosts: formData.totalPosts,
+            rating: formData.rating
+          };
+
+          const res = await fetch(`${API}/api/Admin/users/${selectedItem.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updateData)
+          });
+
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const u = result.data;
+              const mappedUser = {
+                id: u.id,
+                email: u.email,
+                fullName: u.fullName || 'N/A',
+                userType: (u.role === 0 ? 'admin' : 'user') as 'user' | 'admin',
+                paymentPlan: (u.paymentPlan || 'free') as PaymentPlan,
+                status: (u.status === 'suspended' ? 'suspended' : 'active') as 'active' | 'suspended',
+                revenue: u.revenue || 0,
+                joinDate: u.joinDate || new Date().toISOString().split('T')[0],
+                isVerified: u.isVerified || false
+              };
+              setUsers(prev => prev.map(user => user.id === selectedItem.id ? { ...user, ...mappedUser } : user));
+              setIsDialogOpen(false);
+              toast.success('User updated successfully');
+            }
+          } else {
+            console.error("Failed to update user:", await res.text());
+            toast.error('Failed to update user');
+          }
+        }
+      } catch (error) {
+        console.error("Error saving user:", error);
+        toast.error('An error occurred while saving user');
+      }
+      return;
+    }
+
+    // Default mock behavior for other menus
     const newId = Date.now();
     if (dialogMode === 'create') {
       const newItem = { ...formData, id: newId };
       switch (selectedMenu) {
-        case 'users': setUsers(prev => [...prev, newItem]); break;
         case 'orders': setOrders(prev => [...prev, newItem]); break;
         case 'posts': setPosts(prev => [...prev, newItem]); break;
         case 'reports': setReports(prev => [...prev, newItem]); break;
         case 'categories': setCategories(prev => [...prev, newItem]); break;
         case 'jobtypes': setJobTypes(prev => [...prev, newItem]); break;
       }
+      setIsDialogOpen(false);
     } else {
       switch (selectedMenu) {
-        case 'users': setUsers(prev => prev.map(u => u.id === selectedItem.id ? { ...u, ...formData } : u)); break;
         case 'orders': setOrders(prev => prev.map(o => o.id === selectedItem.id ? { ...o, ...formData } : o)); break;
         case 'posts': setPosts(prev => prev.map(p => p.id === selectedItem.id ? { ...p, ...formData } : p)); break;
         case 'reports': setReports(prev => prev.map(r => r.id === selectedItem.id ? { ...r, ...formData } : r)); break;
         case 'categories': setCategories(prev => prev.map(c => c.id === selectedItem.id ? { ...c, ...formData } : c)); break;
         case 'jobtypes': setJobTypes(prev => prev.map(j => j.id === selectedItem.id ? { ...j, ...formData } : j)); break;
       }
+      setIsDialogOpen(false);
     }
-    setIsDialogOpen(false);
   };
 
   // ─── DataTables: fully imperative ────────────────────────
@@ -539,46 +650,73 @@ export function AdminDashboard() {
     switch (selectedMenu) {
       case 'users':
         return (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label className="text-purple-300 mb-2 block">Họ và tên *</Label>
-              <Input value={formData.fullName || ''} onChange={e => setFormData({ ...formData, fullName: e.target.value })} disabled={disabled} className={inputCls} />
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label className="text-purple-300 mb-2 block font-medium">Họ và tên *</Label>
+                <div className="relative">
+                  <Input value={formData.fullName || ''} onChange={e => setFormData({ ...formData, fullName: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
+                  <Users className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-purple-300 mb-2 block font-medium">Email *</Label>
+                <div className="relative">
+                  <Input value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} disabled={disabled} className={`${inputCls} pl-10`} />
+                  <Mail className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-purple-300 mb-2 block font-medium">Loại tài khoản</Label>
+                <Select value={formData.userType || 'user'} onValueChange={(v: string) => setFormData({ ...formData, userType: v })} disabled={disabled}>
+                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Người dùng</SelectItem>
+                    <SelectItem value="admin">Quản trị viên</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {dialogMode !== 'create' && (
+                <div>
+                  <Label className="text-purple-300 mb-2 block font-medium">Trạng thái</Label>
+                  <Select value={formData.status || 'active'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
+                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Hoạt động</SelectItem>
+                      <SelectItem value="suspended">Tạm khóa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Email *</Label>
-              <Input value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} disabled={disabled} className={inputCls} />
-            </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Gói đăng ký</Label>
-              <Select value={formData.paymentPlan || 'free'} onValueChange={(v: string) => setFormData({ ...formData, paymentPlan: v })} disabled={disabled}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="silver">Silver</SelectItem>
-                  <SelectItem value="gold">Gold</SelectItem>
-                  <SelectItem value="diamond">Diamond</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Loại tài khoản</Label>
-              <Select value={formData.userType || 'user'} onValueChange={(v: string) => setFormData({ ...formData, userType: v })} disabled={disabled}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Người dùng</SelectItem>
-                  <SelectItem value="admin">Quản trị viên</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Trạng thái</Label>
-              <Select value={formData.status || 'active'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Hoạt động</SelectItem>
-                  <SelectItem value="suspended">Tạm khóa</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="pt-4 border-t border-purple-500/20">
+              <h4 className="text-sm font-bold text-purple-400 mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4" /> CHỈ SỐ HỆ THỐNG
+              </h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-purple-300/60 mb-2 block text-[10px] uppercase tracking-wider font-bold">Total Jobs</Label>
+                  <div className="relative">
+                    <Input type="number" value={formData.totalJobs || 0} onChange={e => setFormData({ ...formData, totalJobs: parseInt(e.target.value) || 0 })} disabled={disabled} className={`${inputCls} pl-9`} />
+                    <Briefcase className="w-3.5 h-3.5 text-purple-400/50 absolute left-3 top-3" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-purple-300/60 mb-2 block text-[10px] uppercase tracking-wider font-bold">Total Posts</Label>
+                  <div className="relative">
+                    <Input type="number" value={formData.totalPosts || 0} onChange={e => setFormData({ ...formData, totalPosts: parseInt(e.target.value) || 0 })} disabled={disabled} className={`${inputCls} pl-9`} />
+                    <FileText className="w-3.5 h-3.5 text-purple-400/50 absolute left-3 top-3" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-purple-300/60 mb-2 block text-[10px] uppercase tracking-wider font-bold">Rating (0-5)</Label>
+                  <div className="relative">
+                    <Input type="number" step="0.1" max="5" min="0" value={formData.rating || 0} onChange={e => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })} disabled={disabled} className={`${inputCls} pl-9`} />
+                    <Star className="w-3.5 h-3.5 text-purple-400/50 absolute left-3 top-3" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
