@@ -220,7 +220,7 @@ export function AdminDashboard() {
               id: u.id,
               email: u.email,
               fullName: u.fullName || 'N/A',
-              userType: u.role === 0 ? 'admin' : 'user',
+              userType: u.role === 0 ? 'admin' : u.role === 1 ? 'employer' : 'jobseeker',
               paymentPlan: u.paymentPlan || 'free',
               status: u.status === 'suspended' ? 'suspended' : 'active',
               revenue: u.revenue || 0,

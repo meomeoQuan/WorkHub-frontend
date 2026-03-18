@@ -139,14 +139,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (parsedUser.email === 'admin@gmail.com') {
+        if (parsedUser.email?.toLowerCase() === 'admin@gmail.com') {
+          console.log("AuthContext: Detected Admin Email, forcing admin role.");
           parsedUser.userType = 'admin';
           parsedUser.role = 0;
         } else if (parsedUser.role !== undefined || (parsedUser as any).Role !== undefined) {
           const mapped = mapUserDTOToUser(parsedUser as any); 
+          console.log("AuthContext: Recovering session mapping:", mapped.userType, mapped.role);
           parsedUser.userType = mapped.userType;
           parsedUser.role = (parsedUser as any).role !== undefined ? (parsedUser as any).role : (parsedUser as any).Role;
         }
+
+        // Final normalization to prevent redirection loops
+        if (parsedUser.userType === 'admin') {
+          parsedUser.role = 0;
+        }
+
+        // Save corrected state back to localStorage to prevent stale readings
+        localStorage.setItem('workhub_user', JSON.stringify(parsedUser));
 
         // Ensure paymentPlan exists for backward compatibility
         if (!parsedUser.paymentPlan) {

@@ -9,7 +9,13 @@ const roleMap: Record<number, UserRole> = {
 };
 
 export function mapUserDTOToUser(dto: UserDTO): UserModel {
-  const roleValue = (dto as any).role !== undefined ? (dto as any).role : (dto as any).Role;
+  let roleValue = (dto as any).role !== undefined ? (dto as any).role : (dto as any).Role;
+  if (typeof roleValue === 'string') roleValue = parseInt(roleValue, 10);
+  
+  if (dto.email?.toLowerCase() === 'admin@gmail.com') {
+    roleValue = 0;
+  }
+  
   return {
     id: dto.id,
     email: dto.email,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, GraduationCap, FileText, ArrowLeft, Edit, Save, X, Upload, Crown, Star, Send, Ban, Unlock } from 'lucide-react';
+import { Mail, Phone, FileText, ArrowLeft, Edit, Save, X, Upload, Crown, Star, Send, Ban, Unlock, CheckCircle } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -7,6 +7,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth, type PaymentPlan } from '../contexts/AuthContext';
+import type { UserRole } from '../types/User';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -14,6 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 const API = import.meta.env.VITE_API_URL;
 
 
@@ -131,11 +139,11 @@ export function AdminUserProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('userId') || '1';
-  const { user, isAuthLoading } = useAuth();
+  const { user, isAuthLoading, updateUser } = useAuth();
   const initialData = mockUserData[userId] || mockUserData['1'];
-  const [userData, setUserData] = useState(initialData);
+  const [userData, setUserData] = useState<any>(initialData);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(userData);
+  const [editedData, setEditedData] = useState<any>(userData);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect if not admin
@@ -145,7 +153,11 @@ export function AdminUserProfile() {
     }
   }, [user, navigate, isAuthLoading]);
 
-  if (isAuthLoading) {
+  const handleActivateVerified = () => {
+    toast.success('Account has been verified and activated successfully!');
+  };
+
+  if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -177,11 +189,9 @@ export function AdminUserProfile() {
             location: data.location || 'N/A',
             paymentPlan: (data.paymentPlan || 'free') as PaymentPlan,
             status: data.status === 'suspended' ? 'suspended' : 'active',
-            role: data.role || 1,
+            role: data.role !== undefined && data.role !== null ? data.role : 1,
+            userType: (data.role === 0 ? 'admin' : data.role === 1 ? 'employer' : 'jobseeker'),
             revenue: data.revenue || 0,
-            joinDate: data.joinDate || 'N/A',
-            lastActive: data.lastActive || 'N/A',
-            bio: data.bio || data.description || 'No bio provided.',
             industryFocus: data.industry,
             website: data.website,
             companySize: data.companySize,
@@ -277,6 +287,19 @@ export function AdminUserProfile() {
           ...editedData,
           name: editedData.fullName || editedData.name
         });
+        
+        // CRITICAL: Update local auth state if we just edited ourselves
+        if (user?.id?.toString() === userId) {
+           const updatedAuthUser = { 
+             ...user, 
+             fullName: editedData.fullName || editedData.name,
+             email: editedData.email,
+             role: editedData.role,
+             userType: (editedData.role === 0 ? 'admin' : editedData.role === 1 ? 'employer' : 'jobseeker') as UserRole
+           };
+           updateUser(updatedAuthUser);
+        }
+
         toast.success('User profile updated successfully!');
         setIsEditing(false);
       } else {
@@ -432,25 +455,33 @@ export function AdminUserProfile() {
                     <Input
                       value={editedData.fullName || editedData.name || ''}
                       onChange={(e) => setEditedData({ ...editedData, fullName: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-white focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Industry Focus</Label>
-                    <Input
-                      value={editedData.industryFocus || ''}
-                      onChange={(e) => setEditedData({ ...editedData, industryFocus: e.target.value })}
-                      placeholder="e.g. Software Development"
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500 placeholder:text-purple-400/30"
-                    />
+                    <Label className="text-purple-300 text-sm font-semibold">User Role</Label>
+                    <Select 
+                      value={editedData.userType || 'jobseeker'} 
+                      onValueChange={(val) => setEditedData({ ...editedData, userType: val, role: val === 'admin' ? 0 : val === 'employer' ? 1 : 2 })}
+                    >
+                      <SelectTrigger className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-white focus:ring-2 focus:ring-purple-500">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/90 border-purple-500/30 text-purple-100">
+                        <SelectItem value="jobseeker">Jobseeker</SelectItem>
+                        <SelectItem value="employer">Employer</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+
                   <div className="space-y-2">
                     <Label className="text-purple-300 text-sm font-semibold">Email Address</Label>
                     <Input
                       value={editedData.email || ''}
                       onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-white focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -458,71 +489,17 @@ export function AdminUserProfile() {
                     <Input
                       value={editedData.phone || editedData.phoneNumber || ''}
                       onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
+                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-white focus:ring-2 focus:ring-purple-500"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Website</Label>
-                    <Input
-                      value={editedData.website || ''}
-                      onChange={(e) => setEditedData({ ...editedData, website: e.target.value })}
-                      placeholder="https://example.com"
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500 placeholder:text-purple-400/30"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Company Size</Label>
-                    <Input
-                      value={editedData.companySize || ''}
-                      onChange={(e) => setEditedData({ ...editedData, companySize: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Founded Year</Label>
-                    <Input
-                      value={editedData.foundedYear || ''}
-                      onChange={(e) => setEditedData({ ...editedData, foundedYear: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Google Maps Embed URL</Label>
-                    <Input
-                      value={editedData.googleMapsEmbedUrl || ''}
-                      onChange={(e) => setEditedData({ ...editedData, googleMapsEmbedUrl: e.target.value })}
-                      className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100 focus:ring-2 focus:ring-purple-500"
-                    />
-                    <p className="text-purple-400/50 text-[10px]">Paste the 'src' value from Google Maps embed code</p>
                   </div>
 
-                  <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-purple-500/30">
+                  <div className="pt-6 border-t border-purple-500/30">
                     <div className="space-y-2">
-                      <Label className="text-purple-400 text-xs font-semibold uppercase">Total Jobs</Label>
-                      <Input type="number" value={editedData.totalJobs || 0} onChange={e => setEditedData({...editedData, totalJobs: parseInt(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-purple-400 text-xs font-semibold uppercase">Total Posts</Label>
-                      <Input type="number" value={editedData.totalPosts || 0} onChange={e => setEditedData({...editedData, totalPosts: parseInt(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-purple-400 text-xs font-semibold uppercase">Revenue ($)</Label>
-                      <Input type="number" step="0.01" value={editedData.revenue || 0} onChange={e => setEditedData({...editedData, revenue: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
                       <Label className="text-purple-400 text-xs font-semibold uppercase">Rating</Label>
-                      <Input type="number" step="0.1" value={editedData.rating || 0} onChange={e => setEditedData({...editedData, rating: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-purple-100 rounded-lg" />
+                      <Input type="number" step="0.1" value={editedData.rating || 0} onChange={e => setEditedData({...editedData, rating: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-white rounded-lg" />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">Office Location</Label>
-                    <Input value={editedData.location || ''} onChange={e => setEditedData({...editedData, location: e.target.value})} className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-purple-300 text-sm font-semibold">School (if individual)</Label>
-                    <Input value={editedData.school || ''} onChange={e => setEditedData({...editedData, school: e.target.value})} className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-purple-100" />
-                  </div>
                </div>
             </Card>
           ) : (
@@ -572,18 +549,10 @@ export function AdminUserProfile() {
                       >
                         <Edit className="w-3.5 h-3.5 text-white" />
                       </button>
-                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-[10px]">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-[10px]">
                         <div>
                           <span className="text-purple-400/60 font-medium">JOINED:</span>
                           <p className="text-purple-300 font-bold truncate">{userData.joinDate}</p>
-                        </div>
-                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                          <span className="text-purple-400/60 block">TOTAL JOBS</span>
-                          <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalJobs || 0}</p>
-                        </div>
-                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                          <span className="text-purple-400/60 block">TOTAL POSTS</span>
-                          <p className="text-purple-200 font-bold text-sm tracking-tighter">{userData.totalPosts || 0}</p>
                         </div>
                         <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
                           <span className="text-purple-400/60 block">RATING</span>
@@ -591,10 +560,6 @@ export function AdminUserProfile() {
                             <Star className="w-3 h-3 fill-yellow-400" />
                             {userData.rating || 0}
                           </p>
-                        </div>
-                        <div className="text-center">
-                          <span className="text-purple-400/60">REVENUE:</span>
-                          <p className="text-green-400 font-bold text-xs">${userData.revenue?.toFixed(2) || '0.00'}</p>
                         </div>
                         <div className="text-right">
                           <span className="text-purple-400/60">STATUS:</span>
@@ -614,21 +579,22 @@ export function AdminUserProfile() {
                         <Phone className="w-4 h-4 text-purple-400" />
                         <span>{userData.phone}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <MapPin className="w-4 h-4 text-purple-400" />
-                        <span>{userData.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-purple-400/70">
-                        <GraduationCap className="w-4 h-4 text-purple-400" />
-                        <span>{userData.school}</span>
-                      </div>
                     </div>
 
-                    <div className="flex gap-3 mt-6">
+                    <div className="flex flex-wrap gap-3 mt-6">
                       <Button onClick={handleEdit} className="bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-cyan-500/50">
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Profile
                       </Button>
+                      
+                      <Button 
+                        onClick={handleActivateVerified}
+                        className="bg-emerald-500/80 hover:bg-emerald-500 text-white rounded-xl shadow-md hover:shadow-lg transition border border-emerald-500/50"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Activate Verified Account
+                      </Button>
+
                       <Button
                         onClick={handleSuspendUser}
                         className={`rounded-xl shadow-md hover:shadow-lg transition ${userData.status === 'suspended'
