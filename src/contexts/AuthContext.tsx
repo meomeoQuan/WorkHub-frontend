@@ -18,7 +18,8 @@ interface AuthContextType {
   updateUser: (userData: Partial<UserModel>) => void;
   upgradePlan: (plan: PaymentPlan) => void;
   fetchPlan: () => Promise<void>;
-  googleLogin: (idToken: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<string>;
+  isAuthLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,6 +131,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserModel | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -137,6 +139,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.email?.toLowerCase() === 'admin@gmail.com') {
+          console.log("AuthContext: Detected Admin Email, forcing admin role.");
+          parsedUser.userType = 'admin';
+          parsedUser.role = 0;
+        } else if (parsedUser.role !== undefined || (parsedUser as any).Role !== undefined) {
+          const mapped = mapUserDTOToUser(parsedUser as any); 
+          console.log("AuthContext: Recovering session mapping:", mapped.userType, mapped.role);
+          parsedUser.userType = mapped.userType;
+          parsedUser.role = (parsedUser as any).role !== undefined ? (parsedUser as any).role : (parsedUser as any).Role;
+        }
+
+        // Final normalization to prevent redirection loops
+        if (parsedUser.userType === 'admin') {
+          parsedUser.role = 0;
+        }
+
+        // Save corrected state back to localStorage to prevent stale readings
+        localStorage.setItem('workhub_user', JSON.stringify(parsedUser));
+
         // Ensure paymentPlan exists for backward compatibility
         if (!parsedUser.paymentPlan) {
           parsedUser.paymentPlan = 'free';
@@ -166,7 +187,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('workhub_user');
+      } finally {
+        setIsAuthLoading(false);
       }
+    } else {
+      setIsAuthLoading(false);
     }
   }, []);
 
@@ -210,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return mappedUser.userType; // 👈 return role
   };
 
-  const googleLogin = async (authCode: string): Promise<void> => {
+  const googleLogin = async (authCode: string): Promise<string> => {
     const res = await fetch(`${API}/api/auth/google`, {
       method: "POST",
       headers: {
@@ -238,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(mappedUser);
     localStorage.setItem("workhub_user", JSON.stringify(mappedUser));
+    return mappedUser.userType;
   };
 
   const logout = () => {
@@ -297,7 +323,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoggedIn: !!user,
-      login, logout, updateUser, upgradePlan, googleLogin, fetchPlan
+      login, logout, updateUser, upgradePlan, googleLogin, fetchPlan,
+      isAuthLoading
     }}>
       {children}
     </AuthContext.Provider>

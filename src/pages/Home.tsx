@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
 import howItWorksImg from "figma:asset/35710fa8a2ad22f1bc7ef5e3899f7b6a4daf97c0.png";
 import type { RecruitmentOverviewInfoDTO } from "../types/DTOs/ModelDTOs/RecruitmentOverviewInfoDTO";
 import type { UserFeatureDTO } from "../types/DTOs/ModelDTOs/HomeDTOs/UserFeatureDTO";
@@ -138,6 +139,14 @@ export function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isAuthLoading } = useAuth();
+
+  // Redirect admin users to admin panel
+  useEffect(() => {
+    if (!isAuthLoading && user?.userType === 'admin') {
+      navigate('/admin');
+    }
+  }, [user, isAuthLoading, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {

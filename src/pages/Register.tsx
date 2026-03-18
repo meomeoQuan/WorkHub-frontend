@@ -18,7 +18,7 @@ export function Register() {
   const [userEmail, setUserEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
   const [showUserPassword, setShowUserPassword] = useState(false);
-  const [role] = useState<number>(2); // 0 = admin, 1 = user
+  const [role] = useState<number>(1); // 0 = admin, 1 = user
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 

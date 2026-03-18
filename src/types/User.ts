@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "employer" | "jobseeker";
+export type UserRole = "admin" | "user";
 export type PaymentPlan = 'free' | 'silver' | 'gold';
 
 export interface UserModel {
@@ -6,6 +6,7 @@ export interface UserModel {
   email: string;
   fullName: string;
   userType: UserRole;
+  role: number; // Preserve integer role for mapping recovery
   avatarUrl?: string | null;
   paymentPlan: string | null;
   subscription?: {

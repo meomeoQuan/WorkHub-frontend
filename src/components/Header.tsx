@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '../contexts/AuthContext';
-import type { UserModel, PaymentPlan } from '../types/User';
+import type { UserModel } from '../types/User';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -120,6 +120,18 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                     Schedule
                   </Button>
                 </Link>
+
+                {user?.userType === 'admin' && (
+                  <Link to="/admin">
+                    <Button
+                      variant="ghost"
+                      className={`rounded-xl hover:bg-[#FF9800]/10 hover:text-[#FF9800] ${currentPath.startsWith('/admin') ? 'bg-[#FF9800]/10 text-[#FF9800]' : 'text-[#263238]/70'}`}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
               </>
             )}
           </div>
