@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "employer" | "jobseeker";
+export type UserRole = "admin" | "user";
 export type PaymentPlan = 'free' | 'silver' | 'gold';
 
 export interface UserModel {

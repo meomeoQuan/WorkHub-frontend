@@ -4,8 +4,7 @@ import type { UserModel, UserRole } from "../types/User";
 
 const roleMap: Record<number, UserRole> = {
   0: "admin",
-  1: "employer",
-  2: "jobseeker",
+  1: "user",
 };
 
 export function mapUserDTOToUser(dto: UserDTO): UserModel {
@@ -20,7 +19,7 @@ export function mapUserDTOToUser(dto: UserDTO): UserModel {
     id: dto.id,
     email: dto.email,
     fullName: dto.fullName,
-    userType: roleMap[roleValue] ?? "jobseeker", // safe fallback
+    userType: roleMap[roleValue] ?? "user", // safe fallback
     role: roleValue,
     avatarUrl: dto.avatarUrl ?? null,
     paymentPlan: (dto as any).paymentPlan || (dto as any).PaymentPlan || 'free',

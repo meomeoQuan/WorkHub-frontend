@@ -181,7 +181,7 @@ export function AdminUserProfile() {
             paymentPlan: (data.paymentPlan || 'free') as PaymentPlan,
             status: data.status === 'suspended' ? 'suspended' : 'active',
             role: data.role !== undefined && data.role !== null ? data.role : 1,
-            userType: (data.role === 0 ? 'admin' : data.role === 1 ? 'employer' : 'jobseeker'),
+            userType: (data.role === 0 ? 'admin' : 'user'),
             revenue: data.revenue || 0,
             industryFocus: data.industry,
             website: data.website,
@@ -286,7 +286,7 @@ export function AdminUserProfile() {
              fullName: editedData.fullName || editedData.name,
              email: editedData.email,
              role: editedData.role,
-             userType: (editedData.role === 0 ? 'admin' : editedData.role === 1 ? 'employer' : 'jobseeker') as UserRole
+             userType: (editedData.role === 0 ? 'admin' : 'user') as UserRole
            };
            updateUser(updatedAuthUser);
         }
@@ -454,16 +454,15 @@ export function AdminUserProfile() {
                   <div className="space-y-2">
                     <Label className="text-purple-300 text-sm font-semibold">User Role</Label>
                     <Select 
-                      value={editedData.userType || 'jobseeker'} 
-                      onValueChange={(val) => setEditedData({ ...editedData, userType: val, role: val === 'admin' ? 0 : val === 'employer' ? 1 : 2 })}
+                      value={editedData.userType || 'user'} 
+                      onValueChange={(val) => setEditedData({ ...editedData, userType: val, role: val === 'admin' ? 0 : 1 })}
                     >
                       <SelectTrigger className="bg-purple-900/20 border-purple-500/30 rounded-lg h-12 text-white focus:ring-2 focus:ring-purple-500">
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
-                      <SelectContent className="bg-black/90 border-purple-500/30 text-purple-100">
-                        <SelectItem value="jobseeker">Jobseeker</SelectItem>
-                        <SelectItem value="employer">Employer</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                      <SelectContent className="bg-white border-purple-500/30 text-black">
+                        <SelectItem value="user" className="focus:bg-purple-100 hover:bg-purple-100 cursor-pointer">User</SelectItem>
+                        <SelectItem value="admin" className="focus:bg-purple-100 hover:bg-purple-100 cursor-pointer">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -485,11 +484,9 @@ export function AdminUserProfile() {
                     />
                   </div>
 
-                  <div className="pt-6 border-t border-purple-500/30">
-                    <div className="space-y-2">
-                      <Label className="text-purple-400 text-xs font-semibold uppercase">Rating</Label>
-                      <Input type="number" step="0.1" value={editedData.rating || 0} onChange={e => setEditedData({...editedData, rating: parseFloat(e.target.value) || 0})} className="h-10 bg-purple-900/20 border-purple-500/30 text-sm text-white rounded-lg" />
-                    </div>
+                  <div className="space-y-2">
+                    <Label className="text-purple-300 text-sm font-semibold">Rating</Label>
+                    <Input type="number" step="0.1" value={editedData.rating || 0} onChange={e => setEditedData({...editedData, rating: parseFloat(e.target.value) || 0})} className="h-12 bg-purple-900/20 border-purple-500/30 text-white focus:ring-2 focus:ring-purple-500 rounded-lg" />
                   </div>
 
                </div>
@@ -532,35 +529,6 @@ export function AdminUserProfile() {
                     </div>
                     <p className="text-purple-400/70 mb-4">{userData.bio}</p>
 
-                    {/* Admin Info Bar */}
-                    <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg group relative">
-                      <button 
-                         onClick={handleEdit}
-                         className="absolute -top-3 -right-3 p-1.5 bg-purple-600 rounded-full shadow-lg border border-purple-400/50 hover:bg-purple-500 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center z-20"
-                         title="Edit Metrics"
-                      >
-                        <Edit className="w-3.5 h-3.5 text-white" />
-                      </button>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-[10px]">
-                        <div>
-                          <span className="text-purple-400/60 font-medium">JOINED:</span>
-                          <p className="text-purple-300 font-bold truncate">{userData.joinDate}</p>
-                        </div>
-                        <div className="bg-purple-500/10 rounded p-1 border border-purple-500/20 text-center">
-                          <span className="text-purple-400/60 block">RATING</span>
-                          <p className="text-yellow-400 font-bold text-sm flex items-center justify-center gap-1">
-                            <Star className="w-3 h-3 fill-yellow-400" />
-                            {userData.rating || 0}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-purple-400/60">STATUS:</span>
-                          <p className={`font-bold ${userData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                            {userData.status?.toUpperCase() || 'ACTIVE'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       <div className="flex items-center gap-2 text-purple-400/70">
