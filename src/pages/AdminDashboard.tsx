@@ -181,6 +181,14 @@ function actionBtnsHtml(id: number, status?: string) {
   </div>`;
 }
 
+function editOnlyBtnHtml(id: number) {
+  return `<div class="flex gap-2">
+    <button data-action="edit" data-id="${id}" class="p-2 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl text-purple-400 border border-purple-500/20 transition-all active:scale-95" title="Chỉnh sửa">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+    </button>
+  </div>`;
+}
+
 // ─── Component ───────────────────────────────────────────────
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -305,26 +313,16 @@ export function AdminDashboard() {
     }
   }, [user, navigate, isAuthLoading]);
 
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-          <p className="text-purple-400 font-mono text-sm animate-pulse">Authenticating...</p>
-        </div>
-      </div>
-    );
-  }
-
   // ─── Find item by id across current menu ─────────────────
   const findItem = useCallback((id: number) => {
+    const sid = String(id);
     switch (selectedMenuRef.current) {
-      case 'users': return usersRef.current.find(u => u.id === id);
-      case 'orders': return ordersRef.current.find(o => o.id === id);
-      case 'posts': return postsRef.current.find(p => p.id === id);
-      case 'reports': return reportsRef.current.find(r => r.id === id);
-      case 'categories': return categoriesRef.current.find(c => c.id === id);
-      case 'jobtypes': return jobTypesRef.current.find(j => j.id === id);
+      case 'users': return usersRef.current.find(u => String(u.id) === sid);
+      case 'orders': return ordersRef.current.find(o => String(o.id) === sid);
+      case 'posts': return postsRef.current.find(p => String(p.id) === sid);
+      case 'reports': return reportsRef.current.find(r => String(r.id) === sid);
+      case 'categories': return categoriesRef.current.find(c => String(c.id) === sid);
+      case 'jobtypes': return jobTypesRef.current.find(j => String(j.id) === sid);
       default: return null;
     }
   }, []);
@@ -520,6 +518,71 @@ export function AdminDashboard() {
       return;
     }
 
+    if (selectedMenu === 'categories' || selectedMenu === 'jobtypes') {
+      try {
+        const endpoint = selectedMenu === 'categories' ? 'categories' : 'jobtypes';
+        if (dialogMode === 'create') {
+          const res = await fetch(`${API}/api/Admin/${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: formData.name })
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              const mappedItem = {
+                id: result.data.id,
+                name: result.data.name,
+                count: result.data.count || 0
+              };
+              if (selectedMenu === 'categories') {
+                setCategories(prev => [...prev, mappedItem]);
+              } else {
+                setJobTypes(prev => [...prev, mappedItem]);
+              }
+              setIsDialogOpen(false);
+              toast.success(`${selectedMenu === 'categories' ? 'Danh mục' : 'Loại công việc'} đã được tạo`);
+            }
+          } else {
+            console.error(`Failed to create ${endpoint}:`, await res.text());
+            toast.error(`Không thể tạo ${selectedMenu === 'categories' ? 'danh mục' : 'loại công việc'}`);
+          }
+        } else {
+          // Update
+          const res = await fetch(`${API}/api/Admin/${endpoint}/${selectedItem.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: formData.name })
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+              if (selectedMenu === 'categories') {
+                setCategories(prev => prev.map(c => c.id === selectedItem.id ? { ...c, name: result.data.name } : c));
+              } else {
+                setJobTypes(prev => prev.map(j => j.id === selectedItem.id ? { ...j, name: result.data.name } : j));
+              }
+              setIsDialogOpen(false);
+              toast.success(`${selectedMenu === 'categories' ? 'Danh mục' : 'Loại công việc'} đã được cập nhật`);
+            }
+          } else {
+            console.error(`Failed to update ${endpoint}:`, await res.text());
+            toast.error(`Không thể cập nhật ${selectedMenu === 'categories' ? 'danh mục' : 'loại công việc'}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error saving ${selectedMenu}:`, error);
+        toast.error('Có lỗi xảy ra khi lưu');
+      }
+      return;
+    }
+
     // Default mock behavior for other menus
     const newId = Date.now();
     if (dialogMode === 'create') {
@@ -528,8 +591,6 @@ export function AdminDashboard() {
         case 'orders': setOrders(prev => [...prev, newItem]); break;
         case 'posts': setPosts(prev => [...prev, newItem]); break;
         case 'reports': setReports(prev => [...prev, newItem]); break;
-        case 'categories': setCategories(prev => [...prev, newItem]); break;
-        case 'jobtypes': setJobTypes(prev => [...prev, newItem]); break;
       }
       setIsDialogOpen(false);
     } else {
@@ -537,8 +598,6 @@ export function AdminDashboard() {
         case 'orders': setOrders(prev => prev.map(o => o.id === selectedItem.id ? { ...o, ...formData } : o)); break;
         case 'posts': setPosts(prev => prev.map(p => p.id === selectedItem.id ? { ...p, ...formData } : p)); break;
         case 'reports': setReports(prev => prev.map(r => r.id === selectedItem.id ? { ...r, ...formData } : r)); break;
-        case 'categories': setCategories(prev => prev.map(c => c.id === selectedItem.id ? { ...c, ...formData } : c)); break;
-        case 'jobtypes': setJobTypes(prev => prev.map(j => j.id === selectedItem.id ? { ...j, ...formData } : j)); break;
       }
       setIsDialogOpen(false);
     }
@@ -598,7 +657,7 @@ export function AdminDashboard() {
           { title: 'ID', data: 'id' },
           { title: 'Tên danh mục', data: 'name' },
           { title: 'Số bài viết', data: 'count' },
-          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => editOnlyBtnHtml(d) },
         ];
         data = categories;
         break;
@@ -607,7 +666,7 @@ export function AdminDashboard() {
           { title: 'ID', data: 'id' },
           { title: 'Loại công việc', data: 'name' },
           { title: 'Số lượng', data: 'count' },
-          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
+          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => editOnlyBtnHtml(d) },
         ];
         data = jobTypes;
         break;
@@ -985,6 +1044,7 @@ export function AdminDashboard() {
     return `${prefix} ${entityMap[selectedMenu]}`;
   };
 
+  if (isAuthLoading) return null;
   if (!user || user.userType !== 'admin') return null;
 
   return (
