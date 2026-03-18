@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -141,6 +142,11 @@ export function UserProfile() {
   const [editedJobPreferences, setEditedJobPreferences] =
     useState(jobPreferences);
 
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
 
   const handleEdit = () => {
     setEditedData(companyData);
@@ -234,28 +240,43 @@ export function UserProfile() {
     }
   };
 
-  const handleReport = async () => {
+  const submitReport = async () => {
+    if (!reportReason) {
+      toast.error("Vui lòng chọn lý do (Please select a reason)");
+      return;
+    }
+    
+    setIsSubmittingReport(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch(`${API_URL}/api/UserProfile/report-user/${profileUserId}`, {
+      const res = await fetch(`${API_URL}/api/Report`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
+        body: JSON.stringify({
+          reporterId: user?.id,
+          reportedUserId: profileUserId,
+          reason: reportReason,
+          description: reportDescription
+        })
       });
 
       if (res.ok) {
-        const result = await res.json();
-        if (result.success) {
-          setCredibilityRating((prev) => Math.max(0, prev - 0.25));
-          toast.success("User reported. Rating penalized.");
-        }
+        toast.success("Báo cáo đã được gửi thành công (Report submitted successfully)");
+        setIsReportModalOpen(false);
+        setReportReason("");
+        setReportDescription("");
       } else {
-        toast.error("Failed to report user");
+        const result = await res.json();
+        toast.error(result.message || "Failed to submit report");
       }
     } catch (err) {
       console.error("Report error", err);
       toast.error("An error occurred while reporting");
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -766,7 +787,7 @@ export function UserProfile() {
                                 )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={handleReport}
+                                onClick={() => setIsReportModalOpen(true)}
                                 className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
                               >
                                 <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
@@ -774,6 +795,51 @@ export function UserProfile() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+
+                          <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Báo cáo người dùng (Report User)</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div>
+                                  <Label className="mb-2 block">Lý do (Reason)</Label>
+                                  <select 
+                                    className="w-full h-10 px-3 border border-[#263238]/20 rounded-lg text-sm bg-white"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                  >
+                                    <option value="">Chọn lý do...</option>
+                                    <option value="Spam">Spam</option>
+                                    <option value="Harassment">Quấy rối (Harassment)</option>
+                                    <option value="Fake account">Tài khoản giả mạo (Fake account)</option>
+                                    <option value="Scam">Lừa đảo (Scam)</option>
+                                    <option value="Other">Khác (Other)</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <Label className="mb-2 block">Chi tiết (Description)</Label>
+                                  <Textarea 
+                                    placeholder="Cung cấp thêm chi tiết..." 
+                                    className="resize-none" 
+                                    rows={4} 
+                                    value={reportDescription}
+                                    onChange={(e) => setReportDescription(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Hủy</Button>
+                                <Button 
+                                  className="bg-red-500 hover:bg-red-600 text-white" 
+                                  onClick={submitReport}
+                                  disabled={isSubmittingReport}
+                                >
+                                  {isSubmittingReport ? "Đang gửi..." : "Gửi Báo Cáo"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       )}
                     </div>
