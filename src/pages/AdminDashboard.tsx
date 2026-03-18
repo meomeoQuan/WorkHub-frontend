@@ -204,7 +204,7 @@ export function AdminDashboard() {
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [reports, setReports] = useState<ReportProblem[]>([]);
   const [stats, setStats] = useState<any>(null);
-  const [chartDays, setChartDays] = useState(7);
+  const [chartTimeRange, setChartTimeRange] = useState('7d');
 
   // Fetch data
   useEffect(() => {
@@ -214,7 +214,7 @@ export function AdminDashboard() {
     const fetchData = async () => {
       try {
         if (selectedMenu === 'analytics') {
-          const res = await fetch(`${API}/api/Admin/stats?days=${chartDays}`, {
+          const res = await fetch(`${API}/api/Admin/stats?timeRange=${chartTimeRange}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const result = await res.json();
@@ -282,7 +282,7 @@ export function AdminDashboard() {
     };
 
     fetchData();
-  }, [selectedMenu, chartDays]);
+  }, [selectedMenu, chartTimeRange]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('view');
@@ -1103,8 +1103,10 @@ export function AdminDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-purple-200">Biểu đồ doanh thu</h3>
                   <div className="flex gap-2">
-                    <button onClick={() => setChartDays(7)} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartDays === 7 ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>7 ngày</button>
-                    <button onClick={() => setChartDays(30)} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartDays === 30 ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>30 ngày</button>
+                    <button onClick={() => setChartTimeRange('7d')} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartTimeRange === '7d' ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>7 ngày</button>
+                    <button onClick={() => setChartTimeRange('30d')} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartTimeRange === '30d' ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>30 ngày</button>
+                    <button onClick={() => setChartTimeRange('12m')} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartTimeRange === '12m' ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>12 tháng</button>
+                    <button onClick={() => setChartTimeRange('5y')} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartTimeRange === '5y' ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>5 năm</button>
                   </div>
                 </div>
                 <canvas ref={chartRef}></canvas>
