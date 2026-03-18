@@ -142,7 +142,7 @@ export function AdminUserProfile() {
   const { user, isAuthLoading, updateUser } = useAuth();
   const initialData = mockUserData[userId] || mockUserData['1'];
   const [userData, setUserData] = useState<any>(initialData);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(searchParams.get('mode') === 'edit');
   const [editedData, setEditedData] = useState<any>(userData);
   const [isLoading, setIsLoading] = useState(true);
 

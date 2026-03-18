@@ -204,6 +204,7 @@ export function AdminDashboard() {
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [reports, setReports] = useState<ReportProblem[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [chartDays, setChartDays] = useState(7);
 
   // Fetch data
   useEffect(() => {
@@ -213,7 +214,7 @@ export function AdminDashboard() {
     const fetchData = async () => {
       try {
         if (selectedMenu === 'analytics') {
-          const res = await fetch(`${API}/api/Admin/stats`, {
+          const res = await fetch(`${API}/api/Admin/stats?days=${chartDays}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const result = await res.json();
@@ -281,7 +282,7 @@ export function AdminDashboard() {
     };
 
     fetchData();
-  }, [selectedMenu]);
+  }, [selectedMenu, chartDays]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('view');
@@ -329,42 +330,16 @@ export function AdminDashboard() {
 
   // ─── CRUD Handlers ───────────────────────────────────────
   const handleEdit = useCallback(async (item: any) => { 
+    if (selectedMenuRef.current === 'users') {
+      navigate(`/admin/user-profile?userId=${item.id}&mode=edit`);
+      return;
+    }
+
     setDialogMode('edit'); 
     setSelectedItem(item); 
-    
-    if (selectedMenuRef.current === 'users') {
-      try {
-        console.log("Fetching full profile for user:", item.id);
-        const token = localStorage.getItem('access_token');
-        const res = await fetch(`${API}/api/Admin/users/${item.id}/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const result = await res.json();
-        if (result.success && result.data) {
-          const u = result.data;
-          setFormData({ 
-            ...item, 
-            phoneNumber: u.phoneNumber || '',
-            bio: u.userDetail?.bio || '',
-            location: u.userDetail?.location || '',
-            school: u.userDetail?.school || '',
-            totalJobs: u.userDetail?.totalJobs || 0,
-            totalPosts: u.userDetail?.totalPosts || 0,
-            rating: u.userDetail?.rating || 0
-          });
-        } else {
-          setFormData({ ...item });
-        }
-      } catch (error) {
-        console.error("Failed to fetch full user profile for edit:", error);
-        setFormData({ ...item });
-      }
-    } else {
-      setFormData({ ...item });
-    }
-    
+    setFormData({ ...item });
     setIsDialogOpen(true); 
-  }, []);
+  }, [navigate]);
   const handleView = useCallback((item: any) => { 
     if (selectedMenuRef.current === 'users') {
       navigate(`/admin/user-profile?userId=${item.id}`);
@@ -633,10 +608,9 @@ export function AdminDashboard() {
           { title: 'ID', data: 'id' },
           { title: 'Khách hàng', data: 'userName' },
           { title: 'Gói', data: 'plan' },
-          { title: 'Số tiền', data: 'amount', render: (d: number) => `$${d}` },
+          { title: 'Số tiền', data: 'amount', render: (d: number) => `${d.toLocaleString('en-US')} VNĐ` },
           { title: 'Trạng thái', data: 'status', render: (d: string) => statusBadgeHtml(d) },
           { title: 'Ngày', data: 'date' },
-          { title: 'Hành động', data: 'id', orderable: false, render: (d: number) => actionBtnsHtml(d) },
         ];
         data = orders;
         break;
@@ -1109,10 +1083,10 @@ export function AdminDashboard() {
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { label: 'Doanh thu', val: stats ? `$${stats.totalRevenue.toLocaleString()}` : '$0', icon: DollarSign, trend: stats ? `+${stats.revenueGrowthPercentage}%` : '0%' },
-                  { label: 'Người dùng', val: stats ? stats.totalUsers.toLocaleString() : '0', icon: Users, trend: stats ? `+${stats.userGrowthCount}` : '+0' },
-                  { label: 'Công việc', val: stats ? stats.totalJobs.toLocaleString() : '0', icon: Briefcase, trend: stats ? `+${stats.jobGrowthCount}` : '+0' },
-                  { label: 'Premium', val: stats ? stats.totalPremiumUsers.toLocaleString() : '0', icon: Crown, trend: stats ? `${stats.premiumGrowthPercentage}%` : '0%' },
+                  { label: 'Doanh thu', val: stats ? `${stats.totalRevenue.toLocaleString('en-US')} VNĐ` : '0 VNĐ', icon: DollarSign, trend: stats ? `${stats.revenueGrowthPercentage > 0 ? '+' : ''}${stats.revenueGrowthPercentage}%` : '0%' },
+                  { label: 'Người dùng', val: stats ? stats.totalUsers.toLocaleString('en-US') : '0', icon: Users, trend: stats ? `${stats.userGrowthCount > 0 ? '+' : ''}${stats.userGrowthCount}` : '+0' },
+                  { label: 'Công việc', val: stats ? stats.totalJobs.toLocaleString('en-US') : '0', icon: Briefcase, trend: stats ? `${stats.jobGrowthCount > 0 ? '+' : ''}${stats.jobGrowthCount}` : '+0' },
+                  { label: 'Premium', val: stats ? stats.totalPremiumUsers.toLocaleString('en-US') : '0', icon: Crown, trend: stats ? `${stats.premiumGrowthPercentage > 0 ? '+' : ''}${stats.premiumGrowthPercentage}%` : '0%' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform" />
@@ -1129,8 +1103,8 @@ export function AdminDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-purple-200">Biểu đồ doanh thu</h3>
                   <div className="flex gap-2">
-                    <button className="px-3 py-1 bg-purple-500/20 rounded-lg text-xs text-purple-300">7 ngày</button>
-                    <button className="px-3 py-1 bg-purple-500/10 rounded-lg text-xs text-purple-400">30 ngày</button>
+                    <button onClick={() => setChartDays(7)} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartDays === 7 ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>7 ngày</button>
+                    <button onClick={() => setChartDays(30)} className={`px-3 py-1 rounded-lg text-xs transition-colors ${chartDays === 30 ? 'bg-purple-500/30 text-purple-200 font-bold' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}>30 ngày</button>
                   </div>
                 </div>
                 <canvas ref={chartRef}></canvas>
