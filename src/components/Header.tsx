@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale, Bell, Flag, CheckCheck, X } from 'lucide-react';
+import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale, Bell, X, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -39,15 +39,7 @@ function timeAgo(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-function getNotificationIcon(type: string) {
-  switch (type?.toLowerCase()) {
-    case 'report': return <Flag className="w-4 h-4 text-red-500" />;
-    case 'application': return <FileText className="w-4 h-4 text-blue-500" />;
-    case 'ban': return <Shield className="w-4 h-4 text-orange-500" />;
-    case 'system': return <Zap className="w-4 h-4 text-purple-500" />;
-    default: return <Bell className="w-4 h-4 text-gray-500" />;
-  }
-}
+
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -63,6 +55,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<NotificationItem | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -278,63 +271,104 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
 
                   {/* Notification Dropdown Panel */}
                   {isNotifOpen && (
-                    <div className="absolute right-0 top-12 w-[500px] bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
-                      {/* Header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5">
-                        <h3 className="font-semibold text-[#263238] text-sm">Notifications</h3>
-                        <div className="flex items-center gap-2">
-                          {unreadCount > 0 && (
-                            <button
-                              onClick={handleMarkAllAsRead}
-                              className="text-xs text-[#FF9800] hover:text-[#F57C00] font-medium flex items-center gap-1 transition"
-                            >
-                              <CheckCheck className="w-3.5 h-3.5" />
-                              Mark all read
-                            </button>
-                          )}
-                          <button onClick={() => setIsNotifOpen(false)} className="text-[#263238]/40 hover:text-[#263238]/70 transition">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
+                    <div className="absolute right-0 top-12 w-[520px] bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
 
-                      {/* List */}
-                      <div className="max-h-80 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-10 text-[#263238]/40">
-                            <Bell className="w-8 h-8 mb-2 opacity-30" />
-                            <p className="text-sm">No notifications yet</p>
-                          </div>
-                        ) : (
-                          notifications.map((notif) => (
+                      {/* === Detail View === */}
+                      {selectedNotif ? (
+                        <>
+                          {/* Detail Header */}
+                          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5">
                             <button
-                              key={notif.notificationId}
-                              onClick={() => !notif.isRead && handleMarkAsRead(notif.notificationId)}
-                              className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-[#263238]/5 transition-all duration-200 cursor-pointer hover:bg-[#FF9800]/10 hover:shadow-inner hover:pl-5 ${
-                                !notif.isRead ? 'bg-blue-50/60 border-l-[3px] border-l-[#4FC3F7]' : ''
-                              }`}
+                              onClick={() => setSelectedNotif(null)}
+                              className="text-[#263238]/60 hover:text-[#FF9800] transition p-1 rounded-full hover:bg-[#FF9800]/10"
                             >
-                              <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                {getNotificationIcon(notif.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm leading-tight ${!notif.isRead ? 'font-semibold text-[#263238]' : 'font-normal text-[#263238]/70'}`}>
-                                  {notif.title}
-                                </p>
-                                <p className="text-xs text-[#263238]/50 mt-0.5 line-clamp-2">
-                                  {notif.message}
-                                </p>
-                                <p className="text-[10px] text-[#263238]/40 mt-1">
-                                  {timeAgo(notif.createdAt)}
-                                </p>
-                              </div>
-                              {!notif.isRead && (
-                                <div className="w-2 h-2 rounded-full bg-[#4FC3F7] mt-2 shrink-0" />
-                              )}
+                              <ArrowLeft className="w-5 h-5" />
                             </button>
-                          ))
-                        )}
-                      </div>
+                            <h3 className="font-semibold text-[#263238] text-base">Notification Detail</h3>
+                          </div>
+
+                          {/* Detail Body */}
+                          <div className="p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="text-[7.5px] font-bold uppercase tracking-widest text-[#FF9800] bg-[#FF9800]/10 px-1.5 py-0 border border-[#FF9800]/20 rounded-sm">
+                                {selectedNotif.type || 'general'}
+                              </span>
+                              <span className="text-[#263238]/20 text-[10px]">•</span>
+                              <p className="text-[10px] font-medium text-[#263238]/40">
+                                {new Date(selectedNotif.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+
+                            <h4 className="text-lg font-bold text-[#263238] mb-3">
+                              {selectedNotif.title}
+                            </h4>
+                            <p className="text-sm text-[#263238]/70 leading-relaxed whitespace-pre-wrap">
+                              {selectedNotif.message}
+                            </p>
+
+                          </div>
+                        </>
+                      ) : (
+                        /* === List View === */
+                        <>
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 mx-2 mt-2 rounded-t-xl">
+                            <h3 className="font-semibold text-[#263238] text-base">Notifications</h3>
+                            <div className="flex items-center gap-3">
+                              {unreadCount > 0 && (
+                                <button
+                                  onClick={handleMarkAllAsRead}
+                                  className="text-xs text-[#FF9800] hover:text-[#F57C00] font-medium flex items-center gap-1 transition"
+                                >
+                                  Mark all read
+                                </button>
+                              )}
+                              <button onClick={() => setIsNotifOpen(false)} className="text-[#263238]/40 hover:text-[#263238]/70 transition">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* List */}
+                          <div className="max-h-96 overflow-y-auto px-2 pb-2">
+                            {notifications.length === 0 ? (
+                              <div className="flex flex-col items-center justify-center py-10 text-[#263238]/40">
+                                <Bell className="w-8 h-8 mb-2 opacity-30" />
+                                <p className="text-sm">No notifications yet</p>
+                              </div>
+                            ) : (
+                              notifications.map((notif) => (
+                                <button
+                                  key={notif.notificationId}
+                                  onClick={() => {
+                                    if (!notif.isRead) handleMarkAsRead(notif.notificationId);
+                                    setSelectedNotif(notif);
+                                  }}
+                                  className={`w-full text-left px-4 py-3 flex items-center gap-4 transition-all duration-200 cursor-pointer hover:bg-[#FF9800]/10 rounded-xl mb-1 last:mb-0 ${!notif.isRead ? 'bg-blue-50/60 border-l-[3px] border-l-[#4FC3F7]' : 'hover:shadow-sm'
+                                    }`}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm ${!notif.isRead ? 'font-semibold text-[#263238]' : 'font-normal text-[#263238]/70'}`}>
+                                      {notif.title}
+                                    </p>
+                                    <p className="text-xs text-[#263238]/50 mt-0.5 truncate">
+                                      {notif.message}
+                                    </p>
+                                  </div>
+                                  <span className="text-[11px] text-[#263238]/40 whitespace-nowrap shrink-0">
+                                    {timeAgo(notif.createdAt)}
+                                  </span>
+                                  {!notif.isRead ? (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#4FC3F7] shrink-0" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-[#263238]/20 shrink-0" />
+                                  )}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
