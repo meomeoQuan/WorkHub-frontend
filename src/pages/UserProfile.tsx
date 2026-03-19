@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -264,7 +264,7 @@ export function UserProfile() {
       });
 
       if (res.ok) {
-        toast.success("Báo cáo đã được gửi thành công (Report submitted successfully)");
+        toast.success("report success");
         setIsReportModalOpen(false);
         setReportReason("");
         setReportDescription("");
@@ -796,50 +796,55 @@ export function UserProfile() {
                             </DropdownMenuContent>
                           </DropdownMenu>
 
-                          <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-                            <DialogContent className="sm:max-w-[425px]">
-                              <DialogHeader>
-                                <DialogTitle>Báo cáo người dùng (Report User)</DialogTitle>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div>
-                                  <Label className="mb-2 block">Lý do (Reason)</Label>
-                                  <select 
-                                    className="w-full h-10 px-3 border border-[#263238]/20 rounded-lg text-sm bg-white"
-                                    value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
-                                  >
-                                    <option value="">Chọn lý do...</option>
-                                    <option value="Spam">Spam</option>
-                                    <option value="Harassment">Quấy rối (Harassment)</option>
-                                    <option value="Fake account">Tài khoản giả mạo (Fake account)</option>
-                                    <option value="Scam">Lừa đảo (Scam)</option>
-                                    <option value="Other">Khác (Other)</option>
-                                  </select>
+                          {isReportModalOpen && (
+                            <div className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center bg-black/50 p-4">
+                              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden text-left relative animate-in fade-in zoom-in duration-200">
+                                <div className="p-6 border-b border-[#263238]/10 flex items-center justify-between">
+                                  <h2 className="text-xl font-semibold text-[#263238]">Report User</h2>
+                                  <button onClick={() => setIsReportModalOpen(false)} className="text-[#263238]/50 hover:text-red-500">
+                                    <X className="w-5 h-5" />
+                                  </button>
                                 </div>
-                                <div>
-                                  <Label className="mb-2 block">Chi tiết (Description)</Label>
-                                  <Textarea 
-                                    placeholder="Cung cấp thêm chi tiết..." 
-                                    className="resize-none" 
-                                    rows={4} 
-                                    value={reportDescription}
-                                    onChange={(e) => setReportDescription(e.target.value)}
-                                  />
+                                <div className="p-6 space-y-4">
+                                  <div>
+                                    <Label className="mb-2 block text-sm font-medium text-[#263238]">Reason</Label>
+                                    <select 
+                                      className="w-full h-10 px-3 border border-[#263238]/20 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF9800]"
+                                      value={reportReason}
+                                      onChange={(e) => setReportReason(e.target.value)}
+                                    >
+                                      <option value="">Select a reason...</option>
+                                      <option value="Spam">Spam</option>
+                                      <option value="Harassment">Harassment</option>
+                                      <option value="Fake account">Fake account</option>
+                                      <option value="Scam">Scam</option>
+                                      <option value="Other">Other</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <Label className="mb-2 block text-sm font-medium text-[#263238]">Description</Label>
+                                    <Textarea 
+                                      placeholder="Provide more details..." 
+                                      className="resize-none border-[#263238]/20 focus:border-[#FF9800] rounded-lg" 
+                                      rows={4} 
+                                      value={reportDescription}
+                                      onChange={(e) => setReportDescription(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="p-4 border-t border-[#263238]/10 flex justify-end gap-3 bg-gray-50">
+                                  <Button variant="outline" className="rounded-xl" onClick={() => setIsReportModalOpen(false)}>Cancel</Button>
+                                  <Button 
+                                    className="bg-red-500 hover:bg-red-600 text-white rounded-xl" 
+                                    onClick={submitReport}
+                                    disabled={isSubmittingReport}
+                                  >
+                                    {isSubmittingReport ? "Submitting..." : "Submit Report"}
+                                  </Button>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Hủy</Button>
-                                <Button 
-                                  className="bg-red-500 hover:bg-red-600 text-white" 
-                                  onClick={submitReport}
-                                  disabled={isSubmittingReport}
-                                >
-                                  {isSubmittingReport ? "Đang gửi..." : "Gửi Báo Cáo"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
