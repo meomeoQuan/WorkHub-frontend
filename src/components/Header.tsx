@@ -278,7 +278,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
 
                   {/* Notification Dropdown Panel */}
                   {isNotifOpen && (
-                    <div className="absolute right-0 top-12 w-[440px] bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
+                    <div className="absolute right-0 top-12 w-[500px] bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
                       {/* Header */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5">
                         <h3 className="font-semibold text-[#263238] text-sm">Notifications</h3>
@@ -310,7 +310,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                             <button
                               key={notif.notificationId}
                               onClick={() => !notif.isRead && handleMarkAsRead(notif.notificationId)}
-                              className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-[#263238]/5 hover:bg-[#FF9800]/5 transition cursor-pointer ${
+                              className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-[#263238]/5 transition-all duration-200 cursor-pointer hover:bg-[#FF9800]/10 hover:shadow-inner hover:pl-5 ${
                                 !notif.isRead ? 'bg-blue-50/60 border-l-[3px] border-l-[#4FC3F7]' : ''
                               }`}
                             >
