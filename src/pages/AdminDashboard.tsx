@@ -116,7 +116,6 @@ interface ReportProblem {
   resolvedAt?: string;
 }
 
-const mockReportProblems: ReportProblem[] = [];
 
 type MenuKey = 'analytics' | 'users' | 'orders' | 'posts' | 'categories' | 'jobtypes' | 'reports';
 
@@ -558,6 +557,33 @@ export function AdminDashboard() {
       return;
     }
 
+    if (selectedMenu === 'reports' && dialogMode === 'edit') {
+      try {
+        const action = formData.resolveAction || 'reviewed';
+        const res = await fetch(`${API}/api/Admin/reports/${selectedItem.id}/resolve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action })
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+             setReports(prev => prev.map(r => r.id === selectedItem.id ? { ...r, status: result.data.status } : r));
+             setIsDialogOpen(false);
+             toast.success('Báo cáo đã được xử lý (Report resolved)');
+          }
+        } else {
+             toast.error('Lỗi khi xử lý báo cáo');
+        }
+      } catch (e) {
+         toast.error('Lỗi hệ thống');
+      }
+      return;
+    }
+
     // Default mock behavior for other menus
     const newId = Date.now();
     if (dialogMode === 'create') {
@@ -565,14 +591,12 @@ export function AdminDashboard() {
       switch (selectedMenu) {
         case 'orders': setOrders(prev => [...prev, newItem]); break;
         case 'posts': setPosts(prev => [...prev, newItem]); break;
-        case 'reports': setReports(prev => [...prev, newItem]); break;
       }
       setIsDialogOpen(false);
     } else {
       switch (selectedMenu) {
         case 'orders': setOrders(prev => prev.map(o => o.id === selectedItem.id ? { ...o, ...formData } : o)); break;
         case 'posts': setPosts(prev => prev.map(p => p.id === selectedItem.id ? { ...p, ...formData } : p)); break;
-        case 'reports': setReports(prev => prev.map(r => r.id === selectedItem.id ? { ...r, ...formData } : r)); break;
       }
       setIsDialogOpen(false);
     }
@@ -947,60 +971,35 @@ export function AdminDashboard() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-purple-300 mb-2 block">Họ tên người báo cáo</Label>
+                <Label className="text-purple-300 mb-2 block">Người báo cáo (Reporter)</Label>
                 <Input value={formData.userName || ''} disabled className={disabledCls} />
               </div>
               <div>
-                <Label className="text-purple-300 mb-2 block">Email liên hệ</Label>
-                <Input value={formData.userEmail || ''} disabled className={disabledCls} />
+                <Label className="text-purple-300 mb-2 block">Người bị báo cáo (Reported User)</Label>
+                <Input value={formData.reportedUserName || ''} disabled className={disabledCls} />
               </div>
             </div>
             <div>
-              <Label className="text-purple-300 mb-2 block">Tiêu đề *</Label>
-              <Input value={formData.subject || ''} onChange={e => setFormData({ ...formData, subject: e.target.value })} disabled={disabled} className={inputCls} />
+              <Label className="text-purple-300 mb-2 block">Lý do (Reason)</Label>
+              <Input value={formData.category || ''} disabled className={disabledCls} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-purple-300 mb-2 block">Chi tiết (Description)</Label>
+              <Textarea value={formData.description || ''} disabled className={`${disabledCls} min-h-[120px]`} />
+            </div>
+            {!disabled && (
               <div>
-                <Label className="text-purple-300 mb-2 block">Loại sự cố</Label>
-                <Select value={formData.category || 'Technical'} onValueChange={(v: string) => setFormData({ ...formData, category: v })} disabled={disabled}>
+                <Label className="text-purple-300 mb-2 block">Hành động của Admin (Resolve Action)</Label>
+                <Select value={formData.resolveAction || 'reviewed'} onValueChange={(v: string) => setFormData({ ...formData, resolveAction: v })}>
                   <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Technical">Lỗi kỹ thuật</SelectItem>
-                    <SelectItem value="Account">Vấn đề tài khoản</SelectItem>
-                    <SelectItem value="Payment">Thanh toán</SelectItem>
-                    <SelectItem value="Other">Khác</SelectItem>
+                    <SelectItem value="reviewed">Đã xem (Mark as Reviewed)</SelectItem>
+                    <SelectItem value="dismiss">Bỏ qua (Dismiss Report)</SelectItem>
+                    <SelectItem value="ban">Khóa tài khoản (Ban Reported User)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-purple-300 mb-2 block">Mức độ ưu tiên</Label>
-                <Select value={formData.priority || 'Medium'} onValueChange={(v: string) => setFormData({ ...formData, priority: v })} disabled={disabled}>
-                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Thấp</SelectItem>
-                    <SelectItem value="Medium">Trung bình</SelectItem>
-                    <SelectItem value="High">Cao</SelectItem>
-                    <SelectItem value="Critical">Khẩn cấp</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Chi tiết sự cố *</Label>
-              <Textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} disabled={disabled} className={`${inputCls} min-h-[120px]`} />
-            </div>
-            <div>
-              <Label className="text-purple-300 mb-2 block">Trạng thái xử lý</Label>
-              <Select value={formData.status || 'Open'} onValueChange={(v: string) => setFormData({ ...formData, status: v })} disabled={disabled}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Open">Chưa xử lý</SelectItem>
-                  <SelectItem value="In Progress">Đang xử lý</SelectItem>
-                  <SelectItem value="Resolved">Đã giải quyết</SelectItem>
-                  <SelectItem value="Closed">Đã đóng</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            )}
           </div>
         );
       default:

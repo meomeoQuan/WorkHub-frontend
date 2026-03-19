@@ -19,6 +19,7 @@ import {
   UserCheck,
   Flag,
   MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -141,6 +143,40 @@ export function UserProfile() {
   const [editedJobPreferences, setEditedJobPreferences] =
     useState(jobPreferences);
 
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportCategories, setReportCategories] = useState<{id: number, name: string, description: string}[]>([]);
+
+  useEffect(() => {
+    if (isReportModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isReportModalOpen]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/ReportCategory`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            setReportCategories(result.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch report categories", err);
+      }
+    };
+    fetchCategories();
+  }, [API_URL]);
+
 
   const handleEdit = () => {
     setEditedData(companyData);
@@ -234,28 +270,43 @@ export function UserProfile() {
     }
   };
 
-  const handleReport = async () => {
+  const submitReport = async () => {
+    if (!reportReason) {
+      toast.error("Vui lòng chọn lý do (Please select a reason)");
+      return;
+    }
+    
+    setIsSubmittingReport(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch(`${API_URL}/api/UserProfile/report-user/${profileUserId}`, {
+      const res = await fetch(`${API_URL}/api/Report`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
+        body: JSON.stringify({
+          reporterId: user?.id,
+          reportedUserId: profileUserId,
+          reason: reportReason,
+          description: reportDescription
+        })
       });
 
       if (res.ok) {
-        const result = await res.json();
-        if (result.success) {
-          setCredibilityRating((prev) => Math.max(0, prev - 0.25));
-          toast.success("User reported. Rating penalized.");
-        }
+        toast.success("report success");
+        setIsReportModalOpen(false);
+        setReportReason("");
+        setReportDescription("");
       } else {
-        toast.error("Failed to report user");
+        const result = await res.json();
+        toast.error(result.message || "Failed to submit report");
       }
     } catch (err) {
       console.error("Report error", err);
       toast.error("An error occurred while reporting");
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -766,7 +817,7 @@ export function UserProfile() {
                                 )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={handleReport}
+                                onClick={() => setIsReportModalOpen(true)}
                                 className="cursor-pointer py-3 px-4 text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 rounded-xl transition-colors group"
                               >
                                 <Flag className="w-4 h-4 mr-3 text-[#263238]/50 group-hover:text-red-600 group-focus:text-red-600 transition-colors" />
@@ -774,6 +825,69 @@ export function UserProfile() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+
+                          {isReportModalOpen && (
+                            <div className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center bg-black/50 p-4">
+                              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden text-left relative animate-in fade-in zoom-in duration-200">
+                                <div className="p-6 border-b border-[#263238]/10 flex items-center justify-between">
+                                  <h2 className="text-xl font-semibold text-[#263238]">Report User</h2>
+                                  <button onClick={() => setIsReportModalOpen(false)} className="text-[#263238]/50 hover:text-red-500">
+                                    <X className="w-5 h-5" />
+                                  </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                  <div>
+                                    <Label className="mb-2 block text-sm font-medium text-[#263238]">Reason</Label>
+                                    <div className="relative">
+                                      <select 
+                                        className="w-full h-10 px-3 pr-10 border border-[#263238]/20 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF9800]"
+                                        style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: 'none' }}
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                      >
+                                        <option value="">Select a reason...</option>
+                                        {reportCategories.map((cat) => (
+                                          <option key={cat.id} value={cat.name}>
+                                            {cat.name} {cat.description && `(${cat.description})`}
+                                          </option>
+                                        ))}
+                                        {reportCategories.length === 0 && (
+                                          <>
+                                            <option value="Spam">Spam</option>
+                                            <option value="Harassment">Harassment</option>
+                                            <option value="Fake account">Fake account</option>
+                                            <option value="Scam">Scam</option>
+                                            <option value="Other">Other</option>
+                                          </>
+                                        )}
+                                      </select>
+                                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label className="mb-2 block text-sm font-medium text-[#263238]">Description</Label>
+                                    <Textarea 
+                                      placeholder="Provide more details..." 
+                                      className="border-[#263238]/20 focus:border-[#FF9800] rounded-lg overflow-y-auto" 
+                                      rows={4} 
+                                      value={reportDescription}
+                                      onChange={(e) => setReportDescription(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="p-4 border-t border-[#263238]/10 flex justify-end gap-3 bg-gray-50">
+                                  <Button variant="outline" className="rounded-xl" onClick={() => setIsReportModalOpen(false)}>Cancel</Button>
+                                  <Button 
+                                    className="bg-red-500 hover:bg-red-600 text-white rounded-xl" 
+                                    onClick={submitReport}
+                                    disabled={isSubmittingReport}
+                                  >
+                                    {isSubmittingReport ? "Submitting..." : "Submit Report"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
