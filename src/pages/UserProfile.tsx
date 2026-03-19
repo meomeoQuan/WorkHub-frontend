@@ -19,6 +19,7 @@ import {
   UserCheck,
   Flag,
   MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -146,6 +147,35 @@ export function UserProfile() {
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportCategories, setReportCategories] = useState<{id: number, name: string, description: string}[]>([]);
+
+  useEffect(() => {
+    if (isReportModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isReportModalOpen]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/ReportCategory`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            setReportCategories(result.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch report categories", err);
+      }
+    };
+    fetchCategories();
+  }, [API_URL]);
 
 
   const handleEdit = () => {
@@ -808,24 +838,37 @@ export function UserProfile() {
                                 <div className="p-6 space-y-4">
                                   <div>
                                     <Label className="mb-2 block text-sm font-medium text-[#263238]">Reason</Label>
-                                    <select 
-                                      className="w-full h-10 px-3 border border-[#263238]/20 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF9800]"
-                                      value={reportReason}
-                                      onChange={(e) => setReportReason(e.target.value)}
-                                    >
-                                      <option value="">Select a reason...</option>
-                                      <option value="Spam">Spam</option>
-                                      <option value="Harassment">Harassment</option>
-                                      <option value="Fake account">Fake account</option>
-                                      <option value="Scam">Scam</option>
-                                      <option value="Other">Other</option>
-                                    </select>
+                                    <div className="relative">
+                                      <select 
+                                        className="w-full h-10 px-3 pr-10 border border-[#263238]/20 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF9800]"
+                                        style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: 'none' }}
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                      >
+                                        <option value="">Select a reason...</option>
+                                        {reportCategories.map((cat) => (
+                                          <option key={cat.id} value={cat.name}>
+                                            {cat.name} {cat.description && `(${cat.description})`}
+                                          </option>
+                                        ))}
+                                        {reportCategories.length === 0 && (
+                                          <>
+                                            <option value="Spam">Spam</option>
+                                            <option value="Harassment">Harassment</option>
+                                            <option value="Fake account">Fake account</option>
+                                            <option value="Scam">Scam</option>
+                                            <option value="Other">Other</option>
+                                          </>
+                                        )}
+                                      </select>
+                                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    </div>
                                   </div>
                                   <div>
                                     <Label className="mb-2 block text-sm font-medium text-[#263238]">Description</Label>
                                     <Textarea 
                                       placeholder="Provide more details..." 
-                                      className="resize-none border-[#263238]/20 focus:border-[#FF9800] rounded-lg" 
+                                      className="border-[#263238]/20 focus:border-[#FF9800] rounded-lg overflow-y-auto" 
                                       rows={4} 
                                       value={reportDescription}
                                       onChange={(e) => setReportDescription(e.target.value)}

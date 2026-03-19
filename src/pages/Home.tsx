@@ -309,27 +309,7 @@ export function Home() {
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-6 mt-10">
-                <div>
-                  <div className="text-3xl mb-1">5K+</div>
-                  <div className="text-sm text-white/80">
-                    Active Jobs
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl mb-1">2K+</div>
-                  <div className="text-sm text-white/80">
-                    Companies
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl mb-1">10K+</div>
-                  <div className="text-sm text-white/80">
-                    Hired
-                  </div>
-                </div>
-              </div>
+
             </div>
 
             {/* Right Image */}
