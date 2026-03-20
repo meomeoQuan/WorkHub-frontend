@@ -222,7 +222,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                       className={`rounded-xl hover:bg-[#4FC3F7]/10 hover:text-[#4FC3F7] ${currentPath === '/my-applications' || currentPath === '/applications'
                         ? 'bg-[#4FC3F7]/10 text-[#4FC3F7]'
                         : 'text-[#263238]/70'
-                      }`}
+                        }`}
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       My Applications
@@ -373,13 +373,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                                   ) : (
                                     <ChevronRight className="w-4 h-4 text-[#263238]/20 shrink-0" />
                                   )}
-                                  <button
-                                    onClick={(e) => handleDeleteNotification(e, notif.notificationId)}
-                                    className="p-1.5 text-[#263238]/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors group/del"
-                                    title="Delete notification"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+
                                 </button>
                               ))
                             )}
