@@ -277,7 +277,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                       {selectedNotif ? (
                         <>
                           {/* Detail Header */}
-                          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
+                          <div className="flex items-center gap-3 px-5 py-5 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
                             <button
                               onClick={() => setSelectedNotif(null)}
                               className="text-[#263238]/60 hover:text-[#FF9800] transition p-1 rounded-full hover:bg-[#FF9800]/10"
@@ -312,7 +312,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                         /* === List View === */
                         <>
                           {/* Header */}
-                          <div className="flex items-center justify-between px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
+                          <div className="flex items-center justify-between px-2 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
                             <h3 className="font-semibold text-[#263238] text-base">Notifications</h3>
                             <div className="flex items-center gap-3">
                               {unreadCount > 0 && (
