@@ -200,7 +200,7 @@ export function UserPosts() {
   }, []);
 
   const handleCopyLink = (postId: string) => {
-    const url = `${window.location.origin}/jobs?postId=${postId}`;
+    const url = `https://www.workhub.com.vn/jobs?postId=${postId}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard!");
   };
