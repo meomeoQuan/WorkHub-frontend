@@ -271,13 +271,13 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
 
                   {/* Notification Dropdown Panel */}
                   {isNotifOpen && (
-                    <div className="absolute right-0 top-12 w-[520px] bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
+                    <div className="absolute right-0 top-12 w-[520px] h-[400px] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#263238]/10 z-50 overflow-hidden">
 
                       {/* === Detail View === */}
                       {selectedNotif ? (
                         <>
                           {/* Detail Header */}
-                          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5">
+                          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
                             <button
                               onClick={() => setSelectedNotif(null)}
                               className="text-[#263238]/60 hover:text-[#FF9800] transition p-1 rounded-full hover:bg-[#FF9800]/10"
@@ -288,7 +288,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                           </div>
 
                           {/* Detail Body */}
-                          <div className="p-6">
+                          <div className="p-6 flex-1 overflow-y-auto">
                             <div className="flex items-center gap-2 mb-4">
                               <span className="text-[7.5px] font-bold uppercase tracking-widest text-[#FF9800] bg-[#FF9800]/10 px-1.5 py-0 border border-[#FF9800]/20 rounded-sm">
                                 {selectedNotif.type || 'general'}
@@ -312,7 +312,7 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                         /* === List View === */
                         <>
                           {/* Header */}
-                          <div className="flex items-center justify-between px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 mx-2 mt-2 rounded-t-xl">
+                          <div className="flex items-center justify-between px-5 py-3 border-b border-[#263238]/10 bg-gradient-to-r from-[#FF9800]/5 to-[#4FC3F7]/5 shrink-0">
                             <h3 className="font-semibold text-[#263238] text-base">Notifications</h3>
                             <div className="flex items-center gap-3">
                               {unreadCount > 0 && (
@@ -330,9 +330,9 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                           </div>
 
                           {/* List */}
-                          <div className="max-h-96 overflow-y-auto px-2 pb-2">
+                          <div className="flex-1 overflow-y-auto px-2 pb-2">
                             {notifications.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center py-10 text-[#263238]/40">
+                              <div className="flex flex-col items-center justify-center py-10 text-[#263238]/40 h-full">
                                 <Bell className="w-8 h-8 mb-2 opacity-30" />
                                 <p className="text-sm">No notifications yet</p>
                               </div>
