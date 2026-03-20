@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale, Bell, X, ArrowLeft, ChevronRight } from 'lucide-react';
+import { User as UserIcon, Zap, LogOut, Settings, Briefcase, FileText, Calendar, ChevronDown, Inbox, Crown, Sparkles, Shield, Scale, Bell, X, ArrowLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -135,6 +135,27 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
       setUnreadCount(0);
     } catch (err) { console.error('Failed to mark all as read', err); }
+  };
+
+  const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation(); // Prevent opening/selecting
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_URL}/api/Notification/${notificationId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const deletedNotif = notifications.find(n => n.notificationId === notificationId);
+        if (deletedNotif && !deletedNotif.isRead) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+        setNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
+        if (selectedNotif?.notificationId === notificationId) {
+          setSelectedNotif(null);
+        }
+      }
+    } catch (err) { console.error('Failed to delete notification', err); }
   };
 
   const handleLogout = () => {
@@ -285,6 +306,14 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                               <ArrowLeft className="w-5 h-5" />
                             </button>
                             <h3 className="font-semibold text-[#263238] text-base">Notification Detail</h3>
+                            <div className="flex-1" />
+                            <button
+                              onClick={(e) => handleDeleteNotification(e, selectedNotif.notificationId)}
+                              className="text-[#263238]/40 hover:text-red-500 transition p-1.5 rounded-full hover:bg-red-50"
+                              title="Delete notification"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
 
                           {/* Detail Body */}
@@ -358,11 +387,20 @@ export function Header({ isLoggedIn = false, user, currentPath = '/' }: HeaderPr
                                   <span className="text-[11px] text-[#263238]/40 whitespace-nowrap shrink-0">
                                     {timeAgo(notif.createdAt)}
                                   </span>
-                                  {!notif.isRead ? (
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[#4FC3F7] shrink-0" />
-                                  ) : (
-                                    <ChevronRight className="w-4 h-4 text-[#263238]/20 shrink-0" />
-                                  )}
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {!notif.isRead ? (
+                                      <div className="w-2.5 h-2.5 rounded-full bg-[#4FC3F7]" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-[#263238]/20" />
+                                    )}
+                                    <button
+                                      onClick={(e) => handleDeleteNotification(e, notif.notificationId)}
+                                      className="p-1.5 text-[#263238]/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors group/del"
+                                      title="Delete notification"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </button>
                               ))
                             )}
